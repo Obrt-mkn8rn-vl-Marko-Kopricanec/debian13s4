@@ -3,6 +3,8 @@
 
 S4_LIBRARY_DIR=/usr/local/lib/debian13s4
 S4_STATE_DIR=/var/lib/debian13s4
+S4_SYSTEMD_DIR=/etc/systemd/system
+S4_SERVICE=debian13s4-repair.service
 S4_TIMER=debian13s4-repair.timer
 S4_RESUME_SERVICE=debian13s4-resume.service
 S4_PHASE_TIMEOUT_MS=1800000
@@ -13,7 +15,7 @@ S4_TASK_OVERHEAD_MS=5000
 S4_ATTEMPT_OVERHEAD_MS=30000
 S4_POLL_INTERVAL_MS=1000
 S4_POLL_COUNT=3
-# Two notifications, shutdown, state queries and rollback need at most 23
+# Notifications, shutdown, durable barriers and rollback need at most 32
 # control calls. Reserve 32, including the poll intervals, before any task runs.
 S4_CONTROL_CALL_BUDGET=32
 S4_PHASE_PATH=/usr/sbin:/usr/bin:/sbin:/bin
@@ -160,6 +162,55 @@ s4_systemctl() {
     s4_control systemctl "$@"
 }
 
+s4_sync_filesystems() {
+    # Linux syncfs waits for file data AND filesystem metadata, including
+    # rename/directory entries. Unlike plain sync, errors are observable.
+    s4_control sync --file-system -- "$@"
+}
+
+s4_persist_recovery_intent() {
+    local marker=$S4_STATE_DIR/timer-stop.pending
+    if [[ -e $marker || -L $marker ]]; then
+        # Do not replace an already durable marker with a volatile inode when
+        # retrying after an IO error. Its presence, not its contents, is the gate.
+        [[ -f $marker && ! -L $marker ]] && s4_trusted_path "$marker" || return 1
+    else
+        printf 'pending\n' | s4_atomic_write "$marker" || return 1
+    fi
+    s4_sync_filesystems "$S4_STATE_DIR"
+}
+
+s4_persist_boot_guard() {
+    local path resolved wants=$S4_SYSTEMD_DIR/multi-user.target.wants
+    local -a paths=("$S4_LIBRARY_DIR" "$S4_LIBRARY_DIR/repair.sh"
+        "$S4_SYSTEMD_DIR" "$S4_SYSTEMD_DIR/$S4_RESUME_SERVICE"
+        "$S4_SYSTEMD_DIR/$S4_SERVICE" "$S4_SYSTEMD_DIR/$S4_TIMER" "$wants")
+    for path in "${paths[@]}"; do
+        s4_trusted_path "$path" || return 1
+    done
+    [[ -d $wants && -f $S4_SYSTEMD_DIR/$S4_RESUME_SERVICE &&
+        -f $S4_SYSTEMD_DIR/$S4_SERVICE && -f $S4_SYSTEMD_DIR/$S4_TIMER &&
+        -x $S4_LIBRARY_DIR/repair.sh && -L $wants/$S4_RESUME_SERVICE ]] || return 1
+    resolved=$(readlink --canonicalize-existing -- "$wants/$S4_RESUME_SERVICE") || return 1
+    [[ $resolved == "$S4_SYSTEMD_DIR/$S4_RESUME_SERVICE" ]] || return 1
+    # Cover the unit/code files, link parent and its ancestors even when they
+    # reside on different filesystems. A read-back of enablement cannot do this.
+    s4_sync_filesystems "${paths[@]}"
+}
+
+s4_persist_timer_enablement() {
+    local wants=$S4_SYSTEMD_DIR/timers.target.wants
+    local -a paths=("$S4_SYSTEMD_DIR")
+    s4_trusted_path "$S4_SYSTEMD_DIR" || return 1
+    # disable may remove an empty wants directory. Its removal is then covered
+    # by the parent's filesystem; a separately mounted wants directory remains.
+    if [[ -d $wants ]]; then
+        s4_trusted_path "$wants" || return 1
+        paths+=("$wants")
+    fi
+    s4_sync_filesystems "${paths[@]}"
+}
+
 s4_notify() {
     # Keep systemd-notify's acknowledgement barrier: enqueueing is insufficient.
     s4_control systemd-notify "$@"
@@ -228,22 +279,25 @@ s4_restore_timer() {
     # Never remove the durable marker here: the worker must verify all tasks
     # and finish the transaction before the boot recovery service can skip it.
     s4_systemctl enable "$S4_TIMER" || return 1
+    s4_persist_timer_enablement || return 1
     s4_systemctl start "$S4_TIMER" || return 1
     s4_wait_timer_state active enabled
 }
 
 s4_stop_timer() {
-    printf 'pending\n' | s4_atomic_write "$S4_STATE_DIR/timer-stop.pending" || return 1
+    s4_persist_recovery_intent || return 1
     # Arm a persistent boot trigger before touching timer enablement. The
     # running worker also has Restart=on-failure, independent of the timer.
     if ! s4_systemctl enable "$S4_RESUME_SERVICE" ||
-        ! s4_enabled_state "$S4_RESUME_SERVICE" enabled; then
+        ! s4_enabled_state "$S4_RESUME_SERVICE" enabled ||
+        ! s4_persist_boot_guard; then
         return 1
     fi
     # Stop while still enabled. Disable only after a bounded state check.
     # Never disable --now: its enablement write precedes reload/stop failures.
     if s4_systemctl stop "$S4_TIMER" && s4_wait_timer_state inactive '' &&
-        s4_systemctl disable "$S4_TIMER" && s4_wait_timer_state inactive disabled; then
+        s4_systemctl disable "$S4_TIMER" && s4_wait_timer_state inactive disabled &&
+        s4_persist_timer_enablement; then
         return 0
     fi
     s4_restore_timer || s4_log 'Timer restoration is pending; service and boot recovery remain armed.'
@@ -301,11 +355,25 @@ s4_run_tasks() {
     fi
     if ! { printf 'verified\n' | s4_atomic_write "$S4_STATE_DIR/setup.ready"; } ||
         ! s4_record_summary complete 0 ||
-        ! rm -f -- "$S4_STATE_DIR/timer-stop.pending"; then
-        rm -f -- "$S4_STATE_DIR/setup.ready" || return 1
+        ! s4_sync_filesystems "$S4_STATE_DIR" ||
+        ! rm -f -- "$S4_STATE_DIR/timer-stop.pending" ||
+        ! s4_sync_filesystems "$S4_STATE_DIR"; then
+        # A failed final barrier may have persisted some writes. Recreate the
+        # intent and restore a durable timer trigger; never assume rollback IO
+        # succeeds. Marker removal starts only after durable completion, so an
+        # uncertain cleanup cannot strand unfinished setup even if IO stays bad.
+        if s4_persist_recovery_intent; then
+            rm -f -- "$S4_STATE_DIR/setup.ready" || s4_log 'Cannot invalidate completion publication.'
+            s4_record_summary timer_stop_pending 0 || s4_log 'Cannot record pending finalization.'
+            s4_sync_filesystems "$S4_STATE_DIR" || s4_log 'Pending publication synchronization failed.'
+        else
+            s4_log 'Recovery intent synchronization failed; preserving prior completion publication.'
+        fi
+        s4_restore_timer || s4_log 'Timer restoration is pending; boot recovery remains armed.'
         return 1
     fi
-    s4_log 'Every setup task is verified; the retry timer is inactive and disabled.'
+    s4_log 'Every setup task is verified; the retry timer is inactive and disabled.' || true
+    return 0
 }
 
 s4_recover() {
@@ -317,7 +385,12 @@ s4_recover() {
         S4_LOCK_FD=
         return 0
     fi
-    if ! rm -f -- "$S4_STATE_DIR/setup.ready"; then
+    # Retrying a failed cleanup must not erase durable completion until another
+    # durable intent exists. A genuine prior completion already armed the guard.
+    if [[ -e $S4_STATE_DIR/setup.ready || -L $S4_STATE_DIR/setup.ready ]] &&
+        ! s4_persist_recovery_intent; then
+        result=75
+    elif ! rm -f -- "$S4_STATE_DIR/setup.ready"; then
         result=1
     elif ! s4_load_tasks; then
         result=78
@@ -387,7 +460,7 @@ if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
     set -Eeuo pipefail
     PATH=$S4_PHASE_PATH
     export PATH
-    readonly PATH S4_LIBRARY_DIR S4_STATE_DIR S4_TIMER S4_RESUME_SERVICE \
+    readonly PATH S4_LIBRARY_DIR S4_STATE_DIR S4_SYSTEMD_DIR S4_SERVICE S4_TIMER S4_RESUME_SERVICE \
         S4_PHASE_TIMEOUT_MS S4_KILL_DELAY_MS S4_CONTROL_TIMEOUT_MS S4_CONTROL_KILL_MS \
         S4_TASK_OVERHEAD_MS S4_ATTEMPT_OVERHEAD_MS S4_POLL_INTERVAL_MS \
         S4_POLL_COUNT S4_CONTROL_CALL_BUDGET S4_PHASE_PATH

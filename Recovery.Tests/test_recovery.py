@@ -17,8 +17,9 @@ TIMER = "debian13s4-repair.timer"
 RESUME = "debian13s4-resume.service"
 
 
-# A disposable manager model, never the host's systemctl. Persisting enablement
-# separately from activity models partial disable/reload failures and reboot.
+# A disposable manager/storage model, never the host's systemctl. Successful
+# writes are volatile until the relevant barrier; /var, /etc, the boot unit/code
+# and the wants directory can lose writes independently in the crash model.
 FAKE_SYSTEMCTL = r'''
 import json
 from pathlib import Path
@@ -29,22 +30,71 @@ state_dir = Path(sys.argv[2])
 log = Path(sys.argv[3])
 args = sys.argv[4:]
 state = json.loads(path.read_text())
+systemd_dir = state_dir.parent / "systemd"
+library = state_dir.parent / "library"
 timer = "debian13s4-repair.timer"
 resume = "debian13s4-resume.service"
-operation, unit = args[0], args[-1]
-assert unit in (timer, resume), args
-with log.open("a") as stream:
-    stream.write(json.dumps({"args": args, "state": state,
-                            "ready": (state_dir / "setup.ready").exists(),
-                            "pending": (state_dir / "timer-stop.pending").exists()}) + "\n")
+operation = args[0]
+unit = args[-1]
+before = json.loads(json.dumps(state))
 faults = state.get("faults", {})
 code = 0
 output = ""
-if operation == "enable":
+stage = None
+
+def contents(name):
+    candidate = state_dir / name
+    return candidate.read_text() if candidate.exists() else None
+
+def enable_link(name, target):
+    directory = systemd_dir / target
+    directory.mkdir(parents=True, exist_ok=True)
+    link = directory / name
+    if not link.is_symlink():
+        link.symlink_to(systemd_dir / name)
+
+if operation == "sync-fs":
+    caller = args[1]
+    targets = [Path(value) for value in args[2:]]
+    assert all(target.exists() for target in targets), targets
+    if state_dir in targets:
+        stage = "marker" if caller == "s4_persist_recovery_intent" else (
+            "cleanup" if contents("timer-stop.pending") is None else (
+                "completion" if contents("setup.ready") is not None else "pending"))
+    elif systemd_dir / resume in targets:
+        stage = "guard"
+    else:
+        stage = "restore" if state["enabled"] else "disable"
+    state.setdefault("sync_counts", {})[stage] = state.get("sync_counts", {}).get(stage, 0) + 1
+    failed = faults.get("sync_" + stage) or (
+        state["sync_counts"][stage] in faults.get("fail_" + stage + "_sync_calls", []))
+    # A sync error can follow partial persistence; model both outcomes.
+    if not failed or faults.get("persist_on_sync_error") or stage in faults.get("persist_sync_errors", []):
+        disk = state["durable"]
+        if state_dir in targets:
+            for name in ("timer-stop.pending", "setup.ready", "status"):
+                disk[name] = contents(name)
+        if systemd_dir in targets:
+            disk["enabled"] = state["enabled"]
+        if systemd_dir / "multi-user.target.wants" in targets:
+            disk["guard_enabled"] = state["guard_enabled"]
+        if stage == "guard":
+            expected = {library, library / "repair.sh", systemd_dir,
+                        systemd_dir / resume, systemd_dir / timer,
+                        systemd_dir / "debian13s4-repair.service",
+                        systemd_dir / "multi-user.target.wants"}
+            assert expected == set(targets), targets
+            disk["boot_files"] = True
+    if failed:
+        code = 1
+elif unit not in (timer, resume):
+    raise AssertionError(args)
+elif operation == "enable":
     if faults.get("enable_guard" if unit == resume else "enable_timer"):
         code = 1
     else:
         state["guard_enabled" if unit == resume else "enabled"] = True
+        enable_link(unit, "multi-user.target.wants" if unit == resume else "timers.target.wants")
 elif operation == "stop":
     assert unit == timer
     state["stop_reads"] = faults.get("stop_lag_reads", 0)
@@ -55,6 +105,13 @@ elif operation == "disable":
     assert unit == timer
     # The persistent change succeeds even if the following reload fails.
     state["enabled"] = False
+    # Unsynced writes may reach storage in any order. Persist disablement early
+    # as the adverse case, while marker/guard writes still require barriers.
+    state["durable"]["enabled"] = False
+    directory = systemd_dir / "timers.target.wants"
+    (directory / timer).unlink(missing_ok=True)
+    if directory.exists() and not any(directory.iterdir()):
+        directory.rmdir()
     if faults.get("disable_reload"):
         code = 1
 elif operation == "start":
@@ -78,6 +135,11 @@ elif operation == "show":
 else:
     raise AssertionError(args)
 path.write_text(json.dumps(state))
+with log.open("a") as stream:
+    stream.write(json.dumps({"args": args, "state": before, "after": state, "stage": stage,
+                            "ready": contents("setup.ready") is not None,
+                            "pending": contents("timer-stop.pending") is not None,
+                            "code": code}) + "\n")
 if output:
     print(output)
 sys.exit(code)
@@ -91,12 +153,24 @@ class RecoveryTests(unittest.TestCase):
         self.root = Path(self.temporary.name)
         self.library = self.root / "library"
         self.state = self.root / "state"
+        self.systemd = self.root / "systemd"
         self.library.mkdir()
         (self.state / "results").mkdir(parents=True)
+        self.systemd.mkdir()
+        (self.library / "repair.sh").write_bytes(WORKER.read_bytes())
+        (self.library / "repair.sh").chmod(0o755)
+        for unit in (PROJECT / "Recovery").glob("debian13s4-*.*"):
+            (self.systemd / unit.name).write_bytes(unit.read_bytes())
+        (self.systemd / "timers.target.wants").mkdir()
+        (self.systemd / "timers.target.wants" / TIMER).symlink_to(self.systemd / TIMER)
         self.calls = self.root / "calls"
         self.timer_calls = self.root / "timer-calls"
         self.controller = self.root / "manager.json"
-        self.controller.write_text(json.dumps({"enabled": True, "active": "active", "guard_enabled": False}))
+        self.controller.write_text(json.dumps({
+            "enabled": True, "active": "active", "guard_enabled": False,
+            "durable": {"enabled": True, "guard_enabled": False, "boot_files": False,
+                        "timer-stop.pending": None, "setup.ready": None, "status": None},
+        }))
         self.fake_systemctl = self.root / "systemctl.py"
         self.fake_systemctl.write_text(FAKE_SYSTEMCTL)
         self.entries = []
@@ -127,11 +201,17 @@ set -Eeuo pipefail
 source {shlex.quote(str(WORKER))}
 S4_LIBRARY_DIR={shlex.quote(str(self.library))}
 S4_STATE_DIR={shlex.quote(str(self.state))}
+S4_SYSTEMD_DIR={shlex.quote(str(self.systemd))}
 s4_trusted_path() {{ return 0; }}
 s4_systemctl() {{
     s4_control python3 {shlex.quote(str(self.fake_systemctl))} \
         {shlex.quote(str(self.controller))} {shlex.quote(str(self.state))} \
         {shlex.quote(str(self.timer_calls))} "$@"
+}}
+s4_sync_filesystems() {{
+    s4_control python3 {shlex.quote(str(self.fake_systemctl))} \
+        {shlex.quote(str(self.controller))} {shlex.quote(str(self.state))} \
+        {shlex.quote(str(self.timer_calls))} sync-fs "${{FUNCNAME[1]}}" "$@"
 }}
 S4_POLL_INTERVAL_MS=10
 unset NOTIFY_SOCKET
@@ -156,13 +236,34 @@ unset NOTIFY_SOCKET
         self.controller.write_text(json.dumps(state))
         return state
 
-    def control_calls(self):
+    def events(self):
         if not self.timer_calls.exists():
             return []
         return [json.loads(line) for line in self.timer_calls.read_text().splitlines()]
 
+    def control_calls(self):
+        return [event for event in self.events() if event["args"][0] != "sync-fs"]
+
     def stop_count(self):
         return sum(call["args"] == ["stop", TIMER] for call in self.control_calls())
+
+    def reset_storage_model(self, faults):
+        self.manager_state(enabled=True, active="active", guard_enabled=False,
+                           sync_counts={}, faults=faults,
+                           durable={"enabled": True, "guard_enabled": False, "boot_files": False,
+                                    "timer-stop.pending": None, "setup.ready": None, "status": None})
+        self.timer_calls.unlink(missing_ok=True)
+        for name in ("timer-stop.pending", "setup.ready", "status"):
+            (self.state / name).unlink(missing_ok=True)
+
+    def assert_crash_safe_events(self):
+        for event in self.events():
+            with self.subTest(operation=event["args"], stage=event["stage"]):
+                disk = event["after"]["durable"]
+                if not disk["enabled"] and disk["setup.ready"] is None:
+                    self.assertIsNotNone(disk["timer-stop.pending"])
+                    self.assertTrue(disk["guard_enabled"])
+                    self.assertTrue(disk["boot_files"])
 
     def unit(self, name):
         parser = configparser.ConfigParser(interpolation=None)
@@ -216,7 +317,17 @@ s4_notify() {{
 
     def simulate_reboot(self):
         state = self.manager_state()
-        state["active"] = "active" if state["enabled"] else "inactive"
+        disk = state["durable"]
+        state["enabled"] = disk["enabled"]
+        state["guard_enabled"] = disk["guard_enabled"] and disk["boot_files"]
+        state["active"] = "active" if disk["enabled"] else "inactive"
+        for name in ("timer-stop.pending", "setup.ready", "status"):
+            path = self.state / name
+            if disk[name] is None:
+                path.unlink(missing_ok=True)
+            else:
+                path.write_text(disk[name])
+                path.chmod(0o600)
         self.controller.write_text(json.dumps(state))
         # This is the shipped boot unit's enablement + ConditionPathExists gate,
         # not a host boot or unit activation. The actual resume code runs below.
@@ -382,14 +493,14 @@ done
         self.assertEqual(result.returncode, 0, result.stderr)
         lines = result.stdout.splitlines()
         phase, grace, task_margin, attempt_margin, calls, control, kill, poll = map(int, lines[0].split())
-        self.assertGreaterEqual(calls, 23)
+        self.assertGreaterEqual(calls, 32)
         self.assertLess(control + kill, 60_000)
         for count, budget in zip((1, 2, 1000), map(int, lines[1:])):
             self.assertEqual(budget, count * (3 * (phase + grace) + task_margin)
                              + attempt_margin + calls * (control + kill + poll))
             self.assertGreater(budget, count * 3 * (phase + grace))
-        # Resume takes at most eight control calls and two poll delays.
-        self.assertLess(8 * (control + kill) + 2 * poll, 120_000)
+        # Resume takes at most nine control/barrier calls and two poll delays.
+        self.assertLess(9 * (control + kill) + 2 * poll, 120_000)
         for name in ("debian13s4-repair.service", RESUME):
             policy = self.unit(name)["Service"]
             self.assertEqual(policy["Restart"], "on-failure")
@@ -406,7 +517,7 @@ s4_notify() {{ [[ $1 != {shlex.quote(failed_message)}* ]]; }}
 """)
                 self.assertEqual(result.returncode, 75, result.stderr)
                 self.assertFalse(self.calls.exists())
-                self.assertFalse(self.timer_calls.exists())
+                self.assertFalse(self.control_calls())
                 self.assertFalse((self.state / "setup.ready").exists())
                 self.assertIn("deadline_pending", (self.state / "status").read_text())
 
@@ -529,7 +640,169 @@ s4_notify() {{ [[ $1 != {shlex.quote(failed_message)}* ]]; }}
         self.assertEqual(self.manager_state()["active"], "active")
         self.assertFalse((self.state / "setup.ready").exists())
 
-    def test_publication_failure_keeps_boot_recovery_after_successful_shutdown(self):
+    def test_model_crash_discards_unflushed_marker_and_enablement(self):
+        (self.state / "timer-stop.pending").write_text("pending\n")
+        result = subprocess.run(
+            ["python3", str(self.fake_systemctl), str(self.controller), str(self.state),
+             str(self.timer_calls), "enable", RESUME],
+            text=True, capture_output=True, timeout=5,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.manager_state()["guard_enabled"])
+        self.assertIsNone(self.simulate_reboot())
+        self.assertFalse((self.state / "timer-stop.pending").exists())
+        self.assertFalse(self.manager_state()["guard_enabled"])
+        self.assertTrue(self.manager_state()["enabled"])
+
+    def test_durable_ordering_precedes_disable_and_marker_removal(self):
+        self.task("setup")
+        result = self.recover()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual([event["stage"] for event in self.events() if event["stage"]],
+                         ["marker", "guard", "disable", "completion", "cleanup"])
+        self.assert_crash_safe_events()
+        for event in self.control_calls():
+            if event["args"][0] in ("stop", "disable"):
+                disk = event["state"]["durable"]
+                self.assertEqual(disk["timer-stop.pending"], "pending\n")
+                self.assertTrue(disk["guard_enabled"])
+                self.assertTrue(disk["boot_files"])
+        cleanup = next(event for event in self.events() if event["stage"] == "cleanup")
+        disk = cleanup["state"]["durable"]
+        self.assertFalse(disk["enabled"])
+        self.assertEqual(disk["setup.ready"], "verified\n")
+        self.assertIn("state=complete", disk["status"])
+        self.assertEqual(disk["timer-stop.pending"], "pending\n")
+        final_disk = self.manager_state()["durable"]
+        self.assertIsNone(final_disk["timer-stop.pending"])
+        self.assertIsNone(self.simulate_reboot())
+        self.assertTrue((self.state / "setup.ready").exists())
+
+    def test_preparation_sync_errors_fail_closed_before_timer_mutation(self):
+        self.task("setup")
+        for stage in ("marker", "guard"):
+            for persist_on_error in (False, True):
+                with self.subTest(stage=stage, persist_on_error=persist_on_error):
+                    self.reset_storage_model({"sync_" + stage: True,
+                                              "persist_on_sync_error": persist_on_error})
+                    result = self.recover()
+                    self.assertEqual(result.returncode, 75, result.stderr)
+                    self.assertEqual(self.stop_count(), 0)
+                    self.assertFalse(any(event["args"][0] == "disable" for event in self.events()))
+                    self.assertFalse((self.state / "setup.ready").exists())
+                    self.assertTrue(self.manager_state()["durable"]["enabled"])
+                    self.assert_crash_safe_events()
+
+    def test_disable_sync_error_keeps_a_durable_boot_trigger(self):
+        self.task("setup")
+        for persist_on_error in (False, True):
+            with self.subTest(persist_on_error=persist_on_error):
+                self.reset_storage_model({"sync_disable": True, "enable_timer": True,
+                                          "persist_on_sync_error": persist_on_error})
+                first = self.recover()
+                self.assertEqual(first.returncode, 75, first.stderr)
+                self.assertFalse(self.manager_state()["durable"]["enabled"])
+                self.assertFalse((self.state / "setup.ready").exists())
+                self.assert_crash_safe_events()
+                self.manager_state(faults={})
+                resumed = self.simulate_reboot()
+                self.assertIsNotNone(resumed)
+                self.assertEqual(resumed.returncode, 0, resumed.stderr)
+                self.assertTrue(self.manager_state()["durable"]["enabled"])
+                final = self.recover()
+                self.assertEqual(final.returncode, 0, final.stderr)
+                self.assertEqual(self.calls.read_text(), "setup\n")
+
+    def test_completion_sync_errors_retain_durable_recovery_ownership(self):
+        self.task("setup")
+        for stage in ("completion", "cleanup"):
+            for persist_on_error in (False, True):
+                with self.subTest(stage=stage, persist_on_error=persist_on_error):
+                    self.reset_storage_model({"sync_" + stage: True,
+                                              "persist_on_sync_error": persist_on_error})
+                    first = self.recover()
+                    self.assertEqual(first.returncode, 1, first.stderr)
+                    self.assertFalse((self.state / "setup.ready").exists())
+                    disk = self.manager_state()["durable"]
+                    self.assertIsNotNone(disk["timer-stop.pending"])
+                    self.assertIsNone(disk["setup.ready"])
+                    self.assertTrue(disk["enabled"])
+                    self.assertIn("timer_stop_pending", disk["status"])
+                    self.assert_crash_safe_events()
+                    self.manager_state(faults={})
+                    resumed = self.simulate_reboot()
+                    self.assertEqual(resumed.returncode, 0, resumed.stderr)
+                    final = self.recover()
+                    self.assertEqual(final.returncode, 0, final.stderr)
+                    self.assertEqual(self.calls.read_text(), "setup\n")
+
+    def test_restore_sync_error_retains_boot_recovery_for_another_retry(self):
+        self.task("setup")
+        self.manager_state(faults={"disable_reload": True, "sync_restore": True})
+        first = self.recover()
+        self.assertEqual(first.returncode, 75, first.stderr)
+        self.assertFalse(self.manager_state()["durable"]["enabled"])
+        self.assert_crash_safe_events()
+        resumed = self.simulate_reboot()
+        self.assertEqual(resumed.returncode, 75, resumed.stderr)
+        self.assertTrue((self.state / "timer-stop.pending").exists())
+        self.manager_state(faults={})
+        resumed = self.simulate_reboot()
+        self.assertEqual(resumed.returncode, 0, resumed.stderr)
+        self.assertTrue(self.manager_state()["durable"]["enabled"])
+
+    def test_existing_durable_intent_is_not_replaced_when_retry_sync_fails(self):
+        self.task("setup")
+        self.manager_state(faults={"disable_reload": True, "enable_timer": True})
+        first = self.recover()
+        self.assertEqual(first.returncode, 75, first.stderr)
+        marker = self.state / "timer-stop.pending"
+        inode = marker.stat().st_ino
+        self.manager_state(faults={"sync_marker": True})
+        second = self.recover()
+        self.assertEqual(second.returncode, 75, second.stderr)
+        self.assertEqual(marker.stat().st_ino, inode)
+        self.assert_crash_safe_events()
+        self.manager_state(faults={})
+        resumed = self.simulate_reboot()
+        self.assertEqual(resumed.returncode, 0, resumed.stderr)
+        self.assertEqual(self.recover().returncode, 0)
+        self.assertEqual(self.calls.read_text(), "setup\n")
+
+    def test_uncertain_cleanup_and_failed_rollback_preserve_durable_completion(self):
+        self.task("setup")
+        self.manager_state(faults={"sync_cleanup": True, "fail_marker_sync_calls": [2],
+                                   "persist_sync_errors": ["cleanup"], "enable_timer": True})
+        first = self.recover()
+        self.assertEqual(first.returncode, 1, first.stderr)
+        disk = self.manager_state()["durable"]
+        self.assertFalse(disk["enabled"])
+        self.assertIsNone(disk["timer-stop.pending"])
+        self.assertEqual(disk["setup.ready"], "verified\n")
+        self.assertIn("state=complete", disk["status"])
+        self.assertTrue((self.state / "setup.ready").exists())
+        # Even the next in-process retry must not erase the committed record
+        # when it cannot establish a durable replacement intent.
+        self.manager_state(faults={"sync_marker": True})
+        second = self.recover()
+        self.assertEqual(second.returncode, 75, second.stderr)
+        self.assertTrue((self.state / "setup.ready").exists())
+        self.assert_crash_safe_events()
+        self.assertIsNone(self.simulate_reboot())
+        self.assertTrue((self.state / "setup.ready").exists())
+        self.assertEqual(self.calls.read_text(), "setup\n")
+
+    def test_real_sync_primitive_flushes_filesystems_and_reports_errors(self):
+        marker = self.root / "sync-marker"
+        marker.write_text("pending\n")
+        for paths, expected in (((marker, self.root), 0), ((self.root / "missing",), 1)):
+            with self.subTest(paths=paths):
+                command = f"source {shlex.quote(str(WORKER))}\ns4_sync_filesystems " + " ".join(
+                    shlex.quote(str(path)) for path in paths)
+                result = subprocess.run(["bash", "-c", command], text=True, capture_output=True, timeout=15)
+                self.assertEqual(result.returncode, expected, result.stderr)
+
+    def test_publication_failure_restores_durable_retries_after_shutdown(self):
         self.task("setup")
         result = self.recover(f"""
 mv() {{
@@ -541,8 +814,8 @@ mv() {{
 """)
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertFalse((self.state / "setup.ready").exists())
-        self.assertFalse(self.manager_state()["enabled"])
-        self.assertEqual(self.manager_state()["active"], "inactive")
+        self.assertTrue(self.manager_state()["durable"]["enabled"])
+        self.assertEqual(self.manager_state()["active"], "active")
         self.assertTrue((self.state / "timer-stop.pending").exists())
         resumed = self.simulate_reboot()
         self.assertEqual(resumed.returncode, 0, resumed.stderr)
@@ -628,7 +901,7 @@ printf 'once\\n' >> {shlex.quote(str(self.calls))}
                 result = self.recover()
                 self.assertEqual(result.returncode, 78, result.stderr)
                 self.assertFalse(self.calls.exists())
-                self.assertFalse(self.timer_calls.exists())
+                self.assertFalse(self.control_calls())
                 self.assertFalse((self.state / "setup.ready").exists())
                 self.assertIn("invalid_bundle", (self.state / "status").read_text())
 
