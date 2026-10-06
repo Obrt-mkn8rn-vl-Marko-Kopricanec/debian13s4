@@ -1,0 +1,29 @@
+[Unit]
+Description=Restore setup retries after interrupted timer finalization
+After=local-fs.target
+ConditionPathExists=/var/lib/debian13s4/timer-stop.pending
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/repair.sh --resume
+User=root
+Group=root
+UMask=0077
+TimeoutStartSec=2min
+TimeoutStopSec=2min
+Restart=on-failure
+RestartSec=5min
+KillMode=control-group
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+
+[Install]
+WantedBy=multi-user.target

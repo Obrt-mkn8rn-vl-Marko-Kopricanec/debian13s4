@@ -4,14 +4,19 @@ After=network.target
 ConditionPathExists=/usr/local/lib/debian13s4/tasks.list
 
 [Service]
-Type=oneshot
+Type=notify
+NotifyAccess=all
 ExecStart=/usr/local/lib/debian13s4/repair.sh
 User=root
 Group=root
 UMask=0077
-SuccessExitStatus=75
-TimeoutStartSec=1h
+# Admission is bounded; the worker derives and acknowledges a finite runtime
+# extension for all phases of the admitted bundle before executing any task.
+TimeoutStartSec=1min
+RuntimeMaxSec=1min
 TimeoutStopSec=2min
+Restart=on-failure
+RestartSec=5min
 KillMode=control-group
 StandardInput=null
 StandardOutput=journal
