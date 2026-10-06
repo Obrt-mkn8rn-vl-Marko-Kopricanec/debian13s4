@@ -1,9 +1,11 @@
 import configparser
+import fcntl
 import importlib.util
 import json
 import os
 from pathlib import Path
 import shlex
+import socket
 import subprocess
 import tempfile
 import time
@@ -177,7 +179,7 @@ class BootstrapTests(unittest.TestCase):
             "disk": {"state": {}, "boot": {}, "library": {}, "units": {},
                      "boot_enabled": False, "timer_enabled": False}, "faults": {}}))
 
-    def harness(self, source=ENTRY):
+    def harness(self, source=ENTRY, lock=True):
         quote = shlex.quote
         return f'''
 set -Eeuo pipefail
@@ -188,11 +190,13 @@ S4B_BOOT_DIR={quote(str(self.boot))}
 S4B_LIBRARY_DIR={quote(str(self.library))}
 S4B_SYSTEMD_DIR={quote(str(self.systemd))}
 s4b_trusted() {{
-    local path=$1
+    local path=$1 mode
     [[ $path == {quote(str(self.root))} || $path == {quote(str(self.root))}/* ]] || return 1
     [[ $path != *'/../'* && $path != */.. && $path != *'/./'* && $path != */. && $path != *'//'* ]] || return 1
     while :; do
         [[ -e $path && ! -L $path && -O $path ]] || return 1
+        mode=$(stat --format='%a' -- "$path") || return 1
+        (( (8#$mode & 8#022) == 0 )) || return 1
         [[ $path == {quote(str(self.root))} ]] && return 0
         path=${{path%/*}}
     done
@@ -201,10 +205,8 @@ s4b_install() {{ /usr/bin/install "$@"; }}
 s4b_systemctl() {{ python3 {quote(str(self.model))} {quote(str(self.database))} {quote(str(self.log))} systemctl "${{FUNCNAME[1]}}" "$@"; }}
 s4b_sync() {{ python3 {quote(str(self.model))} {quote(str(self.database))} {quote(str(self.log))} sync "${{FUNCNAME[1]}}" "$@"; }}
 s4b_prepare
-exec {{S4B_LOCK_FD}}> "$S4B_BOOT_DIR/lock"
-flock --nonblock "$S4B_LOCK_FD"
 trap 's4b_unlock; s4b_cleanup' EXIT
-'''
+''' + ('s4b_open_lock "$S4B_BOOT_DIR/lock" S4B_LOCK_FD\n' if lock else '')
 
     def run_script(self, script, timeout=30):
         return subprocess.run(["/bin/bash", "--noprofile", "--norc", "-c", script],
@@ -212,6 +214,27 @@ trap 's4b_unlock; s4b_cleanup' EXIT
 
     def finish(self, additions="", source=ENTRY):
         return self.run_script(self.harness(source) + additions + "\ns4b_finish\n")
+
+    def lock_paths(self):
+        for path in (self.state_dir, self.boot):
+            path.mkdir(exist_ok=True)
+            path.chmod(0o700)
+        return ((self.boot / "lock", "S4B_LOCK_FD"),
+                (self.state_dir / "repair.lock", "S4B_REPAIR_FD"))
+
+    def lock_attempt(self, path, variable, additions="", timeout=5):
+        return self.run_script(self.harness(lock=False) + additions + f'''
+before=(/proc/$BASHPID/fd/[0-9]*)
+if s4b_open_lock {shlex.quote(str(path))} {variable}; then
+    exit 0
+else
+    result=$?
+    [[ -z ${{{variable}}} ]] || exit 99
+    after=(/proc/$BASHPID/fd/[0-9]*)
+    [[ ${{#before[@]}} == ${{#after[@]}} ]] || exit 99
+    exit "$result"
+fi
+''', timeout=timeout)
 
     def state(self):
         return json.loads(self.database.read_text())
@@ -457,6 +480,225 @@ s4b_finish
         self.assertFalse((self.library / "repair.sh").exists())
         self.assertTrue(self.state()["disk"]["boot_enabled"])
 
+    def test_both_lock_admissions_refuse_symlinks_without_changing_victims(self):
+        for path, variable in self.lock_paths():
+            with self.subTest(variable=variable):
+                victim = self.root / (variable + ".victim")
+                data = b"preserve these bytes\n\x00\xff"
+                victim.write_bytes(data)
+                victim.chmod(0o600)
+                before = victim.stat()
+                path.symlink_to(victim)
+                leaf = path.lstat()
+                # Exercise the initial admission and actual finish admission.
+                script = self.harness()
+                if variable == "S4B_REPAIR_FD":
+                    script += "\ns4b_finish\n"
+                result = self.run_script(script, timeout=20)
+                self.assertNotEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(victim.read_bytes(), data)
+                self.assertEqual((victim.stat().st_dev, victim.stat().st_ino),
+                                 (before.st_dev, before.st_ino))
+                self.assertEqual((path.lstat().st_dev, path.lstat().st_ino),
+                                 (leaf.st_dev, leaf.st_ino))
+                self.assertTrue(path.is_symlink())
+                self.assertFalse((self.library / "repair.sh").exists())
+                if variable == "S4B_LOCK_FD":
+                    self.assertFalse(self.events())
+                    self.assertFalse((self.boot / "pending").exists())
+                else:
+                    self.assertTrue(self.state()["disk"]["boot_enabled"])
+                path.unlink()
+
+    def test_both_lock_admissions_refuse_dangling_links_without_creating_targets(self):
+        for path, variable in self.lock_paths():
+            with self.subTest(variable=variable):
+                victim = self.root / (variable + ".missing")
+                path.symlink_to(victim)
+                before = path.lstat()
+                self.assertEqual(self.lock_attempt(path, variable).returncode, 1)
+                self.assertFalse(victim.exists())
+                self.assertEqual(path.lstat().st_ino, before.st_ino)
+                self.assertTrue(path.is_symlink())
+                path.unlink()
+
+    def test_both_lock_admissions_reject_readerless_fifos_within_finite_time(self):
+        for path, variable in self.lock_paths():
+            with self.subTest(variable=variable):
+                os.mkfifo(path, 0o600)
+                before = path.lstat()
+                started = time.monotonic()
+                result = self.lock_attempt(path, variable, timeout=3)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertLess(time.monotonic() - started, 3)
+                self.assertEqual(path.lstat(), before)
+                self.assertFalse(self.events())
+                path.unlink()
+
+    def test_both_lock_admissions_refuse_directories_and_unix_sockets(self):
+        for kind in ("directory", "socket"):
+            for path, variable in self.lock_paths():
+                with self.subTest(kind=kind, variable=variable):
+                    # A preceding finish admission may have created the other
+                    # ordinary lock. Replace only that fixture-owned regular leaf.
+                    if path.is_file() and not path.is_symlink():
+                        path.unlink()
+                    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as endpoint:
+                        if kind == "directory":
+                            path.mkdir(mode=0o700)
+                        else:
+                            endpoint.bind(str(path))
+                            path.chmod(0o600)
+                        before = path.lstat()
+                        script = self.harness()
+                        if variable == "S4B_REPAIR_FD":
+                            script += "\ns4b_finish\n"
+                        result = self.run_script(script, timeout=20)
+                        self.assertNotEqual(result.returncode, 0, result.stderr)
+                        self.assertEqual(path.lstat(), before)
+                        self.assertFalse((self.library / "repair.sh").exists())
+                    if kind == "directory":
+                        path.rmdir()
+                    else:
+                        path.unlink()
+
+    def test_checked_lock_open_refuses_a_real_device_before_opening(self):
+        device = Path("/dev/null")
+        before = device.stat()
+        self.assertTrue(device.is_char_device())
+        for variable in ("S4B_LOCK_FD", "S4B_REPAIR_FD"):
+            with self.subTest(variable=variable):
+                result = self.run_script(f'''
+set -Eeuo pipefail
+source {shlex.quote(str(ENTRY))}
+s4b_open_lock /dev/null {variable}
+''', timeout=3)
+                self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertEqual(device.stat()[:7], before[:7])
+        self.assertEqual(device.stat().st_rdev, before.st_rdev)
+
+    def test_both_lock_admissions_refuse_unsafe_modes_without_touching_leaves(self):
+        for path, variable in self.lock_paths():
+            for mode in (0o620, 0o602, 0o666):
+                with self.subTest(variable=variable, mode=oct(mode)):
+                    path.write_bytes(b"existing lock data\n")
+                    path.chmod(mode)
+                    before = path.stat()
+                    self.assertEqual(self.lock_attempt(path, variable).returncode, 1)
+                    self.assertEqual(path.read_bytes(), b"existing lock data\n")
+                    self.assertEqual(path.stat()[:7], before[:7])
+                    path.unlink()
+
+    def test_native_lock_leaf_trust_refuses_nonroot_ownership_before_opening(self):
+        for path, variable in self.lock_paths():
+            with self.subTest(variable=variable):
+                path.write_bytes(b"nonroot-owned leaf\n")
+                path.chmod(0o600)
+                before = path.stat()
+                # Adapt only the parent check; the production leaf/ancestor
+                # trust function still sees this real non-root-owned leaf.
+                result = self.run_script(f'''
+set -Eeuo pipefail
+source {shlex.quote(str(ENTRY))}
+eval "$(declare -f s4b_trusted | sed '1s/s4b_trusted/s4b_original_trusted/')"
+s4b_trusted() {{
+    [[ $1 == {shlex.quote(str(path.parent))} ]] || s4b_original_trusted "$@"
+}}
+s4b_open_lock {shlex.quote(str(path))} {variable}
+''', timeout=3)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertNotEqual(before.st_uid, 0)
+                self.assertEqual(path.read_bytes(), b"nonroot-owned leaf\n")
+                self.assertEqual(path.stat()[:7], before[:7])
+                path.unlink()
+
+    def test_both_checked_lock_creations_are_private_and_owned_until_unlock(self):
+        for path, variable in self.lock_paths():
+            with self.subTest(variable=variable):
+                result = self.run_script(self.harness(lock=False) + f'''
+umask 000
+s4b_open_lock {shlex.quote(str(path))} {variable}
+[[ $(umask) == 0000 ]]
+descriptor=/proc/$BASHPID/fd/${{{variable}}}
+[[ -f $descriptor ]]
+[[ $(stat --dereference --format='%u %a %d:%i' -- "$descriptor") == $(stat --format='%u %a %d:%i' -- {shlex.quote(str(path))}) ]]
+if flock --nonblock {shlex.quote(str(path))} true; then exit 98; fi
+s4b_unlock
+[[ -z ${{{variable}}} && ! -e $descriptor ]]
+flock --nonblock {shlex.quote(str(path))} true
+''', timeout=5)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+                self.assertEqual(path.stat().st_uid, os.geteuid())
+                self.assertEqual(path.read_bytes(), b"")
+                path.unlink()
+
+    def test_both_lock_contention_and_retry_preserve_contents_and_inode(self):
+        for path, variable in self.lock_paths():
+            with self.subTest(variable=variable):
+                data = b"lock content must survive all admissions\n"
+                path.write_bytes(data)
+                path.chmod(0o600)
+                before = path.stat()
+                with path.open("rb") as owner:
+                    fcntl.flock(owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    result = self.lock_attempt(path, variable)
+                    self.assertEqual(result.returncode, 75, result.stderr)
+                    self.assertEqual(path.read_bytes(), data)
+                    self.assertEqual(path.stat()[:7], before[:7])
+                result = self.lock_attempt(path, variable)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(path.read_bytes(), data)
+                self.assertEqual(path.stat()[:7], before[:7])
+                path.unlink()
+
+    def test_descriptor_mismatch_refuses_flock_and_closes_the_new_descriptor(self):
+        for path, variable in self.lock_paths():
+            with self.subTest(variable=variable):
+                path.write_bytes(b"original descriptor\n")
+                path.chmod(0o600)
+                old = self.root / (variable + ".old")
+                result = self.run_script(self.harness(lock=False) + f'''
+stat() {{
+    if [[ $1 == '--format=%u %a %d:%i' && ${{@: -1}} == {shlex.quote(str(path))} ]]; then
+        mv -- {shlex.quote(str(path))} {shlex.quote(str(old))}
+        printf 'replacement leaf\\n' > {shlex.quote(str(path))}
+        chmod 0600 -- {shlex.quote(str(path))}
+    fi
+    command stat "$@"
+}}
+flock() {{ exit 97; }}
+before=(/proc/$BASHPID/fd/[0-9]*)
+if s4b_open_lock {shlex.quote(str(path))} {variable}; then exit 98; fi
+[[ -z ${{{variable}}} ]]
+after=(/proc/$BASHPID/fd/[0-9]*)
+[[ ${{#before[@]}} == ${{#after[@]}} ]]
+''', timeout=5)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(old.read_bytes(), b"original descriptor\n")
+                self.assertEqual(path.read_bytes(), b"replacement leaf\n")
+                self.assertNotEqual(old.stat().st_ino, path.stat().st_ino)
+                path.unlink()
+
+    def test_descriptor_stat_error_fails_closed_without_leaking_a_descriptor(self):
+        for path, variable in self.lock_paths():
+            with self.subTest(variable=variable):
+                result = self.run_script(self.harness(lock=False) + f'''
+stat() {{
+    [[ $1 != --dereference ]] || return 1
+    command stat "$@"
+}}
+flock() {{ exit 97; }}
+before=(/proc/$BASHPID/fd/[0-9]*)
+if s4b_open_lock {shlex.quote(str(path))} {variable}; then exit 98; fi
+[[ -z ${{{variable}}} ]]
+after=(/proc/$BASHPID/fd/[0-9]*)
+[[ ${{#before[@]}} == ${{#after[@]}} ]]
+''', timeout=5)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+                path.unlink()
+
     def test_payload_tampering_rejects_the_bundle_before_publication(self):
         result = self.finish('''
 eval "$(declare -f s4b_write_bundle | sed '1s/s4b_write_bundle/s4b_original_bundle/')"
@@ -569,13 +811,11 @@ s4b_write_unit
         self.assertGreater(int(larger["Service"]["TimeoutStartSec"][:-1]), bound)
 
     def test_control_children_close_both_locks_and_clear_environment(self):
-        script = f'''
-set -Eeuo pipefail
-source {shlex.quote(str(ENTRY))}
-exec {{S4B_LOCK_FD}}> {shlex.quote(str(self.root / "first.lock"))}
-exec {{S4B_REPAIR_FD}}> {shlex.quote(str(self.root / "second.lock"))}
+        script = self.harness(lock=False) + '''
+s4b_open_lock "$S4B_BOOT_DIR/lock" S4B_LOCK_FD
+s4b_open_lock "$S4B_STATE_DIR/repair.lock" S4B_REPAIR_FD
 export DEBIAN13S4_FOREIGN=unsafe
-s4b_control /bin/bash -c '[[ ! -e /proc/self/fd/$1 && ! -e /proc/self/fd/$2 && -z ${{DEBIAN13S4_FOREIGN+x}} ]]' fixture "$S4B_LOCK_FD" "$S4B_REPAIR_FD"
+s4b_control /bin/bash -c '[[ ! -e /proc/self/fd/$1 && ! -e /proc/self/fd/$2 && -z ${DEBIAN13S4_FOREIGN+x} ]]' fixture "$S4B_LOCK_FD" "$S4B_REPAIR_FD"
 '''
         result = self.run_script(script)
         self.assertEqual(result.returncode, 0, result.stderr)

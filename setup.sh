@@ -53,6 +53,48 @@ s4b_prepare() {
     s4b_directory "$S4B_BOOT_DIR" 0700 || return 1
 }
 
+s4b_open_lock() {
+    local path=$1 variable=$2 descriptor descriptor_path previous_umask
+    local path_identity descriptor_identity owner mode identity result=1
+    [[ $variable == S4B_LOCK_FD || $variable == S4B_REPAIR_FD ]] || return 1
+    [[ -z ${!variable} && -d ${path%/*} ]] && s4b_trusted "${path%/*}" || return 1
+    # The prepared private parent excludes unprivileged replacement races, but
+    # an existing malformed leaf must be refused before any open can follow it
+    # or block on it. Never repair, remove or truncate a refused lock leaf.
+    if [[ -e $path || -L $path ]]; then
+        [[ ! -L $path && -f $path ]] && s4b_trusted "$path" || return 1
+    fi
+    previous_umask=$(umask) || return 1
+    umask 077
+    if ! exec {descriptor}>> "$path"; then
+        umask "$previous_umask"
+        return 1
+    fi
+    umask "$previous_umask"
+    descriptor_path=/proc/$BASHPID/fd/$descriptor
+    # Revalidate the pathname after the nontruncating open. Matching owner,
+    # mode and device/inode transfer its root/permission trust to the actual
+    # regular descriptor; descriptor inspection deliberately follows procfs.
+    if [[ -f $descriptor_path && ! -L $path && -f $path ]] &&
+        s4b_trusted "$path" &&
+        path_identity=$(stat --format='%u %a %d:%i' -- "$path") &&
+        descriptor_identity=$(stat --dereference --format='%u %a %d:%i' -- "$descriptor_path") &&
+        [[ -n $path_identity && $path_identity == "$descriptor_identity" ]] &&
+        read -r owner mode identity <<< "$descriptor_identity" &&
+        [[ $owner == "$EUID" && $mode =~ ^[0-7]{3,4}$ && $identity =~ ^[0-9]+:[0-9]+$ ]] &&
+        (( (8#$mode & 8#022) == 0 )); then
+        if flock --nonblock "$descriptor"; then
+            if printf -v "$variable" '%s' "$descriptor"; then
+                return 0
+            fi
+        else
+            result=75
+        fi
+    fi
+    exec {descriptor}>&-
+    return "$result"
+}
+
 s4b_control() (
     [[ -z $S4B_LOCK_FD ]] || exec {S4B_LOCK_FD}>&-
     [[ -z $S4B_REPAIR_FD ]] || exec {S4B_REPAIR_FD}>&-
@@ -129,7 +171,7 @@ s4b_write_runner() {
         S4B_FILES S4B_MODES || return 1
     printf 'S4B_LOCK_FD=\nS4B_REPAIR_FD=\nS4B_STAGE=\n' || return 1
     printf 'PATH=%q\nexport PATH\n' "$S4B_PATH" || return 1
-    declare -f s4b_log s4b_trusted s4b_install s4b_directory s4b_prepare \
+    declare -f s4b_log s4b_trusted s4b_install s4b_directory s4b_prepare s4b_open_lock \
         s4b_control s4b_systemctl s4b_sync s4b_atomic s4b_enabled \
         s4b_inactive s4b_quiesce s4b_enablement_paths s4b_write_runner s4b_write_unit \
         s4b_arm s4b_validate_bundle s4b_publish s4b_finish s4b_cleanup \
@@ -239,8 +281,7 @@ s4b_finish() {
     for target in "$S4B_TIMER" "$S4B_SERVICE" "$S4B_RESUME"; do
         s4b_quiesce "$target" || return 1
     done
-    exec {S4B_REPAIR_FD}> "$S4B_STATE_DIR/repair.lock" || return 1
-    flock --nonblock "$S4B_REPAIR_FD" || return 1
+    s4b_open_lock "$S4B_STATE_DIR/repair.lock" S4B_REPAIR_FD || return 1
     S4B_STAGE=$(mktemp -d -- "$S4B_BOOT_DIR/bundle.XXXXXX") || return 1
     s4b_write_bundle || return 1
     s4b_validate_bundle || return 1
@@ -332,13 +373,9 @@ s4b_main() {
         command -v "$command" > /dev/null || return 69
     done
     s4b_prepare || return 1
-    exec {S4B_LOCK_FD}> "$S4B_BOOT_DIR/lock" || return 1
-    if ! flock --nonblock "$S4B_LOCK_FD"; then
-        s4b_unlock
-        # Managed retries must remain failed/pending while another attempt owns
-        # the lock, rather than silently consuming the only queued boot attempt.
-        return 75
-    fi
+    # Contention returns 75: a managed attempt must remain pending rather than
+    # silently consume the only queued boot attempt while another owns it.
+    s4b_open_lock "$S4B_BOOT_DIR/lock" S4B_LOCK_FD || return $?
     trap s4b_cleanup EXIT
     if (( resume )); then
         s4b_finish || result=75
