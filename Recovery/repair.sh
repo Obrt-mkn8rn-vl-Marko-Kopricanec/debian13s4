@@ -424,6 +424,13 @@ s4_resume() {
     return "$result"
 }
 
+s4_bootstrap_gate() {
+    if [[ -e $S4_STATE_DIR/bootstrap/pending || -L $S4_STATE_DIR/bootstrap/pending ]]; then
+        s4_log 'Bootstrap publication is pending; no setup task was started.'
+        return 75
+    fi
+}
+
 s4_main() {
     local ID='' VERSION_ID='' resume=0
     if [[ $# == 1 && $1 == --help ]]; then
@@ -448,6 +455,10 @@ s4_main() {
         return 78
     fi
     s4_trusted_path "${BASH_SOURCE[0]}" || return 1
+    # Bootstrap publishes the protected worker first and flushes it before any
+    # task changes. Refuse mixed generations until its durable transaction ends.
+    # A nonzero exit keeps the manager's independent Restart retry armed.
+    s4_bootstrap_gate || return $?
     s4_prepare_state || return 1
     if (( resume )); then
         s4_resume

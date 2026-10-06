@@ -11,6 +11,10 @@ import time
 import unittest
 
 
+if os.geteuid() == 0:
+    raise RuntimeError("Run the unprivileged fixture suite as an ordinary user.")
+
+
 PROJECT = Path(__file__).resolve().parents[1]
 WORKER = PROJECT / "Recovery" / "repair.sh"
 TIMER = "debian13s4-repair.timer"
@@ -968,6 +972,38 @@ printf 'once\\n' >> {shlex.quote(str(self.calls))}
         valid = f"source {shlex.quote(str(WORKER))}; s4_trusted_path /usr/bin/bash"
         result = subprocess.run(["bash", "-c", valid], capture_output=True)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_bootstrap_gate_retains_readiness_and_starts_no_task(self):
+        self.task('prerequisites')
+        (self.state / 'setup.ready').write_text('previously verified\n')
+        (self.state / 'bootstrap').mkdir()
+        marker = self.state / 'bootstrap/pending'
+        for symlink in (False, True):
+            with self.subTest(symlink=symlink):
+                if symlink:
+                    marker.symlink_to(self.root / 'missing')
+                else:
+                    marker.write_text('pending\n')
+                result = subprocess.run(
+                    ['bash', '--noprofile', '--norc', '-c',
+                     self.command(entry='s4_bootstrap_gate && s4_recover')],
+                    text=True, capture_output=True, timeout=10)
+                self.assertEqual(result.returncode, 75, result.stderr)
+                self.assertEqual((self.state / 'setup.ready').read_text(), 'previously verified\n')
+                self.assertFalse(self.calls.exists())
+                self.assertEqual(self.stop_count(), 0)
+                marker.unlink()
+
+    def test_clearing_bootstrap_gate_allows_actual_verified_recovery(self):
+        self.task('prerequisites')
+        (self.state / 'bootstrap').mkdir()
+        result = subprocess.run(
+            ['bash', '--noprofile', '--norc', '-c',
+             self.command(entry='s4_bootstrap_gate && s4_recover')],
+            text=True, capture_output=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.calls.read_text(), 'prerequisites\n')
+        self.assertTrue((self.state / 'setup.ready').is_file())
 
     @unittest.skipIf(os.geteuid() == 0, "Requires an unprivileged test runner")
     def test_direct_worker_invocation_refuses_an_unprivileged_user(self):
