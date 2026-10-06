@@ -1,0 +1,12 @@
+[Unit]
+Description=Retry unfinished Debian 13 server setup
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=5min
+RandomizedDelaySec=30s
+AccuracySec=1s
+Unit=debian13s4-repair.service
+
+[Install]
+WantedBy=timers.target

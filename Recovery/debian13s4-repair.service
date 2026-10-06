@@ -1,0 +1,25 @@
+[Unit]
+Description=Finish and verify pending Debian 13 server setup
+After=network.target
+ConditionPathExists=/usr/local/lib/debian13s4/tasks.list
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/repair.sh
+User=root
+Group=root
+UMask=0077
+SuccessExitStatus=75
+TimeoutStartSec=1h
+TimeoutStopSec=2min
+KillMode=control-group
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK

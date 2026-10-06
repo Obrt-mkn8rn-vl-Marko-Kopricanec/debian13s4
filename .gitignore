@@ -24,6 +24,7 @@ Thumbs.db
 
 # Generated output and caches
 .cache/
+__pycache__/
 /build/
 /dist/
 /artifacts/
