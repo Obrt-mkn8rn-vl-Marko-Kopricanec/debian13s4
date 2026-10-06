@@ -1,0 +1,30 @@
+# Internal documentation and agent state
+**/docs/internal/
+**/internal-docs/
+**/[Aa][Gg][Ee][Nn][Tt].[Mm][Dd]
+**/[Aa][Gg][Ee][Nn][Tt][Ss].[Mm][Dd]
+.codex/
+.agents/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Editors and operating systems
+.idea/
+.vscode/
+.vs/
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+
+# Generated output and caches
+.cache/
+/build/
+/dist/
+/artifacts/
+*.log
