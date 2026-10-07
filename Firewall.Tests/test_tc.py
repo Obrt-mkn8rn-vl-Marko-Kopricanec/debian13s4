@@ -152,6 +152,26 @@ class NativeTests(PrivateNative):
 
 
 class ProfileTests(unittest.TestCase):
+    def test_numeric_and_mixed_native_link_types_preserve_original_private_rows(self):
+        for loopback,ethernet in (('[772]','[1]'),('loopback','[1]'),('[772]','ether')):
+            value = link_rows();value[0]['link_type'] = loopback;value[1]['link_type'] = ethernet
+            original = copy.deepcopy(value)
+            with self.subTest(loopback=loopback, ethernet=ethernet):
+                result = TC.link_inventory(value)
+                self.assertEqual(result, original)
+                self.assertEqual(len(TC.noqueue_roots(message(), result)), 2)
+                value[1]['ifindex'] += 1
+                self.assertEqual(result, original)
+
+    def test_unknown_numeric_wrong_kind_and_numeric_loopback_consistency_refuse(self):
+        for index,bad in ((0,'[1]'),(1,'[772]'),(0,'[0]'),(1,'[9999]'),(1,'[01]'),(1,'[1 ]'),
+                          (1,1),(0,772),(1,None),(1,True)):
+            value = link_rows();value[0]['link_type'] = '[772]';value[1]['link_type'] = '[1]';value[index]['link_type'] = bad
+            with self.subTest(index=index,bad=bad), self.assertRaises(TC.Pending):TC.link_inventory(value)
+        for index,flags in ((0,['UP','LOWER_UP']),(1,['LOOPBACK','UP','LOWER_UP'])):
+            value = link_rows();value[0]['link_type'] = '[772]';value[1]['link_type'] = '[1]';value[index]['flags'] = flags
+            with self.subTest(index=index,flags=flags), self.assertRaises(TC.Pending):TC.link_inventory(value)
+
     def test_complete_noqueue_roots_include_loopback_and_are_privately_copied(self):
         links = link_rows();qdiscs = message();before = TC.link_inventory(links)
         result = TC.noqueue_roots(qdiscs, before);links[1]['ifindex'] = 99;qdiscs[1]['refcnt'] = 3
@@ -294,6 +314,38 @@ class ObservationTests(unittest.TestCase):
 
 
 class CompleteNativeTests(PrivateNative):
+    def test_complete_numeric_fixed_ip_tc_capture_and_cli_preserve_raw_types(self):
+        ip = self.root / 'ip';rows = link_rows();rows[0]['link_type'] = '[772]';rows[1]['link_type'] = '[1]'
+        ip.write_text('#!/usr/bin/python3 -B\nimport json,os,sys\nassert sys.argv[1:]=='+repr(['-j','-N',*KERNEL.COMMANDS['links']])+
+                      '\nwith open('+repr(str(self.ledger))+',"a") as f:f.write(json.dumps(["ip",sys.argv[1:],dict(os.environ)])+"\\n")'+
+                      '\nprint('+repr(json.dumps(rows))+')\n');ip.chmod(0o700)
+        self.executable(f"import json,os,sys\nassert sys.argv[1:]=={list(TC.COMMAND)!r}\nwith open({str(self.ledger)!r},'a') as f:f.write(json.dumps(['tc',sys.argv[1:],dict(os.environ)])+'\\n')\nprint({json.dumps(message())!r})")
+        out,err = io.StringIO(),io.StringIO()
+        with patch.object(KERNEL, 'IP_BINARY', ip), patch.object(TC.sys, 'argv', ['tc.py']), \
+                patch.dict(os.environ, {'IP_LIB_DIR':'bad','TC_LIB_DIR':'bad','NUMERIC_SECRET':'bad'}), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):status = TC.main()
+        self.assertEqual(status, 0, err.getvalue());self.assertEqual(err.getvalue(), '')
+        value = json.loads(out.getvalue());self.assertEqual(value['links'], rows)
+        self.assertEqual(value['source'], {'tc':str(self.binary),'ip':str(ip)})
+        self.assertEqual(len(value['qdiscs']), 2)
+        ledger = [json.loads(line) for line in self.ledger.read_text().splitlines()]
+        self.assertEqual([name for name,_,_ in ledger], ['ip','tc']*2)
+        for name,args,environment in ledger:
+            self.assertEqual(args, ['-j','-N',*KERNEL.COMMANDS['links']] if name=='ip' else list(TC.COMMAND))
+            self.assertFalse(set(environment)&{'IP_LIB_DIR','TC_LIB_DIR','NUMERIC_SECRET'})
+
+    def test_complete_numeric_unknown_and_wrong_kind_cli_refuses_before_tc_query(self):
+        ip = self.root / 'ip'
+        for index,bad in ((0,'[1]'),(1,'[772]'),(1,'[9999]'),(1,'[01]')):
+            rows = link_rows();rows[0]['link_type'] = '[772]';rows[1]['link_type'] = '[1]';rows[index]['link_type'] = bad
+            ip.write_text('#!/usr/bin/python3 -B\nimport sys\nassert sys.argv[1:]=='+repr(['-j','-N',*KERNEL.COMMANDS['links']])+
+                          '\nprint('+repr(json.dumps(rows))+')\n');ip.chmod(0o700)
+            self.executable(f"open({str(self.ledger)!r},'w').write('unexpected tc query')\nraise SystemExit(1)")
+            out,err = io.StringIO(),io.StringIO()
+            with self.subTest(index=index,bad=bad), patch.object(KERNEL, 'IP_BINARY', ip), patch.object(TC.sys, 'argv', ['tc.py']), \
+                    contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):self.assertEqual(TC.main(), 75)
+            self.assertEqual(out.getvalue(), '');self.assertIn('pending', err.getvalue());self.assertFalse(self.ledger.exists())
+
     def test_real_private_ip_tc_capture_parser_binding_and_cli_path_is_positive(self):
         ip = self.root / 'ip';data = json.dumps(link_rows())
         ip.write_text('#!/usr/bin/python3 -B\nimport json,os,sys\nassert sys.argv[1:]=='+repr(['-j','-N',*KERNEL.COMMANDS['links']])+

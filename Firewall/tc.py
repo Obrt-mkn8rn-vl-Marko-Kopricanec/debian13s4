@@ -121,9 +121,10 @@ def link_inventory(value):
         if type(name) is not str or KERNEL.NAME.fullmatch(name) is None or name in names or not index or index in indexes:
             raise Pending('ambiguous tc link identity')
         flags = KERNEL.flags(row['flags'])
-        if not flags.issubset(KERNEL.LINK_FLAGS) or row['qdisc'] != 'noqueue' or row['link_type'] not in ('ether', 'loopback'):
+        kind = KERNEL.link_type(row['link_type'])
+        if not flags.issubset(KERNEL.LINK_FLAGS) or row['qdisc'] != 'noqueue' or kind not in ('ether', 'loopback'):
             raise Pending('unsupported tc link profile')
-        if (name == 'lo') != (row['link_type'] == 'loopback') or ('LOOPBACK' in flags) != (name == 'lo'):
+        if (name == 'lo') != (kind == 'loopback') or ('LOOPBACK' in flags) != (name == 'lo'):
             raise Pending('inconsistent tc loopback identity')
         names.add(name);indexes.add(index)
     if 'lo' not in names:
