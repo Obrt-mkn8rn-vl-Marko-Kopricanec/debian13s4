@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 """Prepare compiler input from agreeing supported automatic observations.
 
-Empty nftables space, classic external DNS, selected timesyncd and managed
-networkd without an instantiated DHCPv6 client form this limited profile. No policy is installed;
-coexistence, native nft verification and controller ownership remain separate.
+Empty nftables space and all-present empty legacy IP/IPv6/ARP proc views,
+classic external DNS, selected timesyncd and managed networkd without an
+instantiated DHCPv6 client form this limited profile. No policy is installed;
+bridge/tc/eBPF coexistence, native verification and ownership remain separate.
 """
 
 import importlib.util
@@ -23,6 +24,9 @@ SPEC.loader.exec_module(POLICY)
 SPEC = importlib.util.spec_from_file_location('debian13s4_nft', Path(__file__).with_name('nft.py'))
 NFT = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(NFT)
+SPEC = importlib.util.spec_from_file_location('debian13s4_legacy', Path(__file__).with_name('legacy.py'))
+LEGACY = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(LEGACY)
 Pending = KERNEL.Pending
 ATTEMPT_SECONDS = 60
 MAX_NODES = 65536
@@ -182,7 +186,7 @@ def input_from(records, kernel):
     return value, raw
 
 
-def observe(dhcp=SERVERS.observe, dns=RESOLVER.observe, ntp=TIMESYNC.observe, compiler=POLICY.compile_policy, deadline=None, nft=NFT.observe):
+def observe(dhcp=SERVERS.observe, dns=RESOLVER.observe, ntp=TIMESYNC.observe, compiler=POLICY.compile_policy, deadline=None, nft=NFT.observe, legacy=LEGACY.observe):
     start = KERNEL.now()
     if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):
         raise Pending('invalid assembly deadline')
@@ -192,6 +196,11 @@ def observe(dhcp=SERVERS.observe, dns=RESOLVER.observe, ntp=TIMESYNC.observe, co
         if KERNEL.now() >= deadline:
             raise Pending('assembly deadline expired before nft admission')
         records = {'nft': snapshot(NFT.validate_receipt(nft(deadline=deadline)))}
+        if KERNEL.now() >= deadline:
+            raise Pending('assembly deadline expired before legacy admission')
+        records['legacy'] = snapshot(LEGACY.validate_receipt(legacy(deadline=deadline)))
+        if records['nft']['namespace'] != records['legacy']['namespace']:
+            raise Pending('nft and infrastructure namespaces disagree (legacy receipt)')
         for service, reader in (('dhcp4', dhcp), ('dns', dns), ('ntp', ntp)):
             if KERNEL.now() >= deadline:
                 raise Pending('assembly deadline expired before observer admission')
@@ -216,11 +225,15 @@ def observe(dhcp=SERVERS.observe, dns=RESOLVER.observe, ntp=TIMESYNC.observe, co
         raise Pending('assembly changed or expired before publication')
     if snapshot(NFT.validate_receipt(nft(deadline=deadline))) != rounds[-1]['nft']:
         raise Pending('nft facts changed before preparation publication')
+    if KERNEL.now() >= deadline:
+        raise Pending('assembly deadline expired before final legacy admission')
+    if snapshot(LEGACY.validate_receipt(legacy(deadline=deadline))) != rounds[-1]['legacy']:
+        raise Pending('legacy facts changed before preparation publication')
     SERVERS.fresh(rounds[-1]['dhcp4']['attributions'])
     if KERNEL.namespace() != common['namespace'] or KERNEL.now() >= deadline:
         raise Pending('assembly changed or expired before publication')
     return {'schema': 'debian13s4-assembled-policy-1', 'namespace': common['namespace'], 'topology': value, 'policy': text,
-            'profile': 'nft-empty-networkd-classic-timesyncd-no-dhcp6-1', 'sources': {service: row['source'] for service, row in rounds[-1].items()}}
+            'profile': 'nft-legacy-proc-empty-networkd-classic-timesyncd-no-dhcp6-1', 'sources': {service: row['source'] for service, row in rounds[-1].items()}}
 
 
 def main():

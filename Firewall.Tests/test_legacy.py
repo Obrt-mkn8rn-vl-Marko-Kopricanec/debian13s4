@@ -320,4 +320,38 @@ class CliTests(PrivateViews):
             self.assertEqual(output.getvalue(), '')
 
 
+class ReceiptTests(PrivateViews):
+    def receipt(self):
+        with patch.object(LEGACY, 'filesystem'):return LEGACY.observe()
+
+    def test_checked_complete_receipt_is_privately_copied(self):
+        value = self.receipt();result = LEGACY.validate_receipt(value)
+        value['source']['files'][LEGACY.FILES[0]]['identity'][1] += 1
+        self.assertNotEqual(result['source'], value['source']);self.assertIs(result['empty'], True)
+
+    def test_missing_extra_schema_boolean_namespace_and_empty_fields_refuse(self):
+        value = self.receipt()
+        for key in value:
+            bad = copy.deepcopy(value);del bad[key]
+            with self.subTest(missing=key), self.assertRaises(LEGACY.Pending):LEGACY.validate_receipt(bad)
+        for key,bogus in (('empty', False), ('empty', 1), ('namespace', True), ('namespace', 0),
+                          ('namespace', 2 ** 64), ('schema', 'other')):
+            with self.subTest(key=key), self.assertRaises(LEGACY.Pending):LEGACY.validate_receipt(value | {key: bogus})
+        for bad in (None, [], value | {'extra': 1}):
+            with self.subTest(type=type(bad).__name__), self.assertRaises(LEGACY.Pending):LEGACY.validate_receipt(bad)
+
+    def test_all_required_file_identity_hash_bytes_owner_mode_and_devices_are_checked(self):
+        value = self.receipt()
+        for name in LEGACY.FILES:
+            for field,index,bogus in (('bytes', None, True), ('bytes', None, 1), ('sha256', None, '0' * 64),
+                                      ('identity', 0, value['source']['identity'][0] + 1),
+                                      ('identity', 2, 0o100640), ('identity', 3, os.geteuid() + 1)):
+                bad = copy.deepcopy(value)
+                if index is None:bad['source']['files'][name][field] = bogus
+                else:bad['source']['files'][name][field][index] = bogus
+                with self.subTest(name=name, field=field, index=index), self.assertRaises(LEGACY.Pending):LEGACY.validate_receipt(bad)
+            bad = copy.deepcopy(value);del bad['source']['files'][name]
+            with self.subTest(name=name), self.assertRaises(LEGACY.Pending):LEGACY.validate_receipt(bad)
+
+
 if __name__ == '__main__':unittest.main()

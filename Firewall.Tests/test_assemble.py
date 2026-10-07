@@ -21,11 +21,21 @@ ASSEMBLY = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ASSEMBLY)
 SERVERS, DHCP, TIME, DNS, KERNEL, POLICY = ASSEMBLY.SERVERS, ASSEMBLY.DHCP, ASSEMBLY.TIMESYNC, ASSEMBLY.RESOLVER, ASSEMBLY.KERNEL, ASSEMBLY.POLICY
 NFT = ASSEMBLY.NFT
+LEGACY = ASSEMBLY.LEGACY
 
 
 def nft_receipt(namespace):
     return {'schema': 'debian13s4-nft-empty-1', 'namespace': namespace, 'empty': True,
             'source': {'binary': str(NFT.BINARY), 'version': '1.1.3', 'release_name': 'fixture', 'json_schema_version': 1}}
+
+
+def legacy_receipt(namespace):
+    return {'schema': 'debian13s4-legacy-ip-ip6-arp-empty-1', 'namespace': namespace, 'empty': True,
+            'source': {'path': str(LEGACY.PROC / str(os.getpid()) / 'net'),
+                       'identity': [1, 1, 0o40555, LEGACY.TRUSTED_UID, 0, 0, 0, 0],
+                       'files': {name: {'identity': [1, index + 2, 0o100440, LEGACY.TRUSTED_UID, 0, 0, 0, 0],
+                                        'bytes': 0, 'sha256': LEGACY.EMPTY_HASH}
+                                 for index, name in enumerate(LEGACY.FILES)}}}
 
 
 def records():
@@ -52,6 +62,7 @@ class AssemblyTests(unittest.TestCase):
     def observe(self, **overrides):
         settings = {name: (lambda deadline, key=key: copy.deepcopy(self.records[key])) for name, key in (('dhcp', 'dhcp4'), ('dns', 'dns'), ('ntp', 'ntp'))}
         settings['nft'] = lambda deadline: nft_receipt(self.namespace)
+        settings['legacy'] = lambda deadline: legacy_receipt(self.namespace)
         settings.update(overrides)
         return ASSEMBLY.observe(**settings)
 
@@ -261,6 +272,73 @@ class AssemblyTests(unittest.TestCase):
         self.assertEqual(seen, [deadline] * 3)
         self.assertEqual(result['sources']['nft']['binary'], str(NFT.BINARY))
 
+    def test_legacy_refusal_or_unverifiable_receipt_prevents_infrastructure_and_compiler(self):
+        def failure(deadline):raise FileNotFoundError('missing legacy reporting')
+        with self.assertRaises(FileNotFoundError):
+            self.observe(legacy=failure, dhcp=lambda **kw:self.fail('unadmitted infrastructure'),
+                         compiler=lambda raw:self.fail('unadmitted compile'))
+        for empty in (False, 1, None):
+            value = legacy_receipt(self.namespace);value['empty'] = empty
+            with self.subTest(empty=empty), self.assertRaises(LEGACY.Pending):
+                self.observe(legacy=lambda deadline:value, dhcp=lambda **kw:self.fail('unverified receipt admitted'))
+
+    def test_legacy_namespace_mismatch_refuses_before_infrastructure(self):
+        with self.assertRaisesRegex(ASSEMBLY.Pending, 'namespaces disagree'):
+            self.observe(legacy=lambda deadline:legacy_receipt(self.namespace + 1),
+                         dhcp=lambda **kw:self.fail('foreign legacy admission'),
+                         compiler=lambda raw:self.fail('foreign legacy compile'))
+
+    def test_legacy_identity_change_in_second_round_or_after_compile_cannot_publish(self):
+        for turn in (2, 3):
+            calls = []
+            def changed(deadline):
+                calls.append(deadline);value = legacy_receipt(self.namespace)
+                if len(calls) == turn:value['source']['files'][LEGACY.FILES[0]]['identity'][1] += 1
+                return value
+            with self.subTest(turn=turn), self.assertRaises(ASSEMBLY.Pending):self.observe(legacy=changed)
+            self.assertEqual(len(calls), turn)
+
+    def test_legacy_rounds_and_final_barrier_share_one_deadline_and_retain_full_source(self):
+        calls = [];deadline = KERNEL.now() + 20
+        def read(deadline):calls.append(deadline);return legacy_receipt(self.namespace)
+        result = self.observe(legacy=read, deadline=deadline)
+        self.assertEqual(calls, [deadline] * 3)
+        self.assertEqual(result['sources']['legacy'], legacy_receipt(self.namespace)['source'])
+        self.assertEqual(result['profile'], 'nft-legacy-proc-empty-networkd-classic-timesyncd-no-dhcp6-1')
+
+    def test_legacy_snapshot_cannot_be_mutated_by_a_later_infrastructure_callback(self):
+        value = legacy_receipt(self.namespace)
+        def changed(deadline):
+            value['source']['files'][LEGACY.FILES[0]]['identity'][1] += 1
+            return self.records['dhcp4']
+        with self.assertRaisesRegex(ASSEMBLY.Pending, 'complete infrastructure observations changed'):
+            self.observe(legacy=lambda deadline:value, dhcp=changed)
+
+    def test_legacy_deadline_expiry_cannot_admit_infrastructure_or_late_publication(self):
+        start = KERNEL.now();clock = [start]
+        def expire(deadline):clock[0] = deadline;return legacy_receipt(self.namespace)
+        with patch.object(KERNEL, 'now', side_effect=lambda:clock[0]), self.assertRaises(ASSEMBLY.Pending):
+            self.observe(legacy=expire, dhcp=lambda **kw:self.fail('expired legacy admission'))
+        clock[0] = start;calls = []
+        def late(deadline):
+            calls.append(deadline)
+            if len(calls) == 3:clock[0] = deadline
+            return legacy_receipt(self.namespace)
+        with patch.object(KERNEL, 'now', side_effect=lambda:clock[0]), self.assertRaises(ASSEMBLY.Pending):
+            self.observe(legacy=late)
+        self.assertEqual(len(calls), 3)
+
+    def test_nft_expiry_after_compile_prevents_final_legacy_read(self):
+        start = KERNEL.now();clock = [start];nft_calls = [];legacy_calls = []
+        def nft(deadline):
+            nft_calls.append(deadline)
+            if len(nft_calls) == 3:clock[0] = deadline
+            return nft_receipt(self.namespace)
+        def legacy(deadline):legacy_calls.append(deadline);return legacy_receipt(self.namespace)
+        with patch.object(KERNEL, 'now', side_effect=lambda:clock[0]), self.assertRaises(ASSEMBLY.Pending):
+            self.observe(nft=nft, legacy=legacy)
+        self.assertEqual(len(nft_calls), 3);self.assertEqual(len(legacy_calls), 2)
+
 
 class CLITests(unittest.TestCase):
     def test_arguments_and_refusal_do_not_emit_a_partial_policy(self):
@@ -285,11 +363,19 @@ class PrivateNative(unittest.TestCase):
         self.root = Path(self.directory.name)
         self.bus, self.ip, self.ledger = self.root / 'busctl', self.root / 'ip', self.root / 'ledger'
         self.nft = self.root / 'nft'
+        self.proc = self.root / 'proc'
+        self.legacy_net = self.proc / str(os.getpid()) / 'net'
+        self.legacy_net.mkdir(parents=True)
+        for path in (self.proc, self.legacy_net.parent, self.legacy_net):path.chmod(0o700)
+        for name in LEGACY.FILES:
+            path = self.legacy_net / name;path.write_bytes(b'');path.chmod(0o440)
         self.source = self.root / 'resolv.conf'
         self.settings = [patch.object(DHCP, 'BUS_BINARY', self.bus), patch.object(TIME, 'BUS_BINARY', self.bus),
                          patch.object(KERNEL, 'IP_BINARY', self.ip), patch.object(KERNEL, 'TRUST_ROOT', self.root), patch.object(KERNEL, 'TRUSTED_UID', os.geteuid()),
                          patch.object(DNS, 'RESOLV_CONF', self.source), patch.object(DNS, 'TRUST_ROOT', self.root), patch.object(DNS, 'TRUSTED_UID', os.geteuid())]
         self.settings += [patch.object(NFT, 'BINARY', self.nft), patch.object(NFT.KERNEL, 'TRUST_ROOT', self.root), patch.object(NFT.KERNEL, 'TRUSTED_UID', os.geteuid())]
+        self.settings += [patch.object(LEGACY, 'PROC', self.proc), patch.object(LEGACY, 'TRUST_ROOT', self.root),
+                          patch.object(LEGACY, 'TRUSTED_UID', os.geteuid()), patch.object(LEGACY, 'filesystem')]
         for setting in self.settings:setting.start()
 
     def tearDown(self):
@@ -416,6 +502,46 @@ class NativeAssemblyTests(PrivateNative):
         self.fixtures(warning=True);out = io.StringIO()
         with patch.object(ASSEMBLY.sys, 'argv', ['assemble.py']), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):self.assertEqual(ASSEMBLY.main(), 75)
         self.assertEqual(out.getvalue(), '')
+
+    def test_complete_native_legacy_predicate_repeats_six_times_before_prepared_text(self):
+        self.fixtures();LEGACY.filesystem.reset_mock()
+        result = ASSEMBLY.observe()
+        self.assertEqual(LEGACY.filesystem.call_count, 48)
+        self.assertEqual(result['sources']['legacy']['path'], str(self.legacy_net))
+        self.assertEqual(set(result['sources']['legacy']['files']), set(LEGACY.FILES))
+        self.assertTrue(result['policy'].startswith('destroy table inet debian13s4\n'))
+
+    def test_each_real_missing_legacy_view_refuses_cli_before_native_infrastructure(self):
+        for name in LEGACY.FILES:
+            self.fixtures();leaf = self.legacy_net / name;leaf.unlink();out,err = io.StringIO(),io.StringIO()
+            try:
+                with patch.object(ASSEMBLY.sys, 'argv', ['assemble.py']), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                    self.assertEqual(ASSEMBLY.main(), 75)
+                self.assertEqual(out.getvalue(), '');self.assertIn('pending', err.getvalue())
+                self.assertFalse(any(json.loads(line)[0] in ('bus','ip') for line in self.ledger.read_text().splitlines()))
+            finally:leaf.write_bytes(b'');leaf.chmod(0o440)
+
+    def test_real_nonempty_legacy_view_and_protected_leaf_drift_refuse_before_compile(self):
+        self.fixtures()
+        for name in LEGACY.FILES:
+            leaf = self.legacy_net / name;leaf.chmod(0o640);leaf.write_bytes(b'nat\n');leaf.chmod(0o440)
+            try:
+                with self.subTest(name=name), self.assertRaisesRegex(LEGACY.Pending, 'legacy table state'):
+                    ASSEMBLY.observe(compiler=lambda raw:self.fail('nonempty legacy compile'))
+            finally:leaf.chmod(0o640);leaf.write_bytes(b'');leaf.chmod(0o440)
+        leaf = self.legacy_net / LEGACY.FILES[0];leaf.chmod(0o460)
+        with self.assertRaises(LEGACY.Pending):ASSEMBLY.observe(compiler=lambda raw:self.fail('unsafe legacy compile'))
+
+    def test_real_final_legacy_damage_after_compile_cannot_emit_prepared_text(self):
+        self.fixtures();out,err = io.StringIO(),io.StringIO();original = ASSEMBLY.observe
+        def compile_and_damage(raw):
+            text = POLICY.compile_policy(raw);leaf = self.legacy_net / LEGACY.FILES[1]
+            leaf.chmod(0o640);leaf.write_bytes(b'filter\n');leaf.chmod(0o440)
+            return text
+        with patch.object(ASSEMBLY, 'observe', side_effect=lambda:original(compiler=compile_and_damage)), \
+                patch.object(ASSEMBLY.sys, 'argv', ['assemble.py']), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            self.assertEqual(ASSEMBLY.main(), 75)
+        self.assertEqual(out.getvalue(), '');self.assertIn('pending', err.getvalue())
 
 
 if __name__ == '__main__':

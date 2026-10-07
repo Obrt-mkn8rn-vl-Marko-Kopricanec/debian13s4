@@ -166,6 +166,17 @@ def empty_views(value):
     return {'path': value['path'], 'identity': copy_identity(value['identity'], directory=True), 'files': sources}
 
 
+def validate_receipt(value):
+    if type(value) is not dict or set(value) != {'schema', 'namespace', 'empty', 'source'} or \
+            value['schema'] != 'debian13s4-legacy-ip-ip6-arp-empty-1' or value['empty'] is not True or \
+            type(value['namespace']) is not int or not 0 < value['namespace'] < 2 ** 64:
+        raise Pending('invalid legacy receipt')
+    source = empty_views(value['source'])
+    if any(row['identity'][0] != source['identity'][0] for row in source['files'].values()):
+        raise Pending('delivered legacy view devices disagree')
+    return {'schema': value['schema'], 'namespace': value['namespace'], 'empty': True, 'source': source}
+
+
 def observe(read=read_views, scope=KERNEL.namespace, deadline=None):
     start = KERNEL.now()
     if deadline is None:
