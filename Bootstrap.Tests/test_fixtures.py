@@ -109,6 +109,35 @@ while [[ ! -s ''' + shlex.quote(str(self.ready)) + ''' ]]; do sleep .01; done
         time.sleep(.05)
         self.assertEqual(self.writes.stat().st_size if self.writes.exists() else 0, size)
 
+    def assert_timeout_bytes(self, stdout, stderr):
+        self.ready.unlink(missing_ok=True)
+        out = ''.join(f'\\{byte:03o}' for byte in stdout)
+        err = ''.join(f'\\{byte:03o}' for byte in stderr)
+        script = self.writer(f"printf '{out}'; printf '{err}' >&2; wait")
+        try:
+            with self.assertRaises(subprocess.TimeoutExpired) as raised:
+                run_bash(script, 2)
+        finally:
+            self.assert_stopped()
+        self.assertEqual(raised.exception.cmd, ['/bin/bash', '--noprofile', '--norc', '-c', script])
+        self.assertEqual(raised.exception.timeout, 2)
+        self.assertEqual(raised.exception.output, stdout)
+        self.assertEqual(raised.exception.stdout, stdout)
+        self.assertEqual(raised.exception.stderr, stderr)
+
+    def test_timeout_preserves_cr_and_crlf_in_both_raw_captures(self):
+        self.assert_timeout_bytes(b'out\r\nnext\rtail\n', b'err\r\nnext\rtail\n')
+
+    def test_timeout_preserves_invalid_utf8_in_each_raw_capture(self):
+        for stdout, stderr in ((b'\xff', b'err\n'), (b'out\n', b'\xff')):
+            with self.subTest(stdout=stdout, stderr=stderr):
+                self.assert_timeout_bytes(stdout, stderr)
+
+    def test_timeout_preserves_partial_utf8_in_each_raw_capture(self):
+        for stdout, stderr in ((b'\xe2\x82', b'err\n'), (b'out\n', b'\xf0\x9f')):
+            with self.subTest(stdout=stdout, stderr=stderr):
+                self.assert_timeout_bytes(stdout, stderr)
+
     def test_outer_timeout_stops_writing_descendants_in_native_timeout_group(self):
         script = self.writer("printf 'stdout-once\\n'; printf 'stderr-once\\n' >&2; wait")
         with self.assertRaises(subprocess.TimeoutExpired) as raised: run_bash(script, 2)

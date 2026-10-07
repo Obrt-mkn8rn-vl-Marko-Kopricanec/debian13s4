@@ -53,16 +53,8 @@ def run_bash(script, timeout):
     process = subprocess.Popen(command, text=True, stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE, start_new_session=True)
     try:
-        try:
-            stdout, stderr = process.communicate(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            terminate_session(process)
-            stdout, stderr = process.communicate(timeout=5)
-            # Preserve subprocess.run's documented bytes on timeout, while
-            # successful CompletedProcess captures remain text.
-            raise subprocess.TimeoutExpired(command, timeout,
-                                            output=stdout.encode(process.encoding),
-                                            stderr=stderr.encode(process.encoding)) from None
+        # Preserve the native timeout exception and its raw bytes through cleanup.
+        stdout, stderr = process.communicate(timeout=timeout)
         return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
     finally:
         try:
