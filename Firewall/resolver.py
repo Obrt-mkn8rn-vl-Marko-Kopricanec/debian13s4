@@ -159,15 +159,67 @@ def parse_configuration(raw):
     return servers
 
 
-def scoped_interface(scope, interfaces):
+def scope_names(links):
+    names = {}
+    count = 0
+    for row in KERNEL.rows(links, KERNEL.MAX_LINKS):
+        KERNEL.known(row, KERNEL.LINK_KEYS, ('ifindex', 'ifname'))
+        index, name = KERNEL.uint(row['ifindex']), row['ifname']
+        aliases = row.get('altnames', [])
+        if not index or type(name) is not str or KERNEL.NAME.fullmatch(name) is None or type(aliases) is not list:
+            raise Pending('unverifiable resolver interface names')
+        count += 1 + len(aliases)
+        if count > KERNEL.MAX_ITEMS:
+            raise Pending('resolver interface name inventory too large')
+        for value in [name, *aliases]:
+            if type(value) is not str or not value or len(value.encode()) > 127:
+                raise Pending('invalid resolver interface name')
+            # Longer/other native alternative names cannot match the supported
+            # ASCII <=15-character scope syntax and need no permission entry.
+            if KERNEL.NAME.fullmatch(value) is None:
+                continue
+            if value in names:
+                raise Pending('ambiguous resolver interface name')
+            names[value] = index
+    return names
+
+
+def resolver_topology(deadline, query=None):
+    query = KERNEL.native_query if query is None else query
+    rounds = []
+    def checked(name, window):
+        result = query(name, window)
+        if name == 'links':
+            rounds.append(scope_names(result))
+        return result
+    result = KERNEL.observe(query=checked, deadline=deadline)
+    if len(rounds) != 2 or rounds[0] != rounds[1]:
+        raise Pending('resolver interface names changed during observation')
+    return result | {'scope_names': rounds[1]}
+
+
+def scoped_interface(scope, interfaces, names=None):
     if scope is None:
         return None
-    if scope.isascii() and scope.isdecimal():
+    primary = [entry for entry in interfaces if entry['name'] == scope]
+    if len(primary) > 1 or names is not None and type(names) is not dict:
+        raise Pending('ambiguous resolver interface name')
+    # glibc tries if_nametoindex before interpreting decimal scope text.
+    # The resolver-specific map includes admitted alternative and loopback
+    # names; resolving to a non-admitted interface must not trigger fallback.
+    if names is not None and scope in names:
+        index = KERNEL.uint(names[scope])
+        if primary and primary[0]['index'] != index:
+            raise Pending('resolver interface name/index disagreement')
+        matches = [entry['name'] for entry in interfaces if entry['index'] == index]
+    elif primary:
+        matches = [primary[0]['name']]
+    elif scope.isascii() and scope.isdecimal():
         if str(int(scope)) != scope or int(scope) == 0:
             raise Pending("noncanonical resolver scope index")
         matches = [entry["name"] for entry in interfaces if entry["index"] == int(scope)]
     else:
-        matches = [entry["name"] for entry in interfaces if entry["name"] == scope]
+        matches = []
     if len(matches) != 1:
         raise Pending("resolver scope lacks observed interface")
     return matches[0]
@@ -207,7 +259,7 @@ def bind_route(destination, scope, routes, interfaces):
     return {"interface": entry["name"], "address": destination}
 
 
-def observe(read=read_configuration, topology=KERNEL.observe, route=KERNEL.native_route):
+def observe(read=read_configuration, topology=resolver_topology, route=KERNEL.native_route):
     deadline = KERNEL.now() + ATTEMPT_SECONDS
     first_source, first_bytes = read()
     servers = parse_configuration(first_bytes)
@@ -215,7 +267,7 @@ def observe(read=read_configuration, topology=KERNEL.observe, route=KERNEL.nativ
     endpoints = []
     bindings = []
     for destination, scope in servers:
-        interface = scoped_interface(scope, first_kernel["interfaces"])
+        interface = scoped_interface(scope, first_kernel["interfaces"], first_kernel.get('scope_names'))
         first_route = route(destination, interface, deadline)
         endpoints.append(bind_route(destination, interface, first_route, first_kernel["interfaces"]))
         bindings.append((destination, interface, first_route))

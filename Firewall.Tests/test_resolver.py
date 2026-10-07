@@ -20,6 +20,19 @@ SPEC.loader.exec_module(RESOLVER)
 KERNEL = RESOLVER.KERNEL
 
 
+def scope_snapshot(name='2', index=7):
+    data = snapshot()
+    interface = copy.deepcopy(data['links'][1])
+    interface.update(ifindex=index, ifname=name, address='02:00:00:00:00:70')
+    data['links'].append(interface)
+    data['addresses'].append(copy.deepcopy(interface) | {'addr_info': [
+        {'family': 'inet', 'local': '192.168.70.100', 'prefixlen': 24},
+        {'family': 'inet6', 'local': 'fe80::700', 'prefixlen': 64}]})
+    data['routes4'].append({'dst': '192.168.70.0/24', 'dev': name, 'table': '254', 'flags': []})
+    data['routes6'].append({'dst': 'fe80::/64', 'dev': name, 'table': '254', 'flags': []})
+    return data
+
+
 class ConfigurationTests(unittest.TestCase):
     def parse(self, raw):
         return RESOLVER.parse_configuration(raw)
@@ -335,6 +348,82 @@ class RouteTests(unittest.TestCase):
             with self.subTest(scope=scope), self.assertRaises(RESOLVER.Pending):
                 RESOLVER.scoped_interface(scope, self.interfaces)
 
+    def test_decimal_interface_name_takes_precedence_over_another_interface_index(self):
+        interfaces = KERNEL.normalize(scope_snapshot())
+        self.assertEqual({entry['name']: entry['index'] for entry in interfaces}, {'eth0': 2, '2': 7})
+        self.assertEqual(RESOLVER.scoped_interface('2', interfaces), '2')
+        self.assertEqual(RESOLVER.scoped_interface('7', interfaces), '2')
+        self.assertEqual(RESOLVER.scoped_interface('eth0', interfaces), 'eth0')
+
+    def test_zero_and_noncanonical_decimal_spellings_are_valid_exact_interface_names(self):
+        for name in ('0', '02'):
+            with self.subTest(name=name):
+                interfaces = KERNEL.normalize(scope_snapshot(name))
+                self.assertEqual(RESOLVER.scoped_interface(name, interfaces), name)
+        for scope in ('0', '02', '7', 'unknown'):
+            with self.subTest(scope=scope), self.assertRaises(RESOLVER.Pending):
+                RESOLVER.scoped_interface(scope, self.interfaces)
+
+    def test_duplicate_exact_names_cannot_fall_back_to_a_numeric_index(self):
+        interfaces = KERNEL.normalize(scope_snapshot())
+        interfaces.append(copy.deepcopy(interfaces[0]))
+        with self.assertRaises(RESOLVER.Pending):
+            RESOLVER.scoped_interface('2', interfaces)
+
+    def test_alternative_decimal_name_uses_observed_name_index_before_fallback(self):
+        interfaces = KERNEL.normalize(scope_snapshot('eth1'))
+        names = {'lo': 1, 'eth0': 2, 'eth1': 7, '2': 7}
+        self.assertEqual(RESOLVER.scoped_interface('2', interfaces, names), 'eth1')
+        self.assertEqual(RESOLVER.scoped_interface('7', interfaces, names), 'eth1')
+        with self.assertRaises(RESOLVER.Pending):
+            RESOLVER.scoped_interface('eth0', interfaces, names | {'eth0': 7})
+
+    def test_loopback_decimal_alias_cannot_fall_back_to_an_admitted_index(self):
+        names = {'lo': 1, 'eth0': 2, '2': 1}
+        with self.assertRaises(RESOLVER.Pending):
+            RESOLVER.scoped_interface('2', self.interfaces, names)
+
+
+class TopologyTests(unittest.TestCase):
+    def test_complete_name_inventory_preserves_aliases_and_both_rounds(self):
+        data = scope_snapshot('eth1')
+        data['links'][2]['altnames'] = ['2', '02', 'an-alias-longer-than-fifteen']
+        calls = []
+        def query(name, deadline):
+            calls.append((name, deadline))
+            return copy.deepcopy(data[name])
+        result = RESOLVER.resolver_topology(KERNEL.now() + 30, query=query)
+        self.assertEqual(result['scope_names'], {'lo': 1, 'eth0': 2, 'eth1': 7, '2': 7, '02': 7})
+        self.assertEqual(result['interfaces'], KERNEL.normalize(data))
+        self.assertEqual([name for name, _ in calls], list(KERNEL.COMMANDS) * 2)
+        self.assertEqual(len({deadline for _, deadline in calls}), 1)
+
+    def test_changed_alias_mapping_requires_retry_when_kernel_facts_are_unchanged(self):
+        first = scope_snapshot('eth1')
+        first['links'][2]['altnames'] = ['2']
+        second = copy.deepcopy(first)
+        second['links'][2]['altnames'] = []
+        second['links'][1]['altnames'] = ['2']
+        self.assertEqual(KERNEL.normalize(first), KERNEL.normalize(second))
+        calls = 0
+        def query(name, deadline):
+            nonlocal calls
+            data = first if calls < len(KERNEL.COMMANDS) else second
+            calls += 1
+            return copy.deepcopy(data[name])
+        with self.assertRaises(RESOLVER.Pending):
+            RESOLVER.resolver_topology(KERNEL.now() + 30, query=query)
+
+    def test_duplicate_wrong_kind_and_oversized_name_inventories_refuse(self):
+        for aliases in (None, '2', [True], [''], ['x' * 128], ['eth0'], ['2', '2'], ['2'] * KERNEL.MAX_ITEMS):
+            data = scope_snapshot('eth1')
+            data['links'][2]['altnames'] = aliases
+            with self.subTest(aliases=repr(aliases)[:60]), self.assertRaises(RESOLVER.Pending):
+                RESOLVER.scope_names(data['links'])
+        data = snapshot()
+        data['links'][0]['altnames'] = ['2']
+        self.assertEqual(RESOLVER.scope_names(data['links'])['2'], 1)
+
 
 class ObservationTests(unittest.TestCase):
     def setUp(self):
@@ -370,6 +459,39 @@ class ObservationTests(unittest.TestCase):
         return RESOLVER.observe(read=replacements.get('read', self.read),
                                 topology=replacements.get('topology', self.topology),
                                 route=replacements.get('route', self.route))
+
+    def test_complete_observation_uses_decimal_name_instead_of_the_colliding_index(self):
+        self.data = scope_snapshot()
+        self.raw = b'nameserver fe80::1%2\n'
+        self.source['sha256'] = hashlib.sha256(self.raw).hexdigest()
+        def route(destination, interface, deadline):
+            self.routes += 1
+            self.calls.append(('route', destination, interface, deadline))
+            # Both interfaces have a valid direct fe80::/64 link, so a
+            # wrongly forced eth0 route would still pass native postconditions.
+            return [{'dst': destination, 'dev': interface, 'flags': [], 'cache': []}]
+        result = self.observe(route=route)
+        self.assertEqual(result['dns'], [{'interface': '2', 'address': 'fe80::1'}])
+        self.assertEqual([entry[2] for entry in self.calls if entry[0] == 'route'], ['2', '2'])
+        self.assertEqual((self.reads, self.topologies, self.routes), (3, 2, 2))
+        self.assertEqual(len([entry for entry in self.calls if entry[0] == 'ip-show']), 40)
+
+    def test_inactive_decimal_name_cannot_fall_back_to_a_healthy_index_target(self):
+        self.data = scope_snapshot()
+        for collection in ('links', 'addresses'):
+            self.data[collection][-1]['flags'].remove('LOWER_UP')
+        self.raw = b'nameserver fe80::1%2\n'
+        def route(destination, interface, deadline):
+            return [{'dst': destination, 'dev': interface, 'flags': []}]
+        with self.assertRaises(RESOLVER.Pending):
+            self.observe(route=route)
+
+    def test_unknown_numeric_scope_refuses_before_any_lookup(self):
+        self.data = scope_snapshot()
+        self.raw = b'nameserver fe80::1%9\n'
+        with self.assertRaises(RESOLVER.Pending):
+            self.observe()
+        self.assertEqual(self.routes, 0)
 
     def test_complete_configuration_kernel_and_bound_route_rounds_share_one_deadline(self):
         result = self.observe()
@@ -515,16 +637,17 @@ class NativeObservationTests(unittest.TestCase):
             setting.stop()
         self.directory.cleanup()
 
-    def executable(self, route_suffix=''):
+    def executable(self, route_suffix='', data=None):
+        data = snapshot() if data is None else data
         script = ("#!/usr/bin/python3\nimport json,os,sys\n"
-                  f"data={snapshot()!r}\ncommands={KERNEL.COMMANDS!r}\n"
+                  f"data={data!r}\ncommands={KERNEL.COMMANDS!r}\n"
                   f"with open({str(self.ledger)!r},'a') as stream: stream.write(json.dumps({{'argv':sys.argv[1:],'env':dict(os.environ),'pid':os.getpid(),'sid':os.getsid(0)}})+'\\n')\n"
                   "argv=tuple(sys.argv[3:])\n"
                   "if len(argv)>=4 and argv[1:3]==('route','get'):\n"
                   " destination=argv[3]\n"
-                  " if destination=='fe80::1' and argv!=('-6','route','get','fe80::1','oif','eth0'): sys.exit(20)\n"
+                  " if destination=='fe80::1' and (len(argv)!=6 or argv[:5]!=('-6','route','get','fe80::1','oif') or argv[5] not in [row['ifname'] for row in data['links'] if row['ifname']!='lo']): sys.exit(20)\n"
                   " if destination=='8.8.8.8' and argv!=('-4','route','get','8.8.8.8'): sys.exit(21)\n"
-                  " result=[{'dst':destination,'dev':'eth0','flags':[],'cache':[],'uid':os.geteuid()}]\n"
+                  " result=[{'dst':destination,'dev':argv[5] if destination=='fe80::1' else 'eth0','flags':[],'cache':[],'uid':os.geteuid()}]\n"
                   " if destination=='8.8.8.8': result[0]['gateway']='192.168.50.1'\n"
                   + ''.join(' '+line+'\n' for line in route_suffix.splitlines()) +
                   "else:\n"
@@ -534,6 +657,39 @@ class NativeObservationTests(unittest.TestCase):
                   "print(json.dumps(result))\n")
         self.binary.write_text(script)
         self.binary.chmod(0o700)
+
+    def test_complete_private_native_primary_decimal_scope_uses_name_not_index(self):
+        self.source.write_bytes(b'nameserver fe80::1%2\n')
+        self.executable(data=scope_snapshot())
+        result = RESOLVER.observe()
+        self.assertEqual(result['dns'], [{'interface': '2', 'address': 'fe80::1'}])
+        ledger = [json.loads(line) for line in self.ledger.read_text().splitlines()]
+        self.assertEqual(len(ledger), 42)
+        self.assertEqual([entry['argv'] for entry in ledger if 'get' in entry['argv']],
+                         [['-j', '-N', '-6', 'route', 'get', 'fe80::1', 'oif', '2']] * 2)
+
+    def test_complete_private_native_decimal_alias_is_bound_to_its_actual_interface(self):
+        self.source.write_bytes(b'nameserver fe80::1%2\n')
+        data = scope_snapshot('eth1')
+        data['links'][2]['altnames'] = ['2']
+        self.executable(data=data)
+        result = RESOLVER.observe()
+        self.assertEqual(result['dns'], [{'interface': 'eth1', 'address': 'fe80::1'}])
+        self.assertEqual(result['kernel']['scope_names']['2'], 7)
+        ledger = [json.loads(line) for line in self.ledger.read_text().splitlines()]
+        self.assertEqual(len(ledger), 42)
+        self.assertEqual([entry['argv'][-1] for entry in ledger if 'get' in entry['argv']], ['eth1', 'eth1'])
+
+    def test_complete_private_native_loopback_alias_refuses_before_route_lookup(self):
+        self.source.write_bytes(b'nameserver fe80::1%2\n')
+        data = snapshot()
+        data['links'][0]['altnames'] = ['2']
+        self.executable(data=data)
+        with self.assertRaises(RESOLVER.Pending):
+            RESOLVER.observe()
+        ledger = [json.loads(line) for line in self.ledger.read_text().splitlines()]
+        self.assertEqual(len(ledger), 20)
+        self.assertFalse(any('get' in entry['argv'] for entry in ledger))
 
     def test_complete_native_capture_file_and_production_predicates_without_host_network_commands(self):
         self.executable()
