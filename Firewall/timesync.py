@@ -207,8 +207,11 @@ def read_peer(deadline, query=native_query, scope=process_scope):
     return peer | {'owner': owner, 'pid': pid, 'namespace': first_scope}
 
 
-def observe(read=read_peer, topology=KERNEL.observe, route=KERNEL.native_route):
-    deadline = KERNEL.now() + ATTEMPT_SECONDS
+def observe(read=read_peer, topology=KERNEL.observe, route=KERNEL.native_route, deadline=None):
+    start = KERNEL.now()
+    if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):
+        raise Pending('invalid inherited time observation deadline')
+    deadline = min(deadline, start + ATTEMPT_SECONDS) if deadline is not None else start + ATTEMPT_SECONDS
     first = read(deadline)
     first_kernel = topology(deadline=deadline)
     if first['namespace'] != first_kernel['namespace']:

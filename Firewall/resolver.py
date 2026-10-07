@@ -259,8 +259,11 @@ def bind_route(destination, scope, routes, interfaces):
     return {"interface": entry["name"], "address": destination}
 
 
-def observe(read=read_configuration, topology=resolver_topology, route=KERNEL.native_route):
-    deadline = KERNEL.now() + ATTEMPT_SECONDS
+def observe(read=read_configuration, topology=resolver_topology, route=KERNEL.native_route, deadline=None):
+    start = KERNEL.now()
+    if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):
+        raise Pending('invalid inherited DNS observation deadline')
+    deadline = min(deadline, start + ATTEMPT_SECONDS) if deadline is not None else start + ATTEMPT_SECONDS
     first_source, first_bytes = read()
     servers = parse_configuration(first_bytes)
     first_kernel = topology(deadline=deadline)

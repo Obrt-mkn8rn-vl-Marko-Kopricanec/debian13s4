@@ -596,5 +596,25 @@ print(json.dumps(value))""")
             self.observe()
 
 
+class InheritedDeadlineTests(unittest.TestCase):
+    def test_invalid_inherited_attempt_refuses_before_peer_or_native_delivery(self):
+        for deadline in (KERNEL.now() - 1, True, float('nan'), float('inf'), 'future', 10 ** 10000):
+            with self.subTest(type=type(deadline).__name__), self.assertRaises(TIME.Pending):
+                TIME.observe(deadline=deadline, read=lambda window: self.fail('unexpected read'))
+
+    def test_inherited_window_is_shared_without_widening_the_default_cap(self):
+        start = KERNEL.now()
+        kernel = {'schema': 'debian13s4-kernel-1', 'namespace': KERNEL.namespace(), 'interfaces': KERNEL.normalize(snapshot())}
+        peer = {'name': 'time.example.test', 'address': '192.168.50.1', 'owner': ':1.77', 'pid': os.getpid(), 'namespace': kernel['namespace']}
+        for budget in (10, 1000):
+            seen = []
+            with self.subTest(budget=budget), patch.object(KERNEL, 'now', return_value=start):
+                record = TIME.observe(deadline=start + budget, read=lambda deadline: seen.append(deadline) or peer,
+                    topology=lambda deadline: seen.append(deadline) or kernel,
+                    route=lambda address, interface, deadline: seen.append(deadline) or [{'dst': address, 'dev': 'eth0'}])
+            self.assertEqual(seen, [start + min(budget, TIME.ATTEMPT_SECONDS)] * 7)
+            self.assertEqual(record['ntp'][0]['address'], '192.168.50.1')
+
+
 if __name__ == '__main__':
     unittest.main()
