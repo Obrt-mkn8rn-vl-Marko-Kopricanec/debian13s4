@@ -1,0 +1,40 @@
+[Unit]
+Description=Reconcile journal retention and clean completed package downloads
+After=systemd-journald.service
+RequiresMountsFor=/usr/local/lib/debian13s4 /var/lib/debian13s4 /var/cache/apt /etc/systemd
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/retention/repair.sh
+User=root
+Group=root
+UMask=0077
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+# At most 32 controls (352s), two independent 180s+10s stages and 60s local
+# allowance fit 900s. Neither stage can consume the other's admission budget.
+TimeoutStartSec=900s
+TimeoutStopSec=15s
+Restart=on-failure
+RestartSec=15min
+KillMode=control-group
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_CHOWN CAP_DAC_OVERRIDE CAP_FOWNER
+ProtectSystem=strict
+ReadWritePaths=/etc/systemd /var/lib/debian13s4 /var/cache/apt /var/lib/dpkg -/var/log/journal -/run/log/journal
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHome=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX
+SystemCallArchitectures=native
+SystemCallFilter=~@mount

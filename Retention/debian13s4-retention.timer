@@ -1,0 +1,12 @@
+[Unit]
+Description=Reconcile journal and download retention after boot and hourly
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=1h
+RandomizedDelaySec=2min
+AccuracySec=1min
+Unit=debian13s4-retention.service
+
+[Install]
+WantedBy=timers.target

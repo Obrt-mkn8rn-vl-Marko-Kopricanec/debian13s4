@@ -572,9 +572,9 @@ printf '%s\\n' "$S4M_REPAIR_FD" > {q(str(expected))}
         self.assert_success(self.run_fixture())
         self.targets(["dbus.service", "networking.service", "apt-daily.service",
                       "debian13s4-maintenance.service", "debian13s4-bootstrap.service",
-                      "debian13s4-repair.service", "debian13s4-resume.service", "debian13s4-network.service",
+                      "debian13s4-repair.service", "debian13s4-resume.service", "debian13s4-network.service", "debian13s4-retention.service",
                       "dbus", "networking", "debian13s4-maintenance", "debian13s4-bootstrap",
-                      "debian13s4-repair", "debian13s4-resume", "debian13s4-network", "nginx.service"])
+                      "debian13s4-repair", "debian13s4-resume", "debian13s4-network", "debian13s4-retention", "nginx.service"])
         self.assert_success(self.run_fixture("s4m_update"))
         targets = [e["args"][-1] for e in self.events() if e["args"][0] == "restart"]
         self.assertEqual(targets, ["nginx.service"])
@@ -657,7 +657,7 @@ s4m_now() {{
 }}
 '''
 
-    def test_slow_pending_queue_cannot_starve_package_repair_or_reboot(self):
+    def test_slow_pending_queue_cannot_starve_package_repair_or_reboot(self, kill_timeout=False):
         self.assert_success(self.run_fixture())
         names = [f"slow{index:02d}" for index in range(13)]
         self.targets(names)
@@ -670,8 +670,9 @@ FAULT=configure
 s4m_restart_command() {{
     local target code=0
     target=$(s4m_unit_name "$1") || return 1
-    timeout --signal=TERM --kill-after=0.02s 0.04s /bin/sh -c 'sleep 2' || code=$?
-    [[ $code == 124 ]] || return 99
+    timeout --signal={'KILL' if kill_timeout else 'TERM'} --kill-after=0.02s 0.04s /bin/sh -c 'sleep 2' || code=$?
+    # GNU timeout may kill its own process group after the grace interval.
+    [[ $code == 124 || $code == 137 ]] || return 99
     python3 {q(str(self.model))} {q(str(self.database))} {q(str(self.log))} systemctl "$BASHPID" restart -- "$target" || :
     return "$code"
 }}
@@ -708,6 +709,9 @@ s4m_restart_command() {{
                     self.assertEqual(len(reboots), 2)  # early retry and final retry, with repair between
                     self.assertTrue(all(e["code"] == 1 for e in reboots))
                     self.assertTrue(any(name.startswith("@reboot:") for name in self.pending()))
+
+    def test_native_kill_timeout_keeps_fair_slices_and_package_repair(self):
+        self.test_slow_pending_queue_cannot_starve_package_repair_or_reboot(kill_timeout=True)
 
     def test_restart_slice_defers_before_mutation_when_full_target_cannot_fit(self):
         self.assert_success(self.run_fixture())
@@ -1199,14 +1203,14 @@ for codename, origin, label, trusted, expected in [
         self.assertEqual(timer["Timer"]["OnUnitInactiveSec"], "1h")
         policy = (ROOT / "Maintenance/needrestart.conf").read_text()
         self.assertIn("do '/etc/needrestart/needrestart.conf'", policy)
-        self.assertIn("maintenance|dotnet|network|bootstrap|repair|resume", policy)
+        self.assertIn("maintenance|dotnet|network|retention|bootstrap|repair|resume", policy)
 
     def test_bundle_admits_maintenance_after_prerequisites(self):
         spec = importlib.util.spec_from_file_location("packer", ROOT / "Bootstrap/pack.py")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         assets = module.assets()
-        self.assertEqual(assets["lib/tasks.list"][0], b"prerequisites:\nnetwork:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\n")
+        self.assertEqual(assets["lib/tasks.list"][0], b"prerequisites:\nnetwork:prerequisites\nretention:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\n")
         self.assertEqual(assets["lib/maintenance/update.sh"][1], "0755")
         self.assertEqual(module.assemble(), (ROOT / "setup.sh").read_bytes())
 

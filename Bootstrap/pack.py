@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def assets():
     result = {
         "lib/repair.sh": ((ROOT / "Recovery/repair.sh").read_bytes(), "0755"),
-        "lib/tasks.list": (b"prerequisites:\nnetwork:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\n", "0644"),
+        "lib/tasks.list": (b"prerequisites:\nnetwork:prerequisites\nretention:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\n", "0644"),
     }
     for name in ("apply.sh", "verify.sh", "common.sh", "debian.sources"):
         result[f"lib/tasks/prerequisites/{name}"] = (
@@ -43,6 +43,13 @@ def assets():
     for name in ("apply.sh", "verify.sh"):
         result[f"lib/tasks/network/{name}"] = (
             (ROOT / "Tasks/network" / name).read_bytes(), "0644")
+    for name in ("common.sh", "repair.sh", "journal.py", "clean-cache.py", "apt.conf", "journal.conf",
+                 "debian13s4-retention.service", "debian13s4-retention.timer"):
+        result[f"lib/retention/{name}"] = (
+            (ROOT / "Retention" / name).read_bytes(), "0755" if name == "repair.sh" else "0644")
+    for name in ("apply.sh", "verify.sh"):
+        result[f"lib/tasks/retention/{name}"] = (
+            (ROOT / "Tasks/retention" / name).read_bytes(), "0644")
     return result
 
 

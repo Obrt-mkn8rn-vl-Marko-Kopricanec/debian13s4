@@ -135,7 +135,8 @@ elif action == "systemctl":
     elif operation == "stop":
         assert unit in (timer, service, resume, "debian13s4-maintenance.timer", "debian13s4-maintenance.service",
                         "debian13s4-dotnet.timer", "debian13s4-dotnet.service",
-                        "debian13s4-network.timer", "debian13s4-network.service"), args
+                        "debian13s4-network.timer", "debian13s4-network.service",
+                 "debian13s4-retention.timer", "debian13s4-retention.service"), args
         state["active"][unit] = False
     elif operation == "start":
         assert unit in (timer, boot_unit), args
@@ -298,7 +299,7 @@ fi
         self.assertFalse((self.boot / "pending").exists())
         self.assertTrue(self.state()["disk"]["timer_enabled"])
         self.assertTrue(self.state()["active"][TIMER])
-        self.assertEqual((self.library / "tasks.list").read_text(), "prerequisites:\nnetwork:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\n")
+        self.assertEqual((self.library / "tasks.list").read_text(), "prerequisites:\nnetwork:prerequisites\nretention:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\n")
         self.assertTrue((self.boot / "installed").is_file())
 
     def test_self_contained_payload_matches_all_current_sources(self):
@@ -475,7 +476,8 @@ fi
     def test_old_maintenance_is_quiesced_before_any_bundle_publication(self):
         names = ("debian13s4-maintenance.timer", "debian13s4-maintenance.service",
                  "debian13s4-dotnet.timer", "debian13s4-dotnet.service",
-                 "debian13s4-network.timer", "debian13s4-network.service")
+                 "debian13s4-network.timer", "debian13s4-network.service",
+                 "debian13s4-retention.timer", "debian13s4-retention.service")
         state = self.state()
         for name in names:
             (self.systemd / name).write_text("[Unit]\nDescription=Old maintenance\n")

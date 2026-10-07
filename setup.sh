@@ -12,7 +12,8 @@ S4B_RESUME=debian13s4-resume.service
 S4B_QUIESCE=("$S4B_TIMER" "$S4B_SERVICE" "$S4B_RESUME"
     debian13s4-maintenance.timer debian13s4-maintenance.service
     debian13s4-dotnet.timer debian13s4-dotnet.service
-    debian13s4-network.timer debian13s4-network.service)
+    debian13s4-network.timer debian13s4-network.service
+    debian13s4-retention.timer debian13s4-retention.service)
 S4B_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4B_LOCK_FD=
 S4B_REPAIR_FD=
@@ -400,9 +401,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=45abab4557fa0f6b2300cc0aafe0ffeaed34e54b8805dc465072b951f28fe460
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=9f76e1f1be57af465d844a40e6c5a70440df068ec10442f976a9e2a8dd7f604d
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     local relative
@@ -891,12 +892,13 @@ if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
     s4_main "$@"
 fi
 S4_PAYLOAD_5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936
-    cat > "$S4B_STAGE/lib/tasks.list" <<'S4_PAYLOAD_0fc5c73114ec7055fa108ae727886f482b52c7ec339afc99b0acc27dee796fba' || return 1
+    cat > "$S4B_STAGE/lib/tasks.list" <<'S4_PAYLOAD_87a3d96648f9ba1445c77e808e351ad4a250e0596620e4cd4f316ced24dad8fc' || return 1
 prerequisites:
 network:prerequisites
+retention:prerequisites
 maintenance:prerequisites
 dotnet:prerequisites
-S4_PAYLOAD_0fc5c73114ec7055fa108ae727886f482b52c7ec339afc99b0acc27dee796fba
+S4_PAYLOAD_87a3d96648f9ba1445c77e808e351ad4a250e0596620e4cd4f316ced24dad8fc
     cat > "$S4B_STAGE/lib/tasks/prerequisites/apply.sh" <<'S4_PAYLOAD_f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934' || return 1
 #!/bin/bash
 set -Eeuo pipefail
@@ -1698,7 +1700,7 @@ Unattended-Upgrade::OnlyOnACPower "false";
 Unattended-Upgrade::Skip-Updates-On-Metered-Connections "false";
 Unattended-Upgrade::SyslogEnable "true";
 S4_PAYLOAD_bc7e6d139257f55d2b8b77c87263709c5fafb72242d728d4372d81d2915d478f
-    cat > "$S4B_STAGE/lib/maintenance/needrestart.conf" <<'S4_PAYLOAD_1848c977881a707ae2c12dbbb22ce07b1497cbf01448c5f230d3f7778b9e768e' || return 1
+    cat > "$S4B_STAGE/lib/maintenance/needrestart.conf" <<'S4_PAYLOAD_1b0ac8cac419ad7e839911403ceb8487a5b689643a06a3e321e8e94df10c8a18' || return 1
 # Keep Debian's service exclusions, then exclude the setup/update controllers.
 {
     local ($@, $!);
@@ -1706,8 +1708,8 @@ S4_PAYLOAD_bc7e6d139257f55d2b8b77c87263709c5fafb72242d728d4372d81d2915d478f
     die "Cannot load Debian restart policy: $@ $!\n" if $@ || (!defined($loaded) && $!);
 }
 $nrconf{restart} = 'a';
-$nrconf{override_rc}->{qr(^debian13s4-(maintenance|dotnet|network|bootstrap|repair|resume)(\.service)?$)} = 0;
-S4_PAYLOAD_1848c977881a707ae2c12dbbb22ce07b1497cbf01448c5f230d3f7778b9e768e
+$nrconf{override_rc}->{qr(^debian13s4-(maintenance|dotnet|network|retention|bootstrap|repair|resume)(\.service)?$)} = 0;
+S4_PAYLOAD_1b0ac8cac419ad7e839911403ceb8487a5b689643a06a3e321e8e94df10c8a18
     cat > "$S4B_STAGE/lib/maintenance/restart-policy.pl" <<'S4_PAYLOAD_4459b2afa9b1914dad46d50758e533160d1f5e63deb017310fa296b170bb4cfe' || return 1
 #!/usr/bin/perl
 use strict;
@@ -2800,9 +2802,660 @@ S4_PAYLOAD_978090bd3843e6a8dbedce17864be98ac183fa3313ba2bcece27d8b4c4ceea1b
 . /usr/local/lib/debian13s4/network/common.sh
 s4n_verify
 S4_PAYLOAD_2c4a253e0fba47833ef625a9f3ea5b15062b3e43ffc36a6a6861a06dcaf2ace4
+    cat > "$S4B_STAGE/lib/retention/common.sh" <<'S4_PAYLOAD_c7bf108d8bf796d7db45af4030142b1ca066aa9b224639943b794e2a9626fb6a' || return 1
+#!/bin/bash
+
+# shellcheck source=Maintenance/common.sh
+. /usr/local/lib/debian13s4/maintenance/common.sh
+
+S4R_LIBRARY=/usr/local/lib/debian13s4/retention
+S4R_CONFIG=/etc/systemd/journald.conf.d/90-debian13s4-retention.conf
+S4R_TIMER=debian13s4-retention.timer
+S4R_SERVICE=debian13s4-retention.service
+S4R_JOURNAL=systemd-journald.service
+S4R_SECONDS=180
+S4R_GRACE_SECONDS=10
+S4R_FILES=(common.sh repair.sh journal.py clean-cache.py apt.conf journal.conf
+    debian13s4-retention.service debian13s4-retention.timer)
+
+s4r_assets() {
+    local name
+    [[ -d $S4M_STATE && -d $S4M_SYSTEMD ]] &&
+        s4m_trusted "$S4M_STATE" && s4m_trusted "$S4M_SYSTEMD" || return 1
+    [[ -f $S4M_LIBRARY/common.sh ]] && s4m_trusted "$S4M_LIBRARY/common.sh" || return 1
+    for name in "${S4R_FILES[@]}"; do
+        [[ -f $S4R_LIBRARY/$name ]] && s4m_trusted "$S4R_LIBRARY/$name" || return 1
+    done
+    [[ -x $S4R_LIBRARY/repair.sh ]]
+}
+
+s4r_identity() {
+    local name digest
+    for name in "${S4R_FILES[@]}"; do
+        digest=$(sha256sum -- "$S4R_LIBRARY/$name") || return 1
+        printf '%s %s\n' "${digest%% *}" "$name" || return 1
+    done
+    digest=$(sha256sum -- "$S4M_LIBRARY/common.sh") || return 1
+    printf '%s maintenance/common.sh\n' "${digest%% *}"
+}
+
+s4r_controller() {
+    local name
+    s4r_assets || return 1
+    for name in "$S4R_SERVICE" "$S4R_TIMER"; do
+        [[ -f $S4M_SYSTEMD/$name ]] && s4m_trusted "$S4M_SYSTEMD/$name" &&
+            cmp --silent -- "$S4R_LIBRARY/$name" "$S4M_SYSTEMD/$name" || return 1
+        s4m_property "$name" FragmentPath "$S4M_SYSTEMD/$name" &&
+            s4m_property "$name" DropInPaths '' || return 1
+    done
+    s4m_enabled "$S4R_TIMER" && s4m_property "$S4R_TIMER" ActiveState active
+}
+
+s4r_ready() {
+    local expected actual
+    [[ ! -e $S4M_STATE/bootstrap/pending && ! -L $S4M_STATE/bootstrap/pending &&
+        -f $S4M_STATE/retention.ready ]] && s4m_trusted "$S4M_STATE/retention.ready" || return 1
+    s4r_controller || return 1
+    expected=$(s4r_identity) && actual=$(cat -- "$S4M_STATE/retention.ready") || return 1
+    [[ $expected == "$actual" ]]
+}
+
+s4r_configure() {
+    local directory=${S4R_CONFIG%/*}
+    s4m_trusted "${directory%/*}" || return 1
+    if [[ -e $directory || -L $directory ]]; then
+        [[ -d $directory ]] && s4m_trusted "$directory" || return 1
+    else
+        mkdir -m 0755 -- "$directory" || return 1
+    fi
+    s4m_atomic "$S4R_CONFIG" "$S4R_LIBRARY/journal.conf"
+}
+
+s4r_generation() {
+    local invocation
+    s4m_property "$S4R_JOURNAL" FragmentPath /usr/lib/systemd/system/systemd-journald.service &&
+        s4m_property "$S4R_JOURNAL" DropInPaths '' &&
+        s4m_property "$S4R_JOURNAL" Result success &&
+        s4m_property "$S4R_JOURNAL" ActiveState active || return 1
+    invocation=$(s4m_systemctl show --property=InvocationID --value "$S4R_JOURNAL") || return 1
+    [[ $invocation =~ ^[0-9a-f]{32}$ && $invocation != 00000000000000000000000000000000 ]] || return 1
+    printf '%s\n' "$invocation"
+}
+
+s4r_policy() {
+    local digest
+    digest=$(s4m_control /usr/bin/python3 -I -B "$S4R_LIBRARY/journal.py" --config) || return 1
+    [[ $digest =~ ^[0-9a-f]{64}$ ]] || return 1
+    printf '%s\n' "$digest"
+}
+
+s4r_applied() {
+    local digest=$1 generation=$2 actual
+    [[ -f $S4M_STATE/journal.applied ]] && s4m_trusted "$S4M_STATE/journal.applied" || return 1
+    actual=$(cat -- "$S4M_STATE/journal.applied") || return 1
+    [[ $actual == "$digest $generation" ]]
+}
+
+s4r_bounded() (
+    local descriptor=$S4M_REPAIR_FD
+    trap - EXIT
+    [[ -z $descriptor ]] || exec {descriptor}>&-
+    timeout --signal=TERM --kill-after="${S4R_GRACE_SECONDS}s" "${S4R_SECONDS}s" \
+        env -i PATH="$S4M_PATH" LANG=C LC_ALL=C "$@"
+)
+
+s4r_journal() {
+    local digest before after observed temporary
+    s4r_configure || return 1
+    # This also checks default journal paths before any restart or deletion.
+    digest=$(s4r_policy) || return 1
+    before=$(s4m_systemctl show --property=InvocationID --value "$S4R_JOURNAL") || return 1
+    observed=$(s4r_generation) || observed=
+    if ! s4r_applied "$digest" "$before" || [[ $observed != "$before" ]]; then
+        # A restart preserves native log-stream descriptors. Never stop and
+        # then start journald separately, and never accept a queued/no-op restart.
+        s4m_systemctl restart "$S4R_JOURNAL" || return 1
+        after=$(s4r_generation) || return 1
+        [[ $after != "$before" ]] && [[ $(s4r_policy) == "$digest" ]] || return 1
+        temporary=$(mktemp -- "$S4M_STATE/journal-intent.XXXXXX") || return 1
+        if ! printf '%s %s\n' "$digest" "$after" > "$temporary" ||
+            ! chmod 0600 -- "$temporary" || ! s4m_atomic "$S4M_STATE/journal.applied" "$temporary" 0600; then
+            rm -f -- "$temporary"
+            return 1
+        fi
+        rm -f -- "$temporary" || return 1
+    fi
+    s4r_bounded /usr/bin/python3 -I -B "$S4R_LIBRARY/journal.py" --vacuum || return 1
+    after=$(s4r_generation) && [[ $(s4r_policy) == "$digest" ]] && s4r_applied "$digest" "$after"
+}
+
+s4r_cache() {
+    s4r_bounded /usr/bin/env APT_CONFIG="$S4R_LIBRARY/apt.conf" \
+        /usr/bin/python3 -I -B "$S4R_LIBRARY/clean-cache.py" --apply
+}
+
+s4r_work() {
+    local failed=0
+    # Independent finite stages: journal failure/timeouts cannot suppress cache
+    # repair, and this controller does not occupy the package updater's budget.
+    s4r_journal || failed=1
+    s4r_cache || failed=1
+    (( failed == 0 ))
+}
+
+s4r_verify() {
+    local digest generation
+    s4r_ready && [[ -f $S4R_CONFIG ]] && s4m_trusted "$S4R_CONFIG" &&
+        cmp --silent -- "$S4R_LIBRARY/journal.conf" "$S4R_CONFIG" || return 1
+    digest=$(s4r_policy) && generation=$(s4r_generation) && s4r_applied "$digest" "$generation" || return 1
+    s4m_control /usr/bin/python3 -I -B "$S4R_LIBRARY/journal.py" --observe
+}
+
+s4r_apply() {
+    local unit loaded wants resolved temporary
+    s4r_assets || return 1
+    for unit in "$S4R_TIMER" "$S4R_SERVICE"; do
+        if [[ -e $S4M_SYSTEMD/$unit || -L $S4M_SYSTEMD/$unit ]]; then
+            [[ -f $S4M_SYSTEMD/$unit ]] && s4m_trusted "$S4M_SYSTEMD/$unit" || return 1
+        fi
+    done
+    if [[ -e $S4M_STATE/retention.ready || -L $S4M_STATE/retention.ready ]]; then
+        [[ -f $S4M_STATE/retention.ready ]] && s4m_trusted "$S4M_STATE/retention.ready" || return 1
+        rm -f -- "$S4M_STATE/retention.ready" || return 1
+    fi
+    s4m_sync "$S4M_STATE" || return 1
+    for unit in "$S4R_TIMER" "$S4R_SERVICE"; do
+        loaded=$(s4m_systemctl show --property=LoadState --value "$unit") || return 1
+        if [[ $loaded == loaded ]]; then
+            s4m_systemctl stop "$unit" && s4m_property "$unit" ActiveState inactive || return 1
+        elif [[ $loaded != not-found ]]; then
+            return 1
+        fi
+    done
+    # Generic setup repair retains ownership until all initial work succeeds.
+    s4r_work || return 1
+    for unit in "$S4R_SERVICE" "$S4R_TIMER"; do
+        s4m_atomic "$S4M_SYSTEMD/$unit" "$S4R_LIBRARY/$unit" || return 1
+    done
+    s4m_systemctl daemon-reload && s4m_systemctl enable "$S4R_TIMER" && s4m_enabled "$S4R_TIMER" || return 1
+    wants=$S4M_SYSTEMD/timers.target.wants
+    [[ -d $wants && -L $wants/$S4R_TIMER ]] && s4m_trusted "$wants" || return 1
+    resolved=$(readlink --canonicalize-existing -- "$wants/$S4R_TIMER") || return 1
+    [[ $resolved == "$S4M_SYSTEMD/$S4R_TIMER" ]] || return 1
+    s4m_sync "$S4M_SYSTEMD" "$wants" "$S4M_SYSTEMD/$S4R_TIMER" "$S4M_SYSTEMD/$S4R_SERVICE" || return 1
+    s4m_systemctl start "$S4R_TIMER" && s4r_controller || return 1
+    temporary=$(mktemp -- "$S4M_STATE/retention-intent.XXXXXX") || return 1
+    if ! s4r_identity > "$temporary" || ! chmod 0600 -- "$temporary" ||
+        ! s4m_atomic "$S4M_STATE/retention.ready" "$temporary" 0600; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    rm -f -- "$temporary" || return 1
+    s4r_verify
+}
+
+s4r_repair() {
+    [[ ! -e $S4M_STATE/bootstrap/pending && ! -L $S4M_STATE/bootstrap/pending ]] || return 75
+    s4m_lock || return 75
+    trap s4m_unlock EXIT
+    s4r_ready && s4r_work || return 75
+}
+S4_PAYLOAD_c7bf108d8bf796d7db45af4030142b1ca066aa9b224639943b794e2a9626fb6a
+    cat > "$S4B_STAGE/lib/retention/repair.sh" <<'S4_PAYLOAD_2d85e370e47f67a7500e72a9048b78f033246f13d1ccf37d1eb79740a7e1b330' || return 1
+#!/bin/bash -p
+set -Eeuo pipefail
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+(( EUID == 0 )) || exit 77
+
+# shellcheck source=Retention/common.sh
+. /usr/local/lib/debian13s4/retention/common.sh
+s4r_repair
+S4_PAYLOAD_2d85e370e47f67a7500e72a9048b78f033246f13d1ccf37d1eb79740a7e1b330
+    cat > "$S4B_STAGE/lib/retention/journal.py" <<'S4_PAYLOAD_d164649f35a3441e5eb6564d552a540f3cca1748f61ec8a59f18196e9fcefeb4' || return 1
+"""Check the default journal's effective policy and archived-file retention."""
+
+import hashlib
+import os
+from pathlib import Path
+import re
+import stat
+import subprocess
+import sys
+import time
+
+
+TRUSTED_UID = 0
+PREFIXES = tuple(Path(p) for p in ("/etc/systemd", "/run/systemd", "/usr/local/lib/systemd", "/usr/lib/systemd"))
+MACHINE = Path("/etc/machine-id")
+JOURNALS = ((Path("/var/log/journal"), 128 * 1024**2, 32),
+            (Path("/run/log/journal"), 32 * 1024**2, 8))
+POLICY = {
+    "Storage": "persistent", "Compress": "yes",
+    "SystemMaxUse": "128M", "RuntimeMaxUse": "32M",
+    "SystemKeepFree": "512M", "RuntimeKeepFree": "64M",
+    "SystemMaxFileSize": "8M", "RuntimeMaxFileSize": "4M",
+    "SystemMaxFiles": "32", "RuntimeMaxFiles": "8",
+    "MaxFileSec": "1day", "MaxRetentionSec": "14day",
+}
+MAX_INPUT = 1024**2
+MAX_FILES = 100000
+AGE = 14 * 86400
+ARCHIVE = re.compile(r".+@[0-9a-fA-F]{32}-[0-9a-fA-F]{16}-([0-9a-fA-F]{16})\.journal\Z")
+UNCLEAN = re.compile(r".+@([0-9a-fA-F]{16})-[0-9a-fA-F]{16}\.journal~\Z")
+
+
+def trusted(path, kind=stat.S_ISREG):
+    path = Path(path)
+    if not path.is_absolute() or str(path) != os.path.normpath(path):
+        raise ValueError("noncanonical journal path")
+    leaf = path
+    while True:
+        info = path.lstat()
+        if not (kind if path == leaf else stat.S_ISDIR)(info.st_mode) or info.st_uid != TRUSTED_UID or info.st_mode & 0o022:
+            raise ValueError("untrusted journal path: " + str(path))
+        if path == path.parent:
+            return leaf.lstat()
+        path = path.parent
+
+
+def signature(info):
+    return (info.st_dev, info.st_ino, info.st_uid, info.st_gid, info.st_mode,
+            info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def read(path):
+    before = trusted(path)
+    if before.st_size > MAX_INPUT:
+        raise ValueError("oversized journal input")
+    descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_NONBLOCK)
+    try:
+        if signature(before) != signature(os.fstat(descriptor)):
+            raise ValueError("journal input descriptor changed")
+        data = bytearray()
+        while True:
+            chunk = os.read(descriptor, min(65536, MAX_INPUT + 1 - len(data)))
+            if not chunk:
+                break
+            data.extend(chunk)
+            if len(data) > MAX_INPUT:
+                raise ValueError("oversized journal input")
+        if signature(before) != signature(os.fstat(descriptor)) or signature(before) != signature(trusted(path)):
+            raise ValueError("journal input changed")
+        return bytes(data)
+    finally:
+        os.close(descriptor)
+
+
+def sources():
+    result = {}
+    total = 0
+    def add(path):
+        nonlocal total
+        if len(result) >= 1024:
+            raise ValueError("excessive journal configuration")
+        data = read(path)
+        total += len(data)
+        if total > MAX_INPUT:
+            raise ValueError("excessive journal configuration")
+        result[str(path)] = data
+    for prefix in PREFIXES:
+        for path in (prefix / "journald.conf", prefix / "journald.conf.d"):
+            if not path.exists() and not path.is_symlink():
+                continue
+            if path.name == "journald.conf":
+                add(path)
+            else:
+                trusted(path, stat.S_ISDIR)
+                for leaf in path.iterdir():
+                    if leaf.name.endswith(".conf"):
+                        add(leaf)
+    return result
+
+
+def policy(text):
+    values, section = {}, None
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith(("#", ";")):
+            continue
+        # Refuse syntax whose continuation/quoting could make this observer
+        # disagree with the native parser, rather than guessing its meaning.
+        if line.endswith("\\"):
+            raise ValueError("continued journal configuration is unverifiable")
+        if line.startswith("["):
+            if not re.fullmatch(r"\[[A-Za-z0-9]+\]", line):
+                raise ValueError("invalid journal section")
+            section = line[1:-1]
+        elif section == "Journal":
+            key, separator, value = line.partition("=")
+            if not separator:
+                raise ValueError("invalid journal assignment")
+            if key.strip() in POLICY:
+                values[key.strip()] = value.strip()
+    if values != POLICY:
+        raise ValueError("effective journal policy differs")
+
+
+def configuration():
+    before = sources()
+    result = subprocess.run(["/usr/bin/systemd-analyze", "--no-pager", "cat-config", "systemd/journald.conf"],
+                            capture_output=True, check=True, timeout=5)
+    if result.stderr or len(result.stdout) > MAX_INPUT + 262144:
+        raise ValueError("unverifiable native journal configuration")
+    text = result.stdout.decode("utf-8", errors="strict")
+    emitted = re.findall(r"^# (/[^\n]+)$", text, re.M)
+    if not emitted or len(emitted) != len(set(emitted)) or any(path not in before for path in emitted):
+        raise ValueError("untrusted native journal configuration source")
+    policy(text)
+    if sources() != before:
+        raise ValueError("journal configuration changed")
+    return hashlib.sha256(result.stdout).hexdigest()
+
+
+def directories(require_persistent=False):
+    data = read(MACHINE)
+    if not re.fullmatch(rb"[0-9a-f]{32}\n?", data):
+        raise ValueError("unverifiable journal machine identity")
+    machine = data.decode("ascii", errors="strict").rstrip("\n")
+    if not re.fullmatch(r"[0-9a-f]{32}", machine) or machine == "0" * 32:
+        raise ValueError("unverifiable journal machine identity")
+    result = []
+    for base, size, count in JOURNALS:
+        if base.exists() or base.is_symlink():
+            trusted(base, stat.S_ISDIR)
+            path = base / machine
+            if path.exists() or path.is_symlink():
+                trusted(path, stat.S_ISDIR)
+                inventory(path)
+                result.append((path, size, count))
+                continue
+        else:
+            trusted(base.parent, stat.S_ISDIR)
+        if require_persistent and base == JOURNALS[0][0]:
+            raise ValueError("persistent default journal is absent")
+    return result
+
+
+def inventory(path):
+    result = []
+    for leaf in path.iterdir():
+        info = trusted(leaf)
+        match = ARCHIVE.fullmatch(leaf.name) or UNCLEAN.fullmatch(leaf.name)
+        if match:
+            stamp = min(int(match[1], 16), info.st_mtime_ns // 1000,
+                        info.st_ctime_ns // 1000, info.st_atime_ns // 1000)
+            result.append((leaf.name, info.st_blocks * 512, stamp))
+        if len(result) > MAX_FILES:
+            raise ValueError("excessive journal inventory")
+    return result
+
+
+def observe():
+    now = int(time.time() * 1000000)
+    for path, size, count in directories(require_persistent=True):
+        rows = inventory(path)
+        if (len(rows) > count or sum(row[1] for row in rows) > size or
+                any(row[2] < max(0, now - AGE * 1000000) for row in rows)):
+            raise ValueError("archived default journals still exceed retention")
+
+
+def vacuum():
+    directories()
+    subprocess.run(["/usr/bin/journalctl", "--flush"], check=True, timeout=40)
+    subprocess.run(["/usr/bin/journalctl", "--rotate"], check=True, timeout=40)
+    for path, size, count in directories(require_persistent=True):
+        subprocess.run(["/usr/bin/journalctl", "--directory=" + str(path),
+                        "--vacuum-size=" + str(size), "--vacuum-time=14days", "--vacuum-files=" + str(count)],
+                       check=True, timeout=40)
+    # Native vacuum logs unlink failures but may still exit zero. Actual
+    # archived-file observations are required; active files are not a quota.
+    observe()
+
+
+def main():
+    if sys.argv[1:] == ["--config"]:
+        directories()
+        print(configuration())
+    elif sys.argv[1:] == ["--observe"]:
+        observe()
+    elif sys.argv[1:] == ["--vacuum"] and os.geteuid() == TRUSTED_UID:
+        vacuum()
+    else:
+        raise ValueError("expected --config, --observe or trusted --vacuum")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (Exception, KeyboardInterrupt) as error:
+        print("debian13s4 journal retention: " + str(error), file=sys.stderr)
+        sys.exit(1)
+S4_PAYLOAD_d164649f35a3441e5eb6564d552a540f3cca1748f61ec8a59f18196e9fcefeb4
+    cat > "$S4B_STAGE/lib/retention/clean-cache.py" <<'S4_PAYLOAD_715e936a70e166fa6c3bc4e63a4b2fed4fec56b33960c3810d2af54be01489d5' || return 1
+"""Clean only APT download archives after a checked, locked package audit."""
+
+import os
+from pathlib import Path
+import pwd
+import stat
+import subprocess
+import sys
+
+
+POLICY = Path("/usr/local/lib/debian13s4/retention/apt.conf")
+CACHE = Path("/var/cache/apt/archives")
+LISTS = Path("/var/lib/debian13s4/retention-empty-lists")
+STATUS = Path("/var/lib/dpkg/status")
+TRUSTED_UID = 0
+MAX_FILES = 100000
+RESERVED = {"lock", "partial", "auxfiles", "lost+found"}
+
+
+def trusted(path, kind=stat.S_ISREG, owners=None):
+    path = Path(path)
+    if not path.is_absolute() or str(path) != os.path.normpath(path):
+        raise ValueError("noncanonical archive path")
+    leaf = path
+    while True:
+        info = path.lstat()
+        allowed = (owners or {TRUSTED_UID}) if path == leaf else {TRUSTED_UID}
+        if path != leaf and path in {CACHE / "partial", LISTS / "partial"}:
+            allowed = {TRUSTED_UID, pwd.getpwnam("_apt").pw_uid}
+        if (not (kind if path == leaf else stat.S_ISDIR)(info.st_mode) or info.st_mode & 0o022 or
+                info.st_uid not in allowed):
+            raise ValueError("untrusted archive path: " + str(path))
+        if path == path.parent:
+            return leaf.lstat()
+        path = path.parent
+
+
+def inventory(directory, partial=False):
+    owners = {TRUSTED_UID, pwd.getpwnam("_apt").pw_uid}
+    trusted(directory, stat.S_ISDIR, owners if partial else None)
+    result = []
+    for leaf in directory.iterdir():
+        if not partial and leaf.name in {"partial", "auxfiles", "lost+found"}:
+            trusted(leaf, stat.S_ISDIR, owners if leaf.name in {"partial", "auxfiles"} else None)
+            if leaf.name == "partial":
+                result.extend(inventory(leaf, partial=True))
+        else:
+            # Validate lock leaves too: native GetLock uses O_RDWR and must not
+            # receive a FIFO/device even though it already refuses symlinks.
+            trusted(leaf, owners=None if leaf.name == "lock" else owners)
+            if partial or leaf.name not in RESERVED:
+                result.append(leaf)
+        if len(result) > MAX_FILES:
+            raise ValueError("excessive archive inventory")
+    return result
+
+
+def prepare():
+    trusted(CACHE.parent, stat.S_ISDIR)
+    if not CACHE.exists() and not CACHE.is_symlink():
+        CACHE.mkdir(mode=0o755)
+    inventory(CACHE)
+    trusted(LISTS.parent, stat.S_ISDIR)
+    if not LISTS.exists() and not LISTS.is_symlink():
+        LISTS.mkdir(mode=0o700)
+    inventory(LISTS)
+
+
+def audit():
+    result = subprocess.run(["/usr/bin/dpkg", "--audit"], capture_output=True, check=True, timeout=10)
+    if result.stdout or result.stderr:
+        raise ValueError("archive cleanup requires an empty dpkg audit")
+
+
+def configuration():
+    trusted(POLICY)
+    trusted(STATUS)
+    if os.environ.get("APT_CONFIG") != str(POLICY):
+        raise ValueError("unexpected archive APT profile")
+    import apt_pkg
+    apt_pkg.init()
+    config = apt_pkg.config
+    if (config.find("Dir::Etc::parts") or config.find("Dir::Etc::main") or
+            config.find("Dir::Etc::sourcelist") != "-" or config.find("Dir::Etc::sourceparts") != "-" or
+            config.find_dir("Dir::Cache::archives").rstrip("/") != str(CACHE) or
+            config.find_dir("Dir::State::lists").rstrip("/") != str(LISTS) or
+            config.find_file("Dir::Cache::pkgcache") or config.find_file("Dir::Cache::srcpkgcache") or
+            config.find_file("Dir::State::status") != str(STATUS) or
+            config.find_b("Debug::NoLocking", True) or config.find("APT::Sandbox::User") != "_apt"):
+        raise ValueError("unverified archive cleanup configuration")
+    return apt_pkg
+
+
+def clean():
+    apt_pkg = configuration()
+    # Retain repair downloads while dpkg is incomplete. The native package
+    # lock covers the audit, archive delivery and postconditions; apt-get clean
+    # also owns the native archive lock, without disabling either lock.
+    with apt_pkg.SystemLock():
+        audit()
+        prepare()
+        subprocess.run(["/usr/bin/apt-get", "clean"], check=True, timeout=120)
+        if inventory(CACHE) or inventory(LISTS):
+            raise ValueError("native archive cleanup left downloaded files")
+        audit()
+
+
+def main():
+    if sys.argv[1:] != ["--apply"] or os.geteuid() != TRUSTED_UID:
+        raise ValueError("archive cleanup requires trusted --apply")
+    clean()
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (Exception, KeyboardInterrupt) as error:
+        print("debian13s4 archive retention: " + str(error), file=sys.stderr)
+        sys.exit(1)
+S4_PAYLOAD_715e936a70e166fa6c3bc4e63a4b2fed4fec56b33960c3810d2af54be01489d5
+    cat > "$S4B_STAGE/lib/retention/apt.conf" <<'S4_PAYLOAD_dfdda3c5c5f008fc693b0fb1e47a04df8ff33aae4ddc90f4c2126f612115d6ef' || return 1
+// APT_CONFIG loads this before any host fragments. Clean only downloaded
+// archives: retain authenticated indexes, status and existing metadata caches.
+Dir::Etc::parts "";
+Dir::Etc::main "";
+Dir::Etc::sourcelist "-";
+Dir::Etc::sourceparts "-";
+Dir::Cache::archives "/var/cache/apt/archives";
+Dir::State::lists "/var/lib/debian13s4/retention-empty-lists";
+Dir::Cache::pkgcache "";
+Dir::Cache::srcpkgcache "";
+Debug::NoLocking "false";
+APT::Sandbox::User "_apt";
+S4_PAYLOAD_dfdda3c5c5f008fc693b0fb1e47a04df8ff33aae4ddc90f4c2126f612115d6ef
+    cat > "$S4B_STAGE/lib/retention/journal.conf" <<'S4_PAYLOAD_6a2cae9f09342d5f54c40602d0b5a4b10aca08ee34bd3c35bf1deb09a90c3729' || return 1
+[Journal]
+Storage=persistent
+Compress=yes
+SystemMaxUse=128M
+RuntimeMaxUse=32M
+SystemKeepFree=512M
+RuntimeKeepFree=64M
+SystemMaxFileSize=8M
+RuntimeMaxFileSize=4M
+SystemMaxFiles=32
+RuntimeMaxFiles=8
+MaxFileSec=1day
+MaxRetentionSec=14day
+S4_PAYLOAD_6a2cae9f09342d5f54c40602d0b5a4b10aca08ee34bd3c35bf1deb09a90c3729
+    cat > "$S4B_STAGE/lib/retention/debian13s4-retention.service" <<'S4_PAYLOAD_4a18bd9011f90260329a19cdf2747f01f041bafd7184978b5cb8ac8eece4eba5' || return 1
+[Unit]
+Description=Reconcile journal retention and clean completed package downloads
+After=systemd-journald.service
+RequiresMountsFor=/usr/local/lib/debian13s4 /var/lib/debian13s4 /var/cache/apt /etc/systemd
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/retention/repair.sh
+User=root
+Group=root
+UMask=0077
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+# At most 32 controls (352s), two independent 180s+10s stages and 60s local
+# allowance fit 900s. Neither stage can consume the other's admission budget.
+TimeoutStartSec=900s
+TimeoutStopSec=15s
+Restart=on-failure
+RestartSec=15min
+KillMode=control-group
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_CHOWN CAP_DAC_OVERRIDE CAP_FOWNER
+ProtectSystem=strict
+ReadWritePaths=/etc/systemd /var/lib/debian13s4 /var/cache/apt /var/lib/dpkg -/var/log/journal -/run/log/journal
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHome=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX
+SystemCallArchitectures=native
+SystemCallFilter=~@mount
+S4_PAYLOAD_4a18bd9011f90260329a19cdf2747f01f041bafd7184978b5cb8ac8eece4eba5
+    cat > "$S4B_STAGE/lib/retention/debian13s4-retention.timer" <<'S4_PAYLOAD_3484989b87fe25b6eed5e8759d0ff036007e85e10d1e2a6fa129d6294fb18048' || return 1
+[Unit]
+Description=Reconcile journal and download retention after boot and hourly
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=1h
+RandomizedDelaySec=2min
+AccuracySec=1min
+Unit=debian13s4-retention.service
+
+[Install]
+WantedBy=timers.target
+S4_PAYLOAD_3484989b87fe25b6eed5e8759d0ff036007e85e10d1e2a6fa129d6294fb18048
+    cat > "$S4B_STAGE/lib/tasks/retention/apply.sh" <<'S4_PAYLOAD_6a932d600d6894880eaa54c51b274d7bee8cb081fc7018371a43ecf9ac103fb2' || return 1
+#!/bin/bash
+# shellcheck source=Retention/common.sh
+. /usr/local/lib/debian13s4/retention/common.sh
+s4r_apply
+S4_PAYLOAD_6a932d600d6894880eaa54c51b274d7bee8cb081fc7018371a43ecf9ac103fb2
+    cat > "$S4B_STAGE/lib/tasks/retention/verify.sh" <<'S4_PAYLOAD_eaf8d9e89061834624d417ebec6211c3257dcecf52030178597b2c93859503dc' || return 1
+#!/bin/bash
+# shellcheck source=Retention/common.sh
+. /usr/local/lib/debian13s4/retention/common.sh
+s4r_verify
+S4_PAYLOAD_eaf8d9e89061834624d417ebec6211c3257dcecf52030178597b2c93859503dc
     cat > "$S4B_STAGE/files.sha256" <<'S4_CHECKSUMS' || return 1
 5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936  lib/repair.sh
-0fc5c73114ec7055fa108ae727886f482b52c7ec339afc99b0acc27dee796fba  lib/tasks.list
+87a3d96648f9ba1445c77e808e351ad4a250e0596620e4cd4f316ced24dad8fc  lib/tasks.list
 f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934  lib/tasks/prerequisites/apply.sh
 5c2bb90b18725176df85061f2fd7556fc5f00c286991f7ff34445d7b880693fc  lib/tasks/prerequisites/verify.sh
 f99079435a5917ee3a1a69aa9f18e32e4a98ddcd787007336997b5a4fbc2eab9  lib/tasks/prerequisites/common.sh
@@ -2813,7 +3466,7 @@ a107d7016113884baa5f42ef8c5523410d1193f9970c3d320647dc0ee3d3a5f9  units/debian13
 c9c5a3f1e2a4182b94132b25709ff4fdb95405457ac41372fd353437e3a55d04  lib/maintenance/common.sh
 49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1  lib/maintenance/update.sh
 bc7e6d139257f55d2b8b77c87263709c5fafb72242d728d4372d81d2915d478f  lib/maintenance/policy.conf
-1848c977881a707ae2c12dbbb22ce07b1497cbf01448c5f230d3f7778b9e768e  lib/maintenance/needrestart.conf
+1b0ac8cac419ad7e839911403ceb8487a5b689643a06a3e321e8e94df10c8a18  lib/maintenance/needrestart.conf
 4459b2afa9b1914dad46d50758e533160d1f5e63deb017310fa296b170bb4cfe  lib/maintenance/restart-policy.pl
 b213906bff69cad34a5f2a547727622474f545c207bfca681f8a3dcac521b5ac  lib/maintenance/retain-kernels.py
 d2681c6dde48e6cfbd0232cc1303f589fa042b39224489331574aa49c79bd890  lib/maintenance/debian13s4-maintenance.service
@@ -2839,6 +3492,16 @@ eaaf6c2cdf2e36aa2bb49f9bf0a5b668c6788102813dbdb9104127413eb7a812  lib/network/de
 13c391ea87a782aaae1b1e2ed6629a340c9bcd37841e54a09000709e4c663b03  lib/network/debian13s4-network.timer
 978090bd3843e6a8dbedce17864be98ac183fa3313ba2bcece27d8b4c4ceea1b  lib/tasks/network/apply.sh
 2c4a253e0fba47833ef625a9f3ea5b15062b3e43ffc36a6a6861a06dcaf2ace4  lib/tasks/network/verify.sh
+c7bf108d8bf796d7db45af4030142b1ca066aa9b224639943b794e2a9626fb6a  lib/retention/common.sh
+2d85e370e47f67a7500e72a9048b78f033246f13d1ccf37d1eb79740a7e1b330  lib/retention/repair.sh
+d164649f35a3441e5eb6564d552a540f3cca1748f61ec8a59f18196e9fcefeb4  lib/retention/journal.py
+715e936a70e166fa6c3bc4e63a4b2fed4fec56b33960c3810d2af54be01489d5  lib/retention/clean-cache.py
+dfdda3c5c5f008fc693b0fb1e47a04df8ff33aae4ddc90f4c2126f612115d6ef  lib/retention/apt.conf
+6a2cae9f09342d5f54c40602d0b5a4b10aca08ee34bd3c35bf1deb09a90c3729  lib/retention/journal.conf
+4a18bd9011f90260329a19cdf2747f01f041bafd7184978b5cb8ac8eece4eba5  lib/retention/debian13s4-retention.service
+3484989b87fe25b6eed5e8759d0ff036007e85e10d1e2a6fa129d6294fb18048  lib/retention/debian13s4-retention.timer
+6a932d600d6894880eaa54c51b274d7bee8cb081fc7018371a43ecf9ac103fb2  lib/tasks/retention/apply.sh
+eaf8d9e89061834624d417ebec6211c3257dcecf52030178597b2c93859503dc  lib/tasks/retention/verify.sh
 S4_CHECKSUMS
 }
 
