@@ -133,7 +133,8 @@ elif action == "systemctl":
             assert args[1] == "--property=ActiveState", args
             output = "active" if state["active"].get(unit, False) else "inactive"
     elif operation == "stop":
-        assert unit in (timer, service, resume, "debian13s4-maintenance.timer", "debian13s4-maintenance.service"), args
+        assert unit in (timer, service, resume, "debian13s4-maintenance.timer", "debian13s4-maintenance.service",
+                        "debian13s4-dotnet.timer", "debian13s4-dotnet.service"), args
         state["active"][unit] = False
     elif operation == "start":
         assert unit in (timer, boot_unit), args
@@ -296,7 +297,7 @@ fi
         self.assertFalse((self.boot / "pending").exists())
         self.assertTrue(self.state()["disk"]["timer_enabled"])
         self.assertTrue(self.state()["active"][TIMER])
-        self.assertEqual((self.library / "tasks.list").read_text(), "prerequisites:\nmaintenance:prerequisites\n")
+        self.assertEqual((self.library / "tasks.list").read_text(), "prerequisites:\nmaintenance:prerequisites\ndotnet:prerequisites\n")
         self.assertTrue((self.boot / "installed").is_file())
 
     def test_self_contained_payload_matches_all_current_sources(self):
@@ -471,7 +472,8 @@ fi
         self.assert_success(self.finish())
 
     def test_old_maintenance_is_quiesced_before_any_bundle_publication(self):
-        names = ("debian13s4-maintenance.timer", "debian13s4-maintenance.service")
+        names = ("debian13s4-maintenance.timer", "debian13s4-maintenance.service",
+                 "debian13s4-dotnet.timer", "debian13s4-dotnet.service")
         state = self.state()
         for name in names:
             (self.systemd / name).write_text("[Unit]\nDescription=Old maintenance\n")
@@ -819,8 +821,8 @@ s4b_control /bin/bash -c 'sleep 30'
         controls = sum(event["action"] in ("systemctl", "sync") for event in self.events())
         bound = int(unit["Service"]["TimeoutStartSec"][:-1])
         count = len([path for path in self.library.rglob("*") if path.is_file()]) + 3
-        self.assertGreater(bound, (2 * count + 19 + 3 * 5) * 11)
-        self.assertLessEqual(controls, 2 * count + 19 + 3 * 5)
+        self.assertGreater(bound, (2 * count + 19 + 3 * 7) * 11)
+        self.assertLessEqual(controls, 2 * count + 19 + 3 * 7)
         expanded = self.run_script(self.harness() + '''
 S4B_FILES+=(a b c d)
 s4b_write_unit

@@ -362,6 +362,13 @@ needrestart() {{
         self.assertEqual(self.run_fixture("s4m_update").returncode, 75)
         self.assertFalse(self.package_calls())
 
+    def test_external_command_cannot_replace_a_package_profile_callback(self):
+        self.assert_success(self.run_fixture())
+        self.packages.unlink()
+        result = self.run_fixture("s4m_update", "S4M_UPDATE_UPGRADE=true\n")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.package_calls())
+
     def test_no_completed_policy_means_no_package_operations(self):
         self.assertEqual(self.run_fixture("s4m_update").returncode, 75)
         self.assertFalse(self.package_calls())
@@ -1110,14 +1117,14 @@ for codename, origin, label, trusted, expected in [
         self.assertEqual(timer["Timer"]["OnUnitInactiveSec"], "1h")
         policy = (ROOT / "Maintenance/needrestart.conf").read_text()
         self.assertIn("do '/etc/needrestart/needrestart.conf'", policy)
-        self.assertIn("maintenance|bootstrap|repair|resume", policy)
+        self.assertIn("maintenance|dotnet|bootstrap|repair|resume", policy)
 
     def test_bundle_admits_maintenance_after_prerequisites(self):
         spec = importlib.util.spec_from_file_location("packer", ROOT / "Bootstrap/pack.py")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         assets = module.assets()
-        self.assertEqual(assets["lib/tasks.list"][0], b"prerequisites:\nmaintenance:prerequisites\n")
+        self.assertEqual(assets["lib/tasks.list"][0], b"prerequisites:\nmaintenance:prerequisites\ndotnet:prerequisites\n")
         self.assertEqual(assets["lib/maintenance/update.sh"][1], "0755")
         self.assertEqual(module.assemble(), (ROOT / "setup.sh").read_bytes())
 

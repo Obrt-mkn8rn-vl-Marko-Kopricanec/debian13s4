@@ -10,7 +10,8 @@ S4B_TIMER=debian13s4-repair.timer
 S4B_SERVICE=debian13s4-repair.service
 S4B_RESUME=debian13s4-resume.service
 S4B_QUIESCE=("$S4B_TIMER" "$S4B_SERVICE" "$S4B_RESUME"
-    debian13s4-maintenance.timer debian13s4-maintenance.service)
+    debian13s4-maintenance.timer debian13s4-maintenance.service
+    debian13s4-dotnet.timer debian13s4-dotnet.service)
 S4B_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4B_LOCK_FD=
 S4B_REPAIR_FD=
@@ -398,9 +399,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=283bfeecaf91427a81fea134a28e00c09bad3081b2609d674da4221e10f3a623
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=9b51a51254468b9224a225cfd2bd955127ca7ffa86218e5eaa2dd0179e029c51
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     local relative
@@ -889,10 +890,11 @@ if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
     s4_main "$@"
 fi
 S4_PAYLOAD_5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936
-    cat > "$S4B_STAGE/lib/tasks.list" <<'S4_PAYLOAD_a909b573b6fbd0c22251db5d7398afcb7a53466d10cd3617d66f68e626b0b13b' || return 1
+    cat > "$S4B_STAGE/lib/tasks.list" <<'S4_PAYLOAD_0066b18a0c987272b59c97d9a45b23d8c8ef7ff9f3a0c565e4e5ce9ed5be9b13' || return 1
 prerequisites:
 maintenance:prerequisites
-S4_PAYLOAD_a909b573b6fbd0c22251db5d7398afcb7a53466d10cd3617d66f68e626b0b13b
+dotnet:prerequisites
+S4_PAYLOAD_0066b18a0c987272b59c97d9a45b23d8c8ef7ff9f3a0c565e4e5ce9ed5be9b13
     cat > "$S4B_STAGE/lib/tasks/prerequisites/apply.sh" <<'S4_PAYLOAD_f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934' || return 1
 #!/bin/bash
 set -Eeuo pipefail
@@ -1087,10 +1089,15 @@ RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
 [Install]
 WantedBy=multi-user.target
 S4_PAYLOAD_a107d7016113884baa5f42ef8c5523410d1193f9970c3d320647dc0ee3d3a5f9
-    cat > "$S4B_STAGE/lib/maintenance/common.sh" <<'S4_PAYLOAD_f968d81222b5f51b9c20b240ae6527153686ff71ecb79275c9330d284e91f97e' || return 1
+    cat > "$S4B_STAGE/lib/maintenance/common.sh" <<'S4_PAYLOAD_81662b812509fcf97d5207c42dd41c0085b76dfeeadcaff9598d3bea03a025f0' || return 1
 #!/bin/bash
 
 S4M_LIBRARY=/usr/local/lib/debian13s4/maintenance
+S4M_UPDATE_POLICY=
+S4M_UPDATE_READY=s4m_ready
+S4M_UPDATE_PREPARE=s4p_prepare
+S4M_UPDATE_UPGRADE=s4m_debian_upgrade
+S4M_UPDATE_VERIFY=s4m_debian_verify
 S4M_STATE=/var/lib/debian13s4
 S4M_SYSTEMD=/etc/systemd/system
 S4M_TIMER=debian13s4-maintenance.timer
@@ -1518,20 +1525,28 @@ s4m_request_reboot() {
     return 75
 }
 
+# Trusted package profiles share the same locking, restart and reboot ownership.
+s4m_debian_upgrade() { s4m_package unattended-upgrade --verbose; }
+s4m_debian_verify() { return 0; }
+
 s4m_update() (
-    local audit target start now deadline last_restart restart_status reboot_status
+    local audit target start now deadline last_restart restart_status reboot_status callback
+    for callback in "$S4M_UPDATE_READY" "$S4M_UPDATE_PREPARE" "$S4M_UPDATE_UPGRADE" "$S4M_UPDATE_VERIFY"; do
+        declare -F -- "$callback" > /dev/null || return 1
+    done
     start=$(s4m_now) || return 1
     (( S4M_PRE_RESTART_SECONDS >= S4M_RESTART_BOUND_SECONDS &&
         S4M_POST_RESTART_SECONDS >= S4M_RESTART_BOUND_SECONDS &&
         S4M_PRE_RESTART_SECONDS + S4M_POST_RESTART_SECONDS +
         S4M_FINAL_RESERVE_SECONDS < S4M_ATTEMPT_SECONDS )) || return 1
-    s4m_ready || return 75
+    "$S4M_UPDATE_READY" || return 75
     s4m_lock || return 75
     trap s4m_unlock EXIT
-    s4m_ready || return 75
-    s4p_prepare || return 1
+    "$S4M_UPDATE_READY" || return 75
+    "$S4M_UPDATE_PREPARE" || return 1
     # The same isolated configuration/indexes govern refresh and libapt's u-u.
-    export APT_CONFIG=$S4M_LIBRARY/policy.conf
+    export APT_CONFIG=${S4M_UPDATE_POLICY:-$S4M_LIBRARY/policy.conf}
+    [[ -f $APT_CONFIG ]] && s4m_trusted "$APT_CONFIG" || return 1
     export DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none
     export UCF_FORCE_CONFFOLD=1 NEEDRESTART_MODE=l
     s4m_load_restarts || return 1
@@ -1570,9 +1585,10 @@ s4m_update() (
         s4m_package apt-get --assume-yes --no-remove --fix-broken install || return 1
         s4m_package s4p_dpkg --force-confdef --force-confold --configure --pending || return 1
     fi
-    s4m_package unattended-upgrade --verbose || return 1
+    "$S4M_UPDATE_UPGRADE" || return 1
     audit=$(s4m_package s4p_dpkg --audit) || return 1
     [[ -z $audit ]] || return 1
+    "$S4M_UPDATE_VERIFY" || return 1
     s4m_discover_restarts || return 1
     now=$(s4m_now) || return 1
     deadline=$((now + S4M_POST_RESTART_SECONDS))
@@ -1586,7 +1602,7 @@ s4m_update() (
     (( ${#S4M_RESTARTS[@]} == 0 )) || return 75
     return 0
 )
-S4_PAYLOAD_f968d81222b5f51b9c20b240ae6527153686ff71ecb79275c9330d284e91f97e
+S4_PAYLOAD_81662b812509fcf97d5207c42dd41c0085b76dfeeadcaff9598d3bea03a025f0
     cat > "$S4B_STAGE/lib/maintenance/update.sh" <<'S4_PAYLOAD_49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1' || return 1
 #!/bin/bash -p
 set -Eeuo pipefail
@@ -1648,7 +1664,7 @@ Unattended-Upgrade::OnlyOnACPower "false";
 Unattended-Upgrade::Skip-Updates-On-Metered-Connections "false";
 Unattended-Upgrade::SyslogEnable "true";
 S4_PAYLOAD_ef244462f0855adfa878e7a746789ea1d2cfc9181ab31065a822a234a3afc5d4
-    cat > "$S4B_STAGE/lib/maintenance/needrestart.conf" <<'S4_PAYLOAD_afaebab8a3988c64cb770b532b6494fada271461dbf04a33c5d8c9fea428d03e' || return 1
+    cat > "$S4B_STAGE/lib/maintenance/needrestart.conf" <<'S4_PAYLOAD_7082163c6cb6301ce36b1e9528a3d38f295abc2fbac0d29f52ad39abd5969fe3' || return 1
 # Keep Debian's service exclusions, then exclude the setup/update controllers.
 {
     local ($@, $!);
@@ -1656,8 +1672,8 @@ S4_PAYLOAD_ef244462f0855adfa878e7a746789ea1d2cfc9181ab31065a822a234a3afc5d4
     die "Cannot load Debian restart policy: $@ $!\n" if $@ || (!defined($loaded) && $!);
 }
 $nrconf{restart} = 'a';
-$nrconf{override_rc}->{qr(^debian13s4-(maintenance|bootstrap|repair|resume)(\.service)?$)} = 0;
-S4_PAYLOAD_afaebab8a3988c64cb770b532b6494fada271461dbf04a33c5d8c9fea428d03e
+$nrconf{override_rc}->{qr(^debian13s4-(maintenance|dotnet|bootstrap|repair|resume)(\.service)?$)} = 0;
+S4_PAYLOAD_7082163c6cb6301ce36b1e9528a3d38f295abc2fbac0d29f52ad39abd5969fe3
     cat > "$S4B_STAGE/lib/maintenance/restart-policy.pl" <<'S4_PAYLOAD_4459b2afa9b1914dad46d50758e533160d1f5e63deb017310fa296b170bb4cfe' || return 1
 #!/usr/bin/perl
 use strict;
@@ -1770,9 +1786,317 @@ set -Eeuo pipefail
 s4m_load_packages
 s4m_verify
 S4_PAYLOAD_7aecaab921b4770b6034d966a36ed3b9d94a1e1ae35f901c067c1d4a45c2f762
+    cat > "$S4B_STAGE/lib/dotnet/common.sh" <<'S4_PAYLOAD_e67afc55aa40c3a42c8f9d1cf1c490bbdfb07e723fedd8ddfe40a238686073b6' || return 1
+#!/bin/bash
+
+# shellcheck source=Maintenance/common.sh
+. /usr/local/lib/debian13s4/maintenance/common.sh
+s4m_load_packages
+
+S4D_LIBRARY=/usr/local/lib/debian13s4/dotnet
+S4D_TIMER=debian13s4-dotnet.timer
+S4D_SERVICE=debian13s4-dotnet.service
+S4D_DOTNET=/usr/share/dotnet/dotnet
+S4D_LINK=/usr/bin/dotnet
+S4D_APT_DIR=/var/lib/apt/debian13s4-dotnet
+S4D_PACKAGES=(aspnetcore-runtime-10.0 dotnet-runtime-10.0
+    dotnet-runtime-deps-10.0 dotnet-hostfxr-10.0 dotnet-host)
+S4D_FILES=(common.sh update.sh policy.conf preferences sources.sources
+    microsoft-2025.asc debian13s4-dotnet.service debian13s4-dotnet.timer)
+
+s4d_supported() {
+    local architecture
+    architecture=$(dpkg --print-architecture) || return 1
+    [[ $architecture == amd64 || $architecture == arm64 ]]
+}
+
+s4d_prepare() {
+    s4d_supported || return 78
+    S4P_APT_DIR=$S4D_APT_DIR
+    s4p_prepare
+}
+
+s4d_runtime() {
+    local package status resolved output line core=0 web=0
+    for package in "${S4D_PACKAGES[@]}"; do
+        status=$(s4p_query "$package") || return 1
+        [[ $status == 'install ok installed' ]] || return 1
+    done
+    [[ -x $S4D_DOTNET && -f $S4D_DOTNET && -L $S4D_LINK ]] &&
+        s4m_trusted "$S4D_DOTNET" && s4m_trusted "${S4D_LINK%/*}" || return 1
+    [[ $(stat --format='%u' -- "$S4D_LINK") == 0 ]] || return 1
+    resolved=$(readlink --canonicalize-existing -- "$S4D_LINK") || return 1
+    [[ $resolved == "$S4D_DOTNET" ]] || return 1
+    output=$(s4m_control env DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 \
+        "$S4D_DOTNET" --list-runtimes) || return 1
+    while IFS= read -r line; do
+        [[ $line =~ ^Microsoft[.]NETCore[.]App\ 10[.]0[.][0-9]+\ \[/usr/share/dotnet/shared/Microsoft[.]NETCore[.]App\]$ ]] && core=1
+        [[ $line =~ ^Microsoft[.]AspNetCore[.]App\ 10[.]0[.][0-9]+\ \[/usr/share/dotnet/shared/Microsoft[.]AspNetCore[.]App\]$ ]] && web=1
+    done <<< "$output"
+    (( core == 1 && web == 1 ))
+}
+
+s4d_files() {
+    local name
+    [[ -d $S4M_STATE ]] && s4m_trusted "$S4M_STATE" || return 1
+    for name in "${S4D_FILES[@]}"; do
+        [[ -f $S4D_LIBRARY/$name ]] && s4m_trusted "$S4D_LIBRARY/$name" || return 1
+    done
+    [[ -x $S4D_LIBRARY/update.sh ]] || return 1
+    for name in common.sh policy.conf needrestart.conf restart-policy.pl; do
+        [[ -f $S4M_LIBRARY/$name ]] && s4m_trusted "$S4M_LIBRARY/$name" || return 1
+    done
+    for name in "$S4D_SERVICE" "$S4D_TIMER"; do
+        [[ -f $S4M_SYSTEMD/$name ]] && s4m_trusted "$S4M_SYSTEMD/$name" &&
+            cmp --silent -- "$S4D_LIBRARY/$name" "$S4M_SYSTEMD/$name" || return 1
+        s4m_property "$name" FragmentPath "$S4M_SYSTEMD/$name" || return 1
+        s4m_property "$name" DropInPaths '' || return 1
+    done
+    s4m_enabled "$S4D_TIMER" && s4m_property "$S4D_TIMER" ActiveState active
+}
+
+s4d_identity() {
+    local name digest
+    for name in "${S4D_FILES[@]}"; do
+        digest=$(sha256sum -- "$S4D_LIBRARY/$name") || return 1
+        printf '%s %s\n' "${digest%% *}" "$name" || return 1
+    done
+}
+
+s4d_ready() {
+    local expected actual
+    [[ ! -e $S4M_STATE/bootstrap/pending && ! -L $S4M_STATE/bootstrap/pending &&
+        -f $S4M_STATE/dotnet.ready ]] && s4m_trusted "$S4M_STATE/dotnet.ready" || return 1
+    s4d_files || return 1
+    expected=$(s4d_identity) && actual=$(cat -- "$S4M_STATE/dotnet.ready") || return 1
+    [[ $expected == "$actual" ]]
+}
+
+s4d_upgrade() {
+    # Explicit installation also repairs an accidentally removed runtime.
+    local -a repair=()
+    s4d_runtime || repair=(--reinstall)
+    s4m_package apt-get --assume-yes --no-remove --no-install-recommends \
+        "${repair[@]}" install "${S4D_PACKAGES[@]}"
+}
+
+s4d_apply() (
+    local unit loaded temporary wants resolved APT_CONFIG=$S4D_LIBRARY/policy.conf
+    local DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none
+    local UCF_FORCE_CONFFOLD=1 NEEDRESTART_MODE=l
+    s4d_prepare || return 1
+    s4m_trusted "$S4M_STATE" && s4m_trusted "$S4M_SYSTEMD" || return 1
+    for unit in "$S4D_TIMER" "$S4D_SERVICE"; do
+        if [[ -e $S4M_SYSTEMD/$unit || -L $S4M_SYSTEMD/$unit ]]; then
+            [[ -f $S4M_SYSTEMD/$unit ]] && s4m_trusted "$S4M_SYSTEMD/$unit" || return 1
+        fi
+    done
+    if [[ -e $S4M_STATE/dotnet.ready || -L $S4M_STATE/dotnet.ready ]]; then
+        [[ -f $S4M_STATE/dotnet.ready ]] && s4m_trusted "$S4M_STATE/dotnet.ready" || return 1
+        rm -f -- "$S4M_STATE/dotnet.ready" || return 1
+    fi
+    s4m_sync "$S4M_STATE" || return 1
+    for unit in "$S4D_TIMER" "$S4D_SERVICE"; do
+        loaded=$(s4m_systemctl show --property=LoadState --value "$unit") || return 1
+        if [[ $loaded == loaded ]]; then
+            s4m_systemctl stop "$unit" && s4m_property "$unit" ActiveState inactive || return 1
+        elif [[ $loaded != not-found ]]; then
+            return 1
+        fi
+    done
+    for unit in "${S4D_FILES[@]}"; do
+        [[ -f $S4D_LIBRARY/$unit ]] && s4m_trusted "$S4D_LIBRARY/$unit" || return 1
+    done
+    export APT_CONFIG
+    export DEBIAN_FRONTEND APT_LISTCHANGES_FRONTEND UCF_FORCE_CONFFOLD NEEDRESTART_MODE
+    s4m_package apt-get update || return 1
+    if ! s4m_package s4p_dpkg --force-confdef --force-confold --configure --pending; then
+        s4m_package apt-get --assume-yes --no-remove --fix-broken install || return 1
+        s4m_package s4p_dpkg --force-confdef --force-confold --configure --pending || return 1
+    fi
+    s4d_upgrade || return 1
+    s4m_package s4p_verify && s4d_runtime || return 1
+    for unit in "$S4D_SERVICE" "$S4D_TIMER"; do
+        s4m_atomic "$S4M_SYSTEMD/$unit" "$S4D_LIBRARY/$unit" || return 1
+    done
+    s4m_systemctl daemon-reload && s4m_systemctl enable "$S4D_TIMER" &&
+        s4m_enabled "$S4D_TIMER" || return 1
+    wants=$S4M_SYSTEMD/timers.target.wants
+    [[ -d $wants && -L $wants/$S4D_TIMER ]] && s4m_trusted "$wants" || return 1
+    resolved=$(readlink --canonicalize-existing -- "$wants/$S4D_TIMER") || return 1
+    [[ $resolved == "$S4M_SYSTEMD/$S4D_TIMER" ]] || return 1
+    s4m_sync "$S4M_SYSTEMD" "$wants" "$S4M_SYSTEMD/$S4D_TIMER" "$S4M_SYSTEMD/$S4D_SERVICE" || return 1
+    s4m_systemctl start "$S4D_TIMER" && s4d_files || return 1
+    temporary=$(mktemp -- "$S4M_STATE/dotnet-intent.XXXXXX") || return 1
+    if ! s4d_identity > "$temporary" || ! chmod 0600 -- "$temporary" ||
+        ! s4m_atomic "$S4M_STATE/dotnet.ready" "$temporary" 0600; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    rm -f -- "$temporary" || return 1
+    s4d_ready
+)
+
+s4d_verify() {
+    s4d_supported && s4p_verify && s4d_runtime && s4d_ready
+}
+
+s4d_update() (
+    S4M_UPDATE_POLICY=$S4D_LIBRARY/policy.conf
+    S4M_UPDATE_READY=s4d_ready
+    S4M_UPDATE_PREPARE=s4d_prepare
+    S4M_UPDATE_UPGRADE=s4d_upgrade
+    S4M_UPDATE_VERIFY=s4d_runtime
+    s4m_update
+)
+S4_PAYLOAD_e67afc55aa40c3a42c8f9d1cf1c490bbdfb07e723fedd8ddfe40a238686073b6
+    cat > "$S4B_STAGE/lib/dotnet/update.sh" <<'S4_PAYLOAD_e2c12a417b6849a97e09d14cd33592cb7e507a2ef5f9c0dbcdd472969f56c9b0' || return 1
+#!/bin/bash -p
+set -Eeuo pipefail
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+(( EUID == 0 )) || exit 77
+
+# shellcheck source=Dotnet/common.sh
+. /usr/local/lib/debian13s4/dotnet/common.sh
+s4d_update
+S4_PAYLOAD_e2c12a417b6849a97e09d14cd33592cb7e507a2ef5f9c0dbcdd472969f56c9b0
+    cat > "$S4B_STAGE/lib/dotnet/policy.conf" <<'S4_PAYLOAD_13feae91abf511acb9efd9b1e4ea940e134d2f197050879f64e4b3436d519cf0' || return 1
+// Inherit the authenticated Debian settings without loading host APT hooks.
+#include "/usr/local/lib/debian13s4/maintenance/policy.conf";
+Dir::Etc::sourcelist "/usr/local/lib/debian13s4/dotnet/sources.sources";
+Dir::Etc::preferences "/usr/local/lib/debian13s4/dotnet/preferences";
+Dir::State::lists "/var/lib/apt/debian13s4-dotnet/lists";
+S4_PAYLOAD_13feae91abf511acb9efd9b1e4ea940e134d2f197050879f64e4b3436d519cf0
+    cat > "$S4B_STAGE/lib/dotnet/preferences" <<'S4_PAYLOAD_4b7530148cfde9fcf43fd36c63f535cd34be28f0d5bfc9c80790594aa8712f75' || return 1
+Package: aspnetcore-runtime-10.0 dotnet-runtime-10.0 dotnet-runtime-deps-10.0 dotnet-hostfxr-10.0
+Pin: release o=microsoft-debian-trixie-prod trixie,n=trixie
+Pin-Priority: 500
+
+Package: dotnet-host
+Pin: version 10.*
+Pin-Priority: 500
+
+Package: *
+Pin: origin "packages.microsoft.com"
+Pin-Priority: -1
+S4_PAYLOAD_4b7530148cfde9fcf43fd36c63f535cd34be28f0d5bfc9c80790594aa8712f75
+    cat > "$S4B_STAGE/lib/dotnet/microsoft-2025.asc" <<'S4_PAYLOAD_d45224d594d969f084232deaaf97c58ca502a9d964c362d7aaef5a76e16b3dd1' || return 1
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: BSN Pgp v1.1.0.0
+
+mQINBGVUhiwBEADF3TWX0HMi2+BdQfJrSdQkZTE4qk4vV2ooAMn8vWA2DGI88JOl
+k1LwhZGEqJv5TsKTyNEMWb3NXhR1ZZ5uQPvf6iN0806cq83s096F85GUtjzfGLQj
+Zo3FhDSKeHz3mhthQ4QP4bwYUmSpWs6e+/ZSFYYc3yU8mInDM4SNzrqr4x2ltmf+
+3RWkoYYo1SpG521A9+1zi7xzz6IHpAk6MdIcTj7mHxXd6ovmXkvHUhKbXGkybHPn
+iupWokDaJZgV4+q6kc7zVgTVnwmXV7NHQhWSyOm/BmYVcpmrkCSgSH18SArFjR6Q
+KyJ9VuUo1mJEUGnEakQSaOn1UAYtO8Mh4cXXD4833G0BLjiFNOL0XRUNh35pKvcT
+my/HnXvRXtpzAzTtANPxIbjli/veagU+JRWhtjtfONz0wQ5Bv1zFjnM9ewxFNPPo
+7Jp9WCVeUKFZcZJo8r/k7Y4d0Y1WINOPniSCNhKcD0pva3gXLcxfdnZjdMSj++ba
+XlAstjw0Oyty0EXoHXCMpelMoa+DQ7KSDGKrOtm5YFAP6Ki4go1Tt2q8nmul36cZ
+Zot6eoPG/qKxW+dvmSrWhQCcfd74VbhECbzXiCFLHadq85C1K5rrLM6oVr1u7K6O
+jlc1aitGgZECi6fvu61QhpUvHjCegRWzMIhah9qrv4lvxFFcA+a1jwXlnwARAQAB
+tEJNaWNyb3NvZnQgQ29ycG9yYXRpb24gLSBHZW5lcmFsIEdQRyBTaWduZXIgPGdw
+Z3NpZ25AbWljcm9zb2Z0LmNvbT6JAjgEEwEIACIFAmVUhiwCGwMGCwkIBwMCBhUI
+AgkKCwQWAgMBAh4BAheAAAoJEO5Nd5L3SBgrDc0P/0Ubx0vqD/DgyhiP0bIs8euO
+iA5BQvOCiroIkhSkFbAw8rT9a/XtRTRM2l4I8c2M1ZX9i/0wWihmFUJhiVHyRxkl
+ZcEFv+ieBuhvD1gPOVLZg3To8yOTrcOnHe+FuKqA6u+3xBn2AmAWeck9o0NKhtnm
+5ckweos+Qj9NoxaZX8UeGFstOiTBJeyhuJjthQ+3M0BvTxEaRcLXGSXSGSgZ00ii
+YSLNgOMPF+C22bXBL/erClEYkIGCctqPvyrhV/GVNnGk2ALyJqdK+BaJeGh9mBJa
+ZrP3l6vFxsAI0RNCNU1s5QaFzfFzFkiUnG/aoyuwh4xmsB+uyVkR+KigPK9gfF3S
+nU7AqcdhSbUA6A0DGDRkHauHM5Wtc7730LdjiNDXbYwG/yXmDYNasoszmItZzh77
+HiQxYA5dNB9r9QJS2rHV/qe+heAJ5Rub5kxcu33DGL30qG7Q9+HRTu0oSEOIUFyT
+aOJJnNUiB2D4hoKKnr5U8FYOZ7KvDcG7cDvInqYtGpNfrnIf94VeB9WJY6DbDQSA
+F5yHb6X8FS0x3lMT2H1l6RRyr0278kyO18VBudtlnonC+Y1UT7eqAk6WjS5CitPX
+T3Hc7jCURugXrc51igKa+p67yAaybEIuVyWF6JaINKRqiUqEPVXnHELXPbBmiHW5
+1HwdbKTMzgF8bu1JI+tQ
+=lIzW
+-----END PGP PUBLIC KEY BLOCK-----
+S4_PAYLOAD_d45224d594d969f084232deaaf97c58ca502a9d964c362d7aaef5a76e16b3dd1
+    cat > "$S4B_STAGE/lib/dotnet/debian13s4-dotnet.service" <<'S4_PAYLOAD_3fbeee3bb047bee13c90681563b891509386a05c075de6a28cc045320f330f96' || return 1
+[Unit]
+Description=Authenticated .NET 10 runtime maintenance
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/dotnet/update.sh
+User=root
+Group=root
+UMask=0077
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=1h
+TimeoutStopSec=5min
+Restart=on-failure
+RestartSec=5min
+KillMode=control-group
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+LockPersonality=yes
+RestrictRealtime=yes
+S4_PAYLOAD_3fbeee3bb047bee13c90681563b891509386a05c075de6a28cc045320f330f96
+    cat > "$S4B_STAGE/lib/dotnet/debian13s4-dotnet.timer" <<'S4_PAYLOAD_1b2f88d8a68182dadceeb0f1ef2c755affb3d5033b564315695ac3a152881a1b' || return 1
+[Unit]
+Description=Retry .NET runtime patches after boot and every hour
+
+[Timer]
+OnBootSec=10min
+OnUnitInactiveSec=1h
+RandomizedDelaySec=5min
+Unit=debian13s4-dotnet.service
+
+[Install]
+WantedBy=timers.target
+S4_PAYLOAD_1b2f88d8a68182dadceeb0f1ef2c755affb3d5033b564315695ac3a152881a1b
+    cat > "$S4B_STAGE/lib/dotnet/sources.sources" <<'S4_PAYLOAD_27796bdadb859d37d728f14a35255b2a95e1c10861a13fd8c821441cc4e33ce9' || return 1
+Types: deb
+URIs: http://deb.debian.org/debian
+Suites: trixie trixie-updates
+Components: main
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+Types: deb
+URIs: http://security.debian.org/debian-security
+Suites: trixie-security
+Components: main
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+Types: deb
+URIs: https://packages.microsoft.com/debian/13/prod
+Suites: trixie
+Components: main
+Architectures: amd64 arm64
+Signed-By: /usr/local/lib/debian13s4/dotnet/microsoft-2025.asc AA86F75E427A19DD33346403EE4D7792F748182B
+Check-Valid-Until: yes
+Valid-Until-Max: 1209600
+S4_PAYLOAD_27796bdadb859d37d728f14a35255b2a95e1c10861a13fd8c821441cc4e33ce9
+    cat > "$S4B_STAGE/lib/tasks/dotnet/apply.sh" <<'S4_PAYLOAD_0ad3ad407a2b16ff7dc5f6b40aec6d74d1bda664607f336d290467e36d54acba' || return 1
+#!/bin/bash
+set -Eeuo pipefail
+umask 077
+
+# shellcheck source=Dotnet/common.sh
+. /usr/local/lib/debian13s4/dotnet/common.sh
+DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none \
+    NEEDRESTART_MODE=l UCF_FORCE_CONFFOLD=1 s4d_apply
+S4_PAYLOAD_0ad3ad407a2b16ff7dc5f6b40aec6d74d1bda664607f336d290467e36d54acba
+    cat > "$S4B_STAGE/lib/tasks/dotnet/verify.sh" <<'S4_PAYLOAD_3f885728438ec7c402eeffb157a968eaa247fabe7b341179d728f6de830193fa' || return 1
+#!/bin/bash
+set -Eeuo pipefail
+
+# shellcheck source=Dotnet/common.sh
+. /usr/local/lib/debian13s4/dotnet/common.sh
+s4d_verify
+S4_PAYLOAD_3f885728438ec7c402eeffb157a968eaa247fabe7b341179d728f6de830193fa
     cat > "$S4B_STAGE/files.sha256" <<'S4_CHECKSUMS' || return 1
 5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936  lib/repair.sh
-a909b573b6fbd0c22251db5d7398afcb7a53466d10cd3617d66f68e626b0b13b  lib/tasks.list
+0066b18a0c987272b59c97d9a45b23d8c8ef7ff9f3a0c565e4e5ce9ed5be9b13  lib/tasks.list
 f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934  lib/tasks/prerequisites/apply.sh
 5c2bb90b18725176df85061f2fd7556fc5f00c286991f7ff34445d7b880693fc  lib/tasks/prerequisites/verify.sh
 f99079435a5917ee3a1a69aa9f18e32e4a98ddcd787007336997b5a4fbc2eab9  lib/tasks/prerequisites/common.sh
@@ -1780,15 +2104,25 @@ f99079435a5917ee3a1a69aa9f18e32e4a98ddcd787007336997b5a4fbc2eab9  lib/tasks/prer
 e21ba280c03e5c9848930e7a58b87febd59332e777a3a992e3bab1f992c1a3e5  units/debian13s4-repair.service
 8618edcc26838d9f7f56c39d538bcfdba099e101582e8fb0adb38df413c5ce28  units/debian13s4-repair.timer
 a107d7016113884baa5f42ef8c5523410d1193f9970c3d320647dc0ee3d3a5f9  units/debian13s4-resume.service
-f968d81222b5f51b9c20b240ae6527153686ff71ecb79275c9330d284e91f97e  lib/maintenance/common.sh
+81662b812509fcf97d5207c42dd41c0085b76dfeeadcaff9598d3bea03a025f0  lib/maintenance/common.sh
 49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1  lib/maintenance/update.sh
 ef244462f0855adfa878e7a746789ea1d2cfc9181ab31065a822a234a3afc5d4  lib/maintenance/policy.conf
-afaebab8a3988c64cb770b532b6494fada271461dbf04a33c5d8c9fea428d03e  lib/maintenance/needrestart.conf
+7082163c6cb6301ce36b1e9528a3d38f295abc2fbac0d29f52ad39abd5969fe3  lib/maintenance/needrestart.conf
 4459b2afa9b1914dad46d50758e533160d1f5e63deb017310fa296b170bb4cfe  lib/maintenance/restart-policy.pl
 d2681c6dde48e6cfbd0232cc1303f589fa042b39224489331574aa49c79bd890  lib/maintenance/debian13s4-maintenance.service
 bce83c7102c31c4e9c5ee8f2bde3ba5a7e33b702b159d1b6f453058985142209  lib/maintenance/debian13s4-maintenance.timer
 488522a33f05b35c7c854074bdcb8d02510e2ea89f6025def2b493c4f81641ec  lib/tasks/maintenance/apply.sh
 7aecaab921b4770b6034d966a36ed3b9d94a1e1ae35f901c067c1d4a45c2f762  lib/tasks/maintenance/verify.sh
+e67afc55aa40c3a42c8f9d1cf1c490bbdfb07e723fedd8ddfe40a238686073b6  lib/dotnet/common.sh
+e2c12a417b6849a97e09d14cd33592cb7e507a2ef5f9c0dbcdd472969f56c9b0  lib/dotnet/update.sh
+13feae91abf511acb9efd9b1e4ea940e134d2f197050879f64e4b3436d519cf0  lib/dotnet/policy.conf
+4b7530148cfde9fcf43fd36c63f535cd34be28f0d5bfc9c80790594aa8712f75  lib/dotnet/preferences
+d45224d594d969f084232deaaf97c58ca502a9d964c362d7aaef5a76e16b3dd1  lib/dotnet/microsoft-2025.asc
+3fbeee3bb047bee13c90681563b891509386a05c075de6a28cc045320f330f96  lib/dotnet/debian13s4-dotnet.service
+1b2f88d8a68182dadceeb0f1ef2c755affb3d5033b564315695ac3a152881a1b  lib/dotnet/debian13s4-dotnet.timer
+27796bdadb859d37d728f14a35255b2a95e1c10861a13fd8c821441cc4e33ce9  lib/dotnet/sources.sources
+0ad3ad407a2b16ff7dc5f6b40aec6d74d1bda664607f336d290467e36d54acba  lib/tasks/dotnet/apply.sh
+3f885728438ec7c402eeffb157a968eaa247fabe7b341179d728f6de830193fa  lib/tasks/dotnet/verify.sh
 S4_CHECKSUMS
 }
 

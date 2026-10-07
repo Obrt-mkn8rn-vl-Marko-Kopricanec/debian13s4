@@ -1,0 +1,11 @@
+Package: aspnetcore-runtime-10.0 dotnet-runtime-10.0 dotnet-runtime-deps-10.0 dotnet-hostfxr-10.0
+Pin: release o=microsoft-debian-trixie-prod trixie,n=trixie
+Pin-Priority: 500
+
+Package: dotnet-host
+Pin: version 10.*
+Pin-Priority: 500
+
+Package: *
+Pin: origin "packages.microsoft.com"
+Pin-Priority: -1

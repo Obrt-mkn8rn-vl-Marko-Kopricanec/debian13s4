@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def assets():
     result = {
         "lib/repair.sh": ((ROOT / "Recovery/repair.sh").read_bytes(), "0755"),
-        "lib/tasks.list": (b"prerequisites:\nmaintenance:prerequisites\n", "0644"),
+        "lib/tasks.list": (b"prerequisites:\nmaintenance:prerequisites\ndotnet:prerequisites\n", "0644"),
     }
     for name in ("apply.sh", "verify.sh", "common.sh", "debian.sources"):
         result[f"lib/tasks/prerequisites/{name}"] = (
@@ -26,6 +26,16 @@ def assets():
     for name in ("apply.sh", "verify.sh"):
         result[f"lib/tasks/maintenance/{name}"] = (
             (ROOT / "Tasks/maintenance" / name).read_bytes(), "0644")
+    for name in ("common.sh", "update.sh", "policy.conf", "preferences",
+                 "microsoft-2025.asc", "debian13s4-dotnet.service", "debian13s4-dotnet.timer"):
+        result[f"lib/dotnet/{name}"] = (
+            (ROOT / "Dotnet" / name).read_bytes(), "0755" if name == "update.sh" else "0644")
+    result["lib/dotnet/sources.sources"] = (
+        (ROOT / "Tasks/prerequisites/debian.sources").read_bytes() + b"\n" +
+        (ROOT / "Dotnet/microsoft.sources").read_bytes(), "0644")
+    for name in ("apply.sh", "verify.sh"):
+        result[f"lib/tasks/dotnet/{name}"] = (
+            (ROOT / "Tasks/dotnet" / name).read_bytes(), "0644")
     return result
 
 

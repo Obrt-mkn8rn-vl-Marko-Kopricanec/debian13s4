@@ -1,0 +1,8 @@
+Types: deb
+URIs: https://packages.microsoft.com/debian/13/prod
+Suites: trixie
+Components: main
+Architectures: amd64 arm64
+Signed-By: /usr/local/lib/debian13s4/dotnet/microsoft-2025.asc AA86F75E427A19DD33346403EE4D7792F748182B
+Check-Valid-Until: yes
+Valid-Until-Max: 1209600

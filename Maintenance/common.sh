@@ -1,6 +1,11 @@
 #!/bin/bash
 
 S4M_LIBRARY=/usr/local/lib/debian13s4/maintenance
+S4M_UPDATE_POLICY=
+S4M_UPDATE_READY=s4m_ready
+S4M_UPDATE_PREPARE=s4p_prepare
+S4M_UPDATE_UPGRADE=s4m_debian_upgrade
+S4M_UPDATE_VERIFY=s4m_debian_verify
 S4M_STATE=/var/lib/debian13s4
 S4M_SYSTEMD=/etc/systemd/system
 S4M_TIMER=debian13s4-maintenance.timer
@@ -428,20 +433,28 @@ s4m_request_reboot() {
     return 75
 }
 
+# Trusted package profiles share the same locking, restart and reboot ownership.
+s4m_debian_upgrade() { s4m_package unattended-upgrade --verbose; }
+s4m_debian_verify() { return 0; }
+
 s4m_update() (
-    local audit target start now deadline last_restart restart_status reboot_status
+    local audit target start now deadline last_restart restart_status reboot_status callback
+    for callback in "$S4M_UPDATE_READY" "$S4M_UPDATE_PREPARE" "$S4M_UPDATE_UPGRADE" "$S4M_UPDATE_VERIFY"; do
+        declare -F -- "$callback" > /dev/null || return 1
+    done
     start=$(s4m_now) || return 1
     (( S4M_PRE_RESTART_SECONDS >= S4M_RESTART_BOUND_SECONDS &&
         S4M_POST_RESTART_SECONDS >= S4M_RESTART_BOUND_SECONDS &&
         S4M_PRE_RESTART_SECONDS + S4M_POST_RESTART_SECONDS +
         S4M_FINAL_RESERVE_SECONDS < S4M_ATTEMPT_SECONDS )) || return 1
-    s4m_ready || return 75
+    "$S4M_UPDATE_READY" || return 75
     s4m_lock || return 75
     trap s4m_unlock EXIT
-    s4m_ready || return 75
-    s4p_prepare || return 1
+    "$S4M_UPDATE_READY" || return 75
+    "$S4M_UPDATE_PREPARE" || return 1
     # The same isolated configuration/indexes govern refresh and libapt's u-u.
-    export APT_CONFIG=$S4M_LIBRARY/policy.conf
+    export APT_CONFIG=${S4M_UPDATE_POLICY:-$S4M_LIBRARY/policy.conf}
+    [[ -f $APT_CONFIG ]] && s4m_trusted "$APT_CONFIG" || return 1
     export DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none
     export UCF_FORCE_CONFFOLD=1 NEEDRESTART_MODE=l
     s4m_load_restarts || return 1
@@ -480,9 +493,10 @@ s4m_update() (
         s4m_package apt-get --assume-yes --no-remove --fix-broken install || return 1
         s4m_package s4p_dpkg --force-confdef --force-confold --configure --pending || return 1
     fi
-    s4m_package unattended-upgrade --verbose || return 1
+    "$S4M_UPDATE_UPGRADE" || return 1
     audit=$(s4m_package s4p_dpkg --audit) || return 1
     [[ -z $audit ]] || return 1
+    "$S4M_UPDATE_VERIFY" || return 1
     s4m_discover_restarts || return 1
     now=$(s4m_now) || return 1
     deadline=$((now + S4M_POST_RESTART_SECONDS))

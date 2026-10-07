@@ -1,0 +1,25 @@
+[Unit]
+Description=Authenticated .NET 10 runtime maintenance
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/dotnet/update.sh
+User=root
+Group=root
+UMask=0077
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=1h
+TimeoutStopSec=5min
+Restart=on-failure
+RestartSec=5min
+KillMode=control-group
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+LockPersonality=yes
+RestrictRealtime=yes
