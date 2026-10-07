@@ -49,7 +49,7 @@ def link_path(index):
 
 
 def native_query(operation, deadline, owner=None, index=None):
-    if type(operation) is not str or operation not in ('owner', 'pid', 'namespace', 'links', 'introspect', 'admin', 'state4', 'state6'):
+    if type(operation) is not str or operation not in ('owner', 'pid', 'namespace', 'links', 'introspect', 'admin', 'state4', 'state6', 'describe'):
         raise Pending('DHCP query is not an admitted read-only operation')
     if operation == 'owner':
         if owner is not None or index is not None:
@@ -68,7 +68,9 @@ def native_query(operation, deadline, owner=None, index=None):
                 arguments = (owner, OBJECT, PROPERTIES, 'Get', 'ss', MANAGER, 'NamespaceId')
         else:
             path = link_path(index)
-            if operation == 'introspect':
+            if operation == 'describe':
+                arguments = (owner, OBJECT, MANAGER, 'DescribeLink', 'i', str(index))
+            elif operation == 'introspect':
                 arguments = (owner, path, INTROSPECT, 'Introspect')
             else:
                 interface = LINK if operation == 'admin' else CLIENTS[int(operation[-1])]
