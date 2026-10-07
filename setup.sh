@@ -11,7 +11,8 @@ S4B_SERVICE=debian13s4-repair.service
 S4B_RESUME=debian13s4-resume.service
 S4B_QUIESCE=("$S4B_TIMER" "$S4B_SERVICE" "$S4B_RESUME"
     debian13s4-maintenance.timer debian13s4-maintenance.service
-    debian13s4-dotnet.timer debian13s4-dotnet.service)
+    debian13s4-dotnet.timer debian13s4-dotnet.service
+    debian13s4-network.timer debian13s4-network.service)
 S4B_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4B_LOCK_FD=
 S4B_REPAIR_FD=
@@ -399,9 +400,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=35442574dc47cfb48c2ea47963d3c9493cb0af15dd96ab75f2c26ee0e3d5bc10
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=45abab4557fa0f6b2300cc0aafe0ffeaed34e54b8805dc465072b951f28fe460
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     local relative
@@ -890,11 +891,12 @@ if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
     s4_main "$@"
 fi
 S4_PAYLOAD_5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936
-    cat > "$S4B_STAGE/lib/tasks.list" <<'S4_PAYLOAD_0066b18a0c987272b59c97d9a45b23d8c8ef7ff9f3a0c565e4e5ce9ed5be9b13' || return 1
+    cat > "$S4B_STAGE/lib/tasks.list" <<'S4_PAYLOAD_0fc5c73114ec7055fa108ae727886f482b52c7ec339afc99b0acc27dee796fba' || return 1
 prerequisites:
+network:prerequisites
 maintenance:prerequisites
 dotnet:prerequisites
-S4_PAYLOAD_0066b18a0c987272b59c97d9a45b23d8c8ef7ff9f3a0c565e4e5ce9ed5be9b13
+S4_PAYLOAD_0fc5c73114ec7055fa108ae727886f482b52c7ec339afc99b0acc27dee796fba
     cat > "$S4B_STAGE/lib/tasks/prerequisites/apply.sh" <<'S4_PAYLOAD_f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934' || return 1
 #!/bin/bash
 set -Eeuo pipefail
@@ -1089,7 +1091,7 @@ RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
 [Install]
 WantedBy=multi-user.target
 S4_PAYLOAD_a107d7016113884baa5f42ef8c5523410d1193f9970c3d320647dc0ee3d3a5f9
-    cat > "$S4B_STAGE/lib/maintenance/common.sh" <<'S4_PAYLOAD_4e24ee80799045c7b56b90584924285ea7d55c9a91fbf8e278b67ff7642866d2' || return 1
+    cat > "$S4B_STAGE/lib/maintenance/common.sh" <<'S4_PAYLOAD_c9c5a3f1e2a4182b94132b25709ff4fdb95405457ac41372fd353437e3a55d04' || return 1
 #!/bin/bash
 
 S4M_LIBRARY=/usr/local/lib/debian13s4/maintenance
@@ -1107,8 +1109,8 @@ S4M_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4M_REPAIR_FD=
 S4M_REBOOT_MARKER=/run/reboot-required
 S4M_BOOT_FILE=/proc/sys/kernel/random/boot_id
-# Match the shipped one-hour oneshot. Restart slices leave 2100 seconds for
-# package work and 300 seconds for final controls; they never grow with a queue.
+# Match the shipped one-hour oneshot. Restart slices and kernel cleanup leave
+# 1760 seconds for package work and 300 for final controls; neither grows with a queue.
 S4M_ATTEMPT_SECONDS=3600
 S4M_PRE_RESTART_SECONDS=600
 S4M_POST_RESTART_SECONDS=600
@@ -1630,7 +1632,7 @@ s4m_update() (
     (( ${#S4M_RESTARTS[@]} == 0 )) || return 75
     return 0
 )
-S4_PAYLOAD_4e24ee80799045c7b56b90584924285ea7d55c9a91fbf8e278b67ff7642866d2
+S4_PAYLOAD_c9c5a3f1e2a4182b94132b25709ff4fdb95405457ac41372fd353437e3a55d04
     cat > "$S4B_STAGE/lib/maintenance/update.sh" <<'S4_PAYLOAD_49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1' || return 1
 #!/bin/bash -p
 set -Eeuo pipefail
@@ -1696,7 +1698,7 @@ Unattended-Upgrade::OnlyOnACPower "false";
 Unattended-Upgrade::Skip-Updates-On-Metered-Connections "false";
 Unattended-Upgrade::SyslogEnable "true";
 S4_PAYLOAD_bc7e6d139257f55d2b8b77c87263709c5fafb72242d728d4372d81d2915d478f
-    cat > "$S4B_STAGE/lib/maintenance/needrestart.conf" <<'S4_PAYLOAD_7082163c6cb6301ce36b1e9528a3d38f295abc2fbac0d29f52ad39abd5969fe3' || return 1
+    cat > "$S4B_STAGE/lib/maintenance/needrestart.conf" <<'S4_PAYLOAD_1848c977881a707ae2c12dbbb22ce07b1497cbf01448c5f230d3f7778b9e768e' || return 1
 # Keep Debian's service exclusions, then exclude the setup/update controllers.
 {
     local ($@, $!);
@@ -1704,8 +1706,8 @@ S4_PAYLOAD_bc7e6d139257f55d2b8b77c87263709c5fafb72242d728d4372d81d2915d478f
     die "Cannot load Debian restart policy: $@ $!\n" if $@ || (!defined($loaded) && $!);
 }
 $nrconf{restart} = 'a';
-$nrconf{override_rc}->{qr(^debian13s4-(maintenance|dotnet|bootstrap|repair|resume)(\.service)?$)} = 0;
-S4_PAYLOAD_7082163c6cb6301ce36b1e9528a3d38f295abc2fbac0d29f52ad39abd5969fe3
+$nrconf{override_rc}->{qr(^debian13s4-(maintenance|dotnet|network|bootstrap|repair|resume)(\.service)?$)} = 0;
+S4_PAYLOAD_1848c977881a707ae2c12dbbb22ce07b1497cbf01448c5f230d3f7778b9e768e
     cat > "$S4B_STAGE/lib/maintenance/restart-policy.pl" <<'S4_PAYLOAD_4459b2afa9b1914dad46d50758e533160d1f5e63deb017310fa296b170bb4cfe' || return 1
 #!/usr/bin/perl
 use strict;
@@ -2433,9 +2435,374 @@ set -Eeuo pipefail
 . /usr/local/lib/debian13s4/dotnet/common.sh
 s4d_verify
 S4_PAYLOAD_3f885728438ec7c402eeffb157a968eaa247fabe7b341179d728f6de830193fa
+    cat > "$S4B_STAGE/lib/network/common.sh" <<'S4_PAYLOAD_95a05f503668b3e24a05b33675d961a4d58700e17b4eab50f41da33dba72b632' || return 1
+#!/bin/bash
+
+# shellcheck source=Maintenance/common.sh
+. /usr/local/lib/debian13s4/maintenance/common.sh
+
+S4N_LIBRARY=/usr/local/lib/debian13s4/network
+S4N_CONFIG=/etc/sysctl.d/90-debian13s4-network.conf
+S4N_TIMER=debian13s4-network.timer
+S4N_SERVICE=debian13s4-network.service
+S4N_FILES=(common.sh repair.sh verify.py network.conf
+    debian13s4-network.service debian13s4-network.timer)
+
+s4n_assets() {
+    local name
+    [[ -d $S4M_STATE && -d $S4M_SYSTEMD ]] &&
+        s4m_trusted "$S4M_STATE" && s4m_trusted "$S4M_SYSTEMD" || return 1
+    [[ -f $S4M_LIBRARY/common.sh ]] && s4m_trusted "$S4M_LIBRARY/common.sh" || return 1
+    for name in "${S4N_FILES[@]}"; do
+        [[ -f $S4N_LIBRARY/$name ]] && s4m_trusted "$S4N_LIBRARY/$name" || return 1
+    done
+    [[ -x $S4N_LIBRARY/repair.sh ]]
+}
+
+s4n_identity() {
+    local name digest
+    for name in "${S4N_FILES[@]}"; do
+        digest=$(sha256sum -- "$S4N_LIBRARY/$name") || return 1
+        printf '%s %s\n' "${digest%% *}" "$name" || return 1
+    done
+    digest=$(sha256sum -- "$S4M_LIBRARY/common.sh") || return 1
+    printf '%s maintenance/common.sh\n' "${digest%% *}"
+}
+
+s4n_controller() {
+    local name
+    s4n_assets || return 1
+    for name in "$S4N_SERVICE" "$S4N_TIMER"; do
+        [[ -f $S4M_SYSTEMD/$name ]] && s4m_trusted "$S4M_SYSTEMD/$name" &&
+            cmp --silent -- "$S4N_LIBRARY/$name" "$S4M_SYSTEMD/$name" || return 1
+        s4m_property "$name" FragmentPath "$S4M_SYSTEMD/$name" &&
+            s4m_property "$name" DropInPaths '' || return 1
+    done
+    s4m_enabled "$S4N_TIMER" && s4m_property "$S4N_TIMER" ActiveState active
+}
+
+s4n_ready() {
+    local expected actual
+    [[ ! -e $S4M_STATE/bootstrap/pending && ! -L $S4M_STATE/bootstrap/pending &&
+        -f $S4M_STATE/network.ready ]] && s4m_trusted "$S4M_STATE/network.ready" || return 1
+    s4n_controller || return 1
+    expected=$(s4n_identity) && actual=$(cat -- "$S4M_STATE/network.ready") || return 1
+    [[ $expected == "$actual" ]]
+}
+
+s4n_configure() {
+    local directory=${S4N_CONFIG%/*}
+    s4m_trusted "${directory%/*}" || return 1
+    if [[ -e $directory || -L $directory ]]; then
+        [[ -d $directory ]] && s4m_trusted "$directory" || return 1
+    else
+        mkdir -m 0755 -- "$directory" || return 1
+    fi
+    s4m_atomic "$S4N_CONFIG" "$S4N_LIBRARY/network.conf"
+}
+
+s4n_observe() {
+    s4m_control /usr/bin/python3 -I -B "$S4N_LIBRARY/verify.py"
+}
+
+s4n_kernel() {
+    # ip_forward is first in this exact policy: changing it can reset the other
+    # IPv4 knobs. Native exit alone cannot prove optional/glob settings applied.
+    s4m_control /usr/lib/systemd/systemd-sysctl --strict "$S4N_CONFIG" && s4n_observe
+}
+
+s4n_verify() {
+    s4n_ready && [[ -f $S4N_CONFIG ]] && s4m_trusted "$S4N_CONFIG" &&
+        cmp --silent -- "$S4N_LIBRARY/network.conf" "$S4N_CONFIG" && s4n_observe
+}
+
+s4n_apply() {
+    local unit loaded wants resolved temporary
+    s4n_assets || return 1
+    for unit in "$S4N_TIMER" "$S4N_SERVICE"; do
+        if [[ -e $S4M_SYSTEMD/$unit || -L $S4M_SYSTEMD/$unit ]]; then
+            [[ -f $S4M_SYSTEMD/$unit ]] && s4m_trusted "$S4M_SYSTEMD/$unit" || return 1
+        fi
+    done
+    if [[ -e $S4M_STATE/network.ready || -L $S4M_STATE/network.ready ]]; then
+        [[ -f $S4M_STATE/network.ready ]] && s4m_trusted "$S4M_STATE/network.ready" || return 1
+        rm -f -- "$S4M_STATE/network.ready" || return 1
+    fi
+    s4m_sync "$S4M_STATE" || return 1
+    for unit in "$S4N_TIMER" "$S4N_SERVICE"; do
+        loaded=$(s4m_systemctl show --property=LoadState --value "$unit") || return 1
+        if [[ $loaded == loaded ]]; then
+            s4m_systemctl stop "$unit" && s4m_property "$unit" ActiveState inactive || return 1
+        elif [[ $loaded != not-found ]]; then
+            return 1
+        fi
+    done
+    s4n_configure && s4n_kernel || return 1
+    for unit in "$S4N_SERVICE" "$S4N_TIMER"; do
+        s4m_atomic "$S4M_SYSTEMD/$unit" "$S4N_LIBRARY/$unit" || return 1
+    done
+    s4m_systemctl daemon-reload && s4m_systemctl enable "$S4N_TIMER" &&
+        s4m_enabled "$S4N_TIMER" || return 1
+    wants=$S4M_SYSTEMD/timers.target.wants
+    [[ -d $wants && -L $wants/$S4N_TIMER ]] && s4m_trusted "$wants" || return 1
+    resolved=$(readlink --canonicalize-existing -- "$wants/$S4N_TIMER") || return 1
+    [[ $resolved == "$S4M_SYSTEMD/$S4N_TIMER" ]] || return 1
+    s4m_sync "$S4M_SYSTEMD" "$wants" "$S4M_SYSTEMD/$S4N_TIMER" "$S4M_SYSTEMD/$S4N_SERVICE" || return 1
+    s4m_systemctl start "$S4N_TIMER" && s4n_controller || return 1
+    temporary=$(mktemp -- "$S4M_STATE/network-intent.XXXXXX") || return 1
+    if ! s4n_identity > "$temporary" || ! chmod 0600 -- "$temporary" ||
+        ! s4m_atomic "$S4M_STATE/network.ready" "$temporary" 0600; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    rm -f -- "$temporary" || return 1
+    s4n_verify
+}
+
+s4n_repair() {
+    [[ ! -e $S4M_STATE/bootstrap/pending && ! -L $S4M_STATE/bootstrap/pending ]] || return 75
+    s4m_lock || return 75
+    trap s4m_unlock EXIT
+    # The task owns initial unit/readiness publication. Recurring repair admits
+    # config drift without treating changed code/controller identity as healthy.
+    s4n_ready && s4n_configure && s4n_kernel || return 75
+}
+S4_PAYLOAD_95a05f503668b3e24a05b33675d961a4d58700e17b4eab50f41da33dba72b632
+    cat > "$S4B_STAGE/lib/network/repair.sh" <<'S4_PAYLOAD_f6c3d8720b50aad13e41edfa2a6890b2abe624d05e66920c86b003a520eaa541' || return 1
+#!/bin/bash -p
+set -Eeuo pipefail
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+(( EUID == 0 )) || exit 77
+
+# shellcheck source=Network/common.sh
+. /usr/local/lib/debian13s4/network/common.sh
+s4n_repair
+S4_PAYLOAD_f6c3d8720b50aad13e41edfa2a6890b2abe624d05e66920c86b003a520eaa541
+    cat > "$S4B_STAGE/lib/network/verify.py" <<'S4_PAYLOAD_f8609255110e1e3cc5686bc366de484c9eb247028dfe817775b19b4a778d29c0' || return 1
+"""Observe the host network policy; this helper never writes kernel settings."""
+
+import os
+from pathlib import Path
+import re
+import stat
+import sys
+
+
+PROC = Path("/proc/sys")
+TRUSTED_UID = 0
+MAX_INTERFACES = 1024
+GLOBALS = {"ip_forward": 0, "tcp_syncookies": 1,
+           "icmp_echo_ignore_broadcasts": 1, "icmp_ignore_bogus_error_responses": 1}
+IPV4 = {"forwarding": 0, "accept_redirects": 0, "send_redirects": 0,
+        "accept_source_route": 0, "rp_filter": 2, "route_localnet": 0, "proxy_arp": 0}
+IPV6 = {"forwarding": 0, "accept_redirects": 0, "accept_source_route": -1, "proxy_ndp": 0}
+
+
+def trusted(path, kind):
+    path = Path(path)
+    if not path.is_absolute() or os.path.normpath(str(path)) != str(path):
+        raise ValueError(f"noncanonical path: {path}")
+    current = path
+    while True:
+        info = current.lstat()
+        expected = kind if current == path else stat.S_ISDIR
+        if not expected(info.st_mode) or info.st_uid != TRUSTED_UID or info.st_mode & 0o022:
+            raise ValueError(f"untrusted path: {current}")
+        if current == Path("/"):
+            return path.lstat()
+        current = current.parent
+
+
+def signature(info):
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid,
+            info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def value(path):
+    before = trusted(path, stat.S_ISREG)
+    fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_NONBLOCK)
+    try:
+        if signature(os.fstat(fd)) != signature(before):
+            raise ValueError(f"changed descriptor: {path}")
+        data = os.read(fd, 65)
+        if len(data) > 64 or os.read(fd, 1) or not re.fullmatch(rb"-?[0-9]+\n?", data):
+            raise ValueError(f"invalid scalar: {path}")
+        if signature(os.fstat(fd)) != signature(before) or signature(path.lstat()) != signature(before):
+            raise ValueError(f"changed scalar: {path}")
+        return int(data)
+    finally:
+        os.close(fd)
+
+
+def interfaces(family):
+    base = PROC / "net" / family
+    # A compiled-out or unloaded IPv6 stack has no namespace. Partial, symbolic
+    # or unreadable namespaces cannot be confused with that optional absence.
+    if family == "ipv6" and not os.path.lexists(base):
+        trusted(base.parent, stat.S_ISDIR)
+        return None
+    directory = base / "conf"
+    trusted(directory, stat.S_ISDIR)
+    names = []
+    with os.scandir(directory) as entries:
+        for entry in entries:
+            if len(names) >= MAX_INTERFACES + 2:
+                raise ValueError("too many interfaces for bounded verification")
+            if not entry.name or len(os.fsencode(entry.name)) > 15 or entry.name in (".", ".."):
+                raise ValueError("invalid interface name")
+            trusted(directory / entry.name, stat.S_ISDIR)
+            names.append(entry.name)
+    if not {"all", "default", "lo"}.issubset(names):
+        raise ValueError(f"incomplete {family} interface inventory")
+    return sorted(names)
+
+
+def verify():
+    inventories = {family: interfaces(family) for family in ("ipv4", "ipv6")}
+    for name, expected in GLOBALS.items():
+        path = PROC / "net/ipv4" / name
+        if value(path) != expected:
+            raise ValueError(f"policy differs: {path}")
+    for family, policy in (("ipv4", IPV4), ("ipv6", IPV6)):
+        for interface in inventories[family] or ():
+            for name, expected in policy.items():
+                path = PROC / "net" / family / "conf" / interface / name
+                if value(path) != expected:
+                    raise ValueError(f"policy differs: {path}")
+    if any(interfaces(family) != names for family, names in inventories.items()):
+        raise ValueError("interface inventory changed; retry required")
+
+
+def main():
+    if len(sys.argv) != 1:
+        return 64
+    try:
+        verify()
+        return 0
+    except (OSError, ValueError) as error:
+        print(f"debian13s4 network verification: {error}", file=sys.stderr)
+        return 75
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+S4_PAYLOAD_f8609255110e1e3cc5686bc366de484c9eb247028dfe817775b19b4a778d29c0
+    cat > "$S4B_STAGE/lib/network/network.conf" <<'S4_PAYLOAD_ba23f85b4240cf1ac9eb91929fba5ce15626c76eadad892ff2f3733aa928f696' || return 1
+# Host networking, not routing. Keep ip_forward first: changing it resets IPv4 defaults.
+net/ipv4/ip_forward = 0
+net/ipv4/tcp_syncookies = 1
+net/ipv4/icmp_echo_ignore_broadcasts = 1
+net/ipv4/icmp_ignore_bogus_error_responses = 1
+# Loose source validation accommodates asymmetric routes without manual configuration.
+# Explicit defaults precede globs so interfaces created during application inherit policy.
+net/ipv4/conf/all/forwarding = 0
+net/ipv4/conf/all/accept_redirects = 0
+net/ipv4/conf/all/send_redirects = 0
+net/ipv4/conf/all/accept_source_route = 0
+net/ipv4/conf/all/rp_filter = 2
+net/ipv4/conf/all/route_localnet = 0
+net/ipv4/conf/all/proxy_arp = 0
+net/ipv4/conf/default/forwarding = 0
+net/ipv4/conf/default/accept_redirects = 0
+net/ipv4/conf/default/send_redirects = 0
+net/ipv4/conf/default/accept_source_route = 0
+net/ipv4/conf/default/rp_filter = 2
+net/ipv4/conf/default/route_localnet = 0
+net/ipv4/conf/default/proxy_arp = 0
+net/ipv4/conf/*/forwarding = 0
+net/ipv4/conf/*/accept_redirects = 0
+net/ipv4/conf/*/send_redirects = 0
+net/ipv4/conf/*/accept_source_route = 0
+net/ipv4/conf/*/rp_filter = 2
+net/ipv4/conf/*/route_localnet = 0
+net/ipv4/conf/*/proxy_arp = 0
+# IPv6 may be absent/unloaded. When present, the verifier requires every value.
+# Preserve RA/SLAAC, DHCP, NDP, PMTU and IPv6 itself.
+-net/ipv6/conf/all/forwarding = 0
+-net/ipv6/conf/all/accept_redirects = 0
+-net/ipv6/conf/all/accept_source_route = -1
+-net/ipv6/conf/all/proxy_ndp = 0
+-net/ipv6/conf/default/forwarding = 0
+-net/ipv6/conf/default/accept_redirects = 0
+-net/ipv6/conf/default/accept_source_route = -1
+-net/ipv6/conf/default/proxy_ndp = 0
+-net/ipv6/conf/*/forwarding = 0
+-net/ipv6/conf/*/accept_redirects = 0
+-net/ipv6/conf/*/accept_source_route = -1
+-net/ipv6/conf/*/proxy_ndp = 0
+S4_PAYLOAD_ba23f85b4240cf1ac9eb91929fba5ce15626c76eadad892ff2f3733aa928f696
+    cat > "$S4B_STAGE/lib/network/debian13s4-network.service" <<'S4_PAYLOAD_eaaf6c2cdf2e36aa2bb49f9bf0a5b668c6788102813dbdb9104127413eb7a812' || return 1
+[Unit]
+Description=Verify and restore Debian 13 host network kernel policy
+After=systemd-sysctl.service
+RequiresMountsFor=/usr/local/lib/debian13s4 /var/lib/debian13s4 /etc/sysctl.d
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/network/repair.sh
+User=root
+Group=root
+UMask=0077
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+# Six manager checks, two persistence barriers and two kernel controls: 110s,
+# with 30s local allowance, fit this fixed deadline without interface scaling.
+TimeoutStartSec=180s
+TimeoutStopSec=15s
+Restart=on-failure
+RestartSec=1min
+KillMode=control-group
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_NET_ADMIN
+ProtectSystem=strict
+ReadOnlyPaths=/proc/sys /sys
+ReadWritePaths=/etc/sysctl.d /var/lib/debian13s4 /proc/sys/net
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHome=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX
+SystemCallArchitectures=native
+SystemCallFilter=~@mount
+S4_PAYLOAD_eaaf6c2cdf2e36aa2bb49f9bf0a5b668c6788102813dbdb9104127413eb7a812
+    cat > "$S4B_STAGE/lib/network/debian13s4-network.timer" <<'S4_PAYLOAD_13c391ea87a782aaae1b1e2ed6629a340c9bcd37841e54a09000709e4c663b03' || return 1
+[Unit]
+Description=Reconcile host network policy after boot and periodically
+
+[Timer]
+OnBootSec=10s
+OnUnitInactiveSec=2min
+AccuracySec=5s
+Unit=debian13s4-network.service
+
+[Install]
+WantedBy=timers.target
+S4_PAYLOAD_13c391ea87a782aaae1b1e2ed6629a340c9bcd37841e54a09000709e4c663b03
+    cat > "$S4B_STAGE/lib/tasks/network/apply.sh" <<'S4_PAYLOAD_978090bd3843e6a8dbedce17864be98ac183fa3313ba2bcece27d8b4c4ceea1b' || return 1
+#!/bin/bash
+# shellcheck source=Network/common.sh
+. /usr/local/lib/debian13s4/network/common.sh
+s4n_apply
+S4_PAYLOAD_978090bd3843e6a8dbedce17864be98ac183fa3313ba2bcece27d8b4c4ceea1b
+    cat > "$S4B_STAGE/lib/tasks/network/verify.sh" <<'S4_PAYLOAD_2c4a253e0fba47833ef625a9f3ea5b15062b3e43ffc36a6a6861a06dcaf2ace4' || return 1
+#!/bin/bash
+# shellcheck source=Network/common.sh
+. /usr/local/lib/debian13s4/network/common.sh
+s4n_verify
+S4_PAYLOAD_2c4a253e0fba47833ef625a9f3ea5b15062b3e43ffc36a6a6861a06dcaf2ace4
     cat > "$S4B_STAGE/files.sha256" <<'S4_CHECKSUMS' || return 1
 5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936  lib/repair.sh
-0066b18a0c987272b59c97d9a45b23d8c8ef7ff9f3a0c565e4e5ce9ed5be9b13  lib/tasks.list
+0fc5c73114ec7055fa108ae727886f482b52c7ec339afc99b0acc27dee796fba  lib/tasks.list
 f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934  lib/tasks/prerequisites/apply.sh
 5c2bb90b18725176df85061f2fd7556fc5f00c286991f7ff34445d7b880693fc  lib/tasks/prerequisites/verify.sh
 f99079435a5917ee3a1a69aa9f18e32e4a98ddcd787007336997b5a4fbc2eab9  lib/tasks/prerequisites/common.sh
@@ -2443,10 +2810,10 @@ f99079435a5917ee3a1a69aa9f18e32e4a98ddcd787007336997b5a4fbc2eab9  lib/tasks/prer
 e21ba280c03e5c9848930e7a58b87febd59332e777a3a992e3bab1f992c1a3e5  units/debian13s4-repair.service
 8618edcc26838d9f7f56c39d538bcfdba099e101582e8fb0adb38df413c5ce28  units/debian13s4-repair.timer
 a107d7016113884baa5f42ef8c5523410d1193f9970c3d320647dc0ee3d3a5f9  units/debian13s4-resume.service
-4e24ee80799045c7b56b90584924285ea7d55c9a91fbf8e278b67ff7642866d2  lib/maintenance/common.sh
+c9c5a3f1e2a4182b94132b25709ff4fdb95405457ac41372fd353437e3a55d04  lib/maintenance/common.sh
 49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1  lib/maintenance/update.sh
 bc7e6d139257f55d2b8b77c87263709c5fafb72242d728d4372d81d2915d478f  lib/maintenance/policy.conf
-7082163c6cb6301ce36b1e9528a3d38f295abc2fbac0d29f52ad39abd5969fe3  lib/maintenance/needrestart.conf
+1848c977881a707ae2c12dbbb22ce07b1497cbf01448c5f230d3f7778b9e768e  lib/maintenance/needrestart.conf
 4459b2afa9b1914dad46d50758e533160d1f5e63deb017310fa296b170bb4cfe  lib/maintenance/restart-policy.pl
 b213906bff69cad34a5f2a547727622474f545c207bfca681f8a3dcac521b5ac  lib/maintenance/retain-kernels.py
 d2681c6dde48e6cfbd0232cc1303f589fa042b39224489331574aa49c79bd890  lib/maintenance/debian13s4-maintenance.service
@@ -2464,6 +2831,14 @@ d45224d594d969f084232deaaf97c58ca502a9d964c362d7aaef5a76e16b3dd1  lib/dotnet/mic
 27796bdadb859d37d728f14a35255b2a95e1c10861a13fd8c821441cc4e33ce9  lib/dotnet/sources.sources
 0ad3ad407a2b16ff7dc5f6b40aec6d74d1bda664607f336d290467e36d54acba  lib/tasks/dotnet/apply.sh
 3f885728438ec7c402eeffb157a968eaa247fabe7b341179d728f6de830193fa  lib/tasks/dotnet/verify.sh
+95a05f503668b3e24a05b33675d961a4d58700e17b4eab50f41da33dba72b632  lib/network/common.sh
+f6c3d8720b50aad13e41edfa2a6890b2abe624d05e66920c86b003a520eaa541  lib/network/repair.sh
+f8609255110e1e3cc5686bc366de484c9eb247028dfe817775b19b4a778d29c0  lib/network/verify.py
+ba23f85b4240cf1ac9eb91929fba5ce15626c76eadad892ff2f3733aa928f696  lib/network/network.conf
+eaaf6c2cdf2e36aa2bb49f9bf0a5b668c6788102813dbdb9104127413eb7a812  lib/network/debian13s4-network.service
+13c391ea87a782aaae1b1e2ed6629a340c9bcd37841e54a09000709e4c663b03  lib/network/debian13s4-network.timer
+978090bd3843e6a8dbedce17864be98ac183fa3313ba2bcece27d8b4c4ceea1b  lib/tasks/network/apply.sh
+2c4a253e0fba47833ef625a9f3ea5b15062b3e43ffc36a6a6861a06dcaf2ace4  lib/tasks/network/verify.sh
 S4_CHECKSUMS
 }
 

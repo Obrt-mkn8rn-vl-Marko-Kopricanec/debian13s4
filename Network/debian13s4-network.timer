@@ -1,0 +1,11 @@
+[Unit]
+Description=Reconcile host network policy after boot and periodically
+
+[Timer]
+OnBootSec=10s
+OnUnitInactiveSec=2min
+AccuracySec=5s
+Unit=debian13s4-network.service
+
+[Install]
+WantedBy=timers.target

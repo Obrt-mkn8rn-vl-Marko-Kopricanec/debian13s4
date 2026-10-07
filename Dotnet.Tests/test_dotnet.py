@@ -582,7 +582,7 @@ stat() {{
 
     def test_runtime_controller_is_excluded_from_its_restart_scan(self):
         self.assert_success(self.apply())
-        self.targets([SERVICE, "debian13s4-dotnet"])
+        self.targets([SERVICE, "debian13s4-dotnet", "debian13s4-network.service", "debian13s4-network"])
         self.assert_success(self.update())
         self.assertFalse(any(e["args"][0] == "restart" for e in self.events() if e["action"] == "systemctl"))
 

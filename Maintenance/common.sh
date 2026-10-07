@@ -15,8 +15,8 @@ S4M_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4M_REPAIR_FD=
 S4M_REBOOT_MARKER=/run/reboot-required
 S4M_BOOT_FILE=/proc/sys/kernel/random/boot_id
-# Match the shipped one-hour oneshot. Restart slices leave 2100 seconds for
-# package work and 300 seconds for final controls; they never grow with a queue.
+# Match the shipped one-hour oneshot. Restart slices and kernel cleanup leave
+# 1760 seconds for package work and 300 for final controls; neither grows with a queue.
 S4M_ATTEMPT_SECONDS=3600
 S4M_PRE_RESTART_SECONDS=600
 S4M_POST_RESTART_SECONDS=600
