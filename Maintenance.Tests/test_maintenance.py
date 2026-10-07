@@ -572,9 +572,9 @@ printf '%s\\n' "$S4M_REPAIR_FD" > {q(str(expected))}
         self.assert_success(self.run_fixture())
         self.targets(["dbus.service", "networking.service", "apt-daily.service",
                       "debian13s4-maintenance.service", "debian13s4-bootstrap.service",
-                      "debian13s4-repair.service", "debian13s4-resume.service", "debian13s4-network.service", "debian13s4-retention.service",
+                      "debian13s4-repair.service", "debian13s4-resume.service", "debian13s4-network.service", "debian13s4-retention.service", "debian13s4-hardening.service",
                       "dbus", "networking", "debian13s4-maintenance", "debian13s4-bootstrap",
-                      "debian13s4-repair", "debian13s4-resume", "debian13s4-network", "debian13s4-retention", "nginx.service"])
+                      "debian13s4-repair", "debian13s4-resume", "debian13s4-network", "debian13s4-retention", "debian13s4-hardening", "nginx.service"])
         self.assert_success(self.run_fixture("s4m_update"))
         targets = [e["args"][-1] for e in self.events() if e["args"][0] == "restart"]
         self.assertEqual(targets, ["nginx.service"])
@@ -1203,14 +1203,14 @@ for codename, origin, label, trusted, expected in [
         self.assertEqual(timer["Timer"]["OnUnitInactiveSec"], "1h")
         policy = (ROOT / "Maintenance/needrestart.conf").read_text()
         self.assertIn("do '/etc/needrestart/needrestart.conf'", policy)
-        self.assertIn("maintenance|dotnet|network|retention|bootstrap|repair|resume", policy)
+        self.assertIn("maintenance|dotnet|network|retention|hardening|bootstrap|repair|resume", policy)
 
     def test_bundle_admits_maintenance_after_prerequisites(self):
         spec = importlib.util.spec_from_file_location("packer", ROOT / "Bootstrap/pack.py")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         assets = module.assets()
-        self.assertEqual(assets["lib/tasks.list"][0], b"prerequisites:\nnetwork:prerequisites\nretention:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\n")
+        self.assertEqual(assets["lib/tasks.list"][0], b"prerequisites:\nnetwork:prerequisites\nhardening:prerequisites\nretention:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\n")
         self.assertEqual(assets["lib/maintenance/update.sh"][1], "0755")
         self.assertEqual(module.assemble(), (ROOT / "setup.sh").read_bytes())
 

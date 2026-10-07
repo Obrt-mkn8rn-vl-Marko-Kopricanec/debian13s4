@@ -13,7 +13,8 @@ S4B_QUIESCE=("$S4B_TIMER" "$S4B_SERVICE" "$S4B_RESUME"
     debian13s4-maintenance.timer debian13s4-maintenance.service
     debian13s4-dotnet.timer debian13s4-dotnet.service
     debian13s4-network.timer debian13s4-network.service
-    debian13s4-retention.timer debian13s4-retention.service)
+    debian13s4-retention.timer debian13s4-retention.service
+    debian13s4-hardening.timer debian13s4-hardening.service)
 S4B_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4B_LOCK_FD=
 S4B_REPAIR_FD=
@@ -401,9 +402,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=9f76e1f1be57af465d844a40e6c5a70440df068ec10442f976a9e2a8dd7f604d
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=cc54a5b0b9702d7bf4973280173c93097b0fa70fe6118ff9fdaf4c8b9a3bc29b
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     local relative
@@ -892,13 +893,14 @@ if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
     s4_main "$@"
 fi
 S4_PAYLOAD_5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936
-    cat > "$S4B_STAGE/lib/tasks.list" <<'S4_PAYLOAD_87a3d96648f9ba1445c77e808e351ad4a250e0596620e4cd4f316ced24dad8fc' || return 1
+    cat > "$S4B_STAGE/lib/tasks.list" <<'S4_PAYLOAD_9a30924a1a877c8da9feb63c068689e3edbba69cf354d27b46f4bbbbbbfae275' || return 1
 prerequisites:
 network:prerequisites
+hardening:prerequisites
 retention:prerequisites
 maintenance:prerequisites
 dotnet:prerequisites
-S4_PAYLOAD_87a3d96648f9ba1445c77e808e351ad4a250e0596620e4cd4f316ced24dad8fc
+S4_PAYLOAD_9a30924a1a877c8da9feb63c068689e3edbba69cf354d27b46f4bbbbbbfae275
     cat > "$S4B_STAGE/lib/tasks/prerequisites/apply.sh" <<'S4_PAYLOAD_f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934' || return 1
 #!/bin/bash
 set -Eeuo pipefail
@@ -1700,7 +1702,7 @@ Unattended-Upgrade::OnlyOnACPower "false";
 Unattended-Upgrade::Skip-Updates-On-Metered-Connections "false";
 Unattended-Upgrade::SyslogEnable "true";
 S4_PAYLOAD_bc7e6d139257f55d2b8b77c87263709c5fafb72242d728d4372d81d2915d478f
-    cat > "$S4B_STAGE/lib/maintenance/needrestart.conf" <<'S4_PAYLOAD_1b0ac8cac419ad7e839911403ceb8487a5b689643a06a3e321e8e94df10c8a18' || return 1
+    cat > "$S4B_STAGE/lib/maintenance/needrestart.conf" <<'S4_PAYLOAD_9f464f118004aba860998254cb5ce0a4f6b4dce6ca84c38e861ec0f179656eec' || return 1
 # Keep Debian's service exclusions, then exclude the setup/update controllers.
 {
     local ($@, $!);
@@ -1708,8 +1710,8 @@ S4_PAYLOAD_bc7e6d139257f55d2b8b77c87263709c5fafb72242d728d4372d81d2915d478f
     die "Cannot load Debian restart policy: $@ $!\n" if $@ || (!defined($loaded) && $!);
 }
 $nrconf{restart} = 'a';
-$nrconf{override_rc}->{qr(^debian13s4-(maintenance|dotnet|network|retention|bootstrap|repair|resume)(\.service)?$)} = 0;
-S4_PAYLOAD_1b0ac8cac419ad7e839911403ceb8487a5b689643a06a3e321e8e94df10c8a18
+$nrconf{override_rc}->{qr(^debian13s4-(maintenance|dotnet|network|retention|hardening|bootstrap|repair|resume)(\.service)?$)} = 0;
+S4_PAYLOAD_9f464f118004aba860998254cb5ce0a4f6b4dce6ca84c38e861ec0f179656eec
     cat > "$S4B_STAGE/lib/maintenance/restart-policy.pl" <<'S4_PAYLOAD_4459b2afa9b1914dad46d50758e533160d1f5e63deb017310fa296b170bb4cfe' || return 1
 #!/usr/bin/perl
 use strict;
@@ -3453,9 +3455,354 @@ S4_PAYLOAD_6a932d600d6894880eaa54c51b274d7bee8cb081fc7018371a43ecf9ac103fb2
 . /usr/local/lib/debian13s4/retention/common.sh
 s4r_verify
 S4_PAYLOAD_eaf8d9e89061834624d417ebec6211c3257dcecf52030178597b2c93859503dc
+    cat > "$S4B_STAGE/lib/hardening/common.sh" <<'S4_PAYLOAD_b7e4737e20c27894bbd2613f8df131614b6d0ebfc9aa589c758df9aac2de8efc' || return 1
+#!/bin/bash
+
+# shellcheck source=Maintenance/common.sh
+. /usr/local/lib/debian13s4/maintenance/common.sh
+
+S4H_LIBRARY=/usr/local/lib/debian13s4/hardening
+S4H_CONFIG=/etc/sysctl.d/90-debian13s4-kernel.conf
+S4H_TIMER=debian13s4-hardening.timer
+S4H_SERVICE=debian13s4-hardening.service
+S4H_FILES=(common.sh repair.sh verify.py kernel.conf
+    debian13s4-hardening.service debian13s4-hardening.timer)
+
+s4h_assets() {
+    local name
+    [[ -d $S4M_STATE && -d $S4M_SYSTEMD ]] &&
+        s4m_trusted "$S4M_STATE" && s4m_trusted "$S4M_SYSTEMD" || return 1
+    [[ -f $S4M_LIBRARY/common.sh ]] && s4m_trusted "$S4M_LIBRARY/common.sh" || return 1
+    for name in "${S4H_FILES[@]}"; do
+        [[ -f $S4H_LIBRARY/$name ]] && s4m_trusted "$S4H_LIBRARY/$name" || return 1
+    done
+    [[ -x $S4H_LIBRARY/repair.sh ]]
+}
+
+s4h_identity() {
+    local name digest
+    for name in "${S4H_FILES[@]}"; do
+        digest=$(sha256sum -- "$S4H_LIBRARY/$name") || return 1
+        printf '%s %s\n' "${digest%% *}" "$name" || return 1
+    done
+    digest=$(sha256sum -- "$S4M_LIBRARY/common.sh") || return 1
+    printf '%s maintenance/common.sh\n' "${digest%% *}"
+}
+
+s4h_controller() {
+    local name
+    s4h_assets || return 1
+    for name in "$S4H_SERVICE" "$S4H_TIMER"; do
+        [[ -f $S4M_SYSTEMD/$name ]] && s4m_trusted "$S4M_SYSTEMD/$name" &&
+            cmp --silent -- "$S4H_LIBRARY/$name" "$S4M_SYSTEMD/$name" || return 1
+        s4m_property "$name" FragmentPath "$S4M_SYSTEMD/$name" &&
+            s4m_property "$name" DropInPaths '' || return 1
+    done
+    s4m_enabled "$S4H_TIMER" && s4m_property "$S4H_TIMER" ActiveState active
+}
+
+s4h_ready() {
+    local expected actual
+    [[ ! -e $S4M_STATE/bootstrap/pending && ! -L $S4M_STATE/bootstrap/pending &&
+        -f $S4M_STATE/hardening.ready ]] && s4m_trusted "$S4M_STATE/hardening.ready" || return 1
+    s4h_controller || return 1
+    expected=$(s4h_identity) && actual=$(cat -- "$S4M_STATE/hardening.ready") || return 1
+    [[ $expected == "$actual" ]]
+}
+
+s4h_configure() {
+    local directory=${S4H_CONFIG%/*}
+    s4m_trusted "${directory%/*}" || return 1
+    if [[ -e $directory || -L $directory ]]; then
+        [[ -d $directory ]] && s4m_trusted "$directory" || return 1
+    else
+        mkdir -m 0755 -- "$directory" || return 1
+    fi
+    s4m_atomic "$S4H_CONFIG" "$S4H_LIBRARY/kernel.conf"
+}
+
+s4h_observe() {
+    s4m_control /usr/bin/python3 -I -B "$S4H_LIBRARY/verify.py"
+}
+
+s4h_kernel() {
+    local plan key
+    local -a options=(--strict)
+    # The real observer admits every required scalar before any native write.
+    # Only drifting keys are included: never weaken an existing stronger
+    # ptrace/perf restriction or rewrite an irreversible healthy BPF setting.
+    plan=$(s4m_control /usr/bin/python3 -I -B "$S4H_LIBRARY/verify.py" --plan) || return 1
+    if [[ -n $plan ]]; then
+        while IFS= read -r key; do
+            [[ $key =~ ^(kernel|fs|vm)/[a-z_]+(/[a-z_]+)?$ ]] || return 1
+            options+=("--prefix=$key")
+        done <<< "$plan"
+        s4m_control /usr/lib/systemd/systemd-sysctl "${options[@]}" "$S4H_CONFIG" || return 1
+    fi
+    s4h_observe
+}
+
+s4h_verify() {
+    s4h_ready && [[ -f $S4H_CONFIG ]] && s4m_trusted "$S4H_CONFIG" &&
+        cmp --silent -- "$S4H_LIBRARY/kernel.conf" "$S4H_CONFIG" && s4h_observe
+}
+
+s4h_apply() {
+    local unit loaded wants resolved temporary
+    s4h_assets || return 1
+    for unit in "$S4H_TIMER" "$S4H_SERVICE"; do
+        if [[ -e $S4M_SYSTEMD/$unit || -L $S4M_SYSTEMD/$unit ]]; then
+            [[ -f $S4M_SYSTEMD/$unit ]] && s4m_trusted "$S4M_SYSTEMD/$unit" || return 1
+        fi
+    done
+    if [[ -e $S4M_STATE/hardening.ready || -L $S4M_STATE/hardening.ready ]]; then
+        [[ -f $S4M_STATE/hardening.ready ]] && s4m_trusted "$S4M_STATE/hardening.ready" || return 1
+        rm -f -- "$S4M_STATE/hardening.ready" || return 1
+    fi
+    s4m_sync "$S4M_STATE" || return 1
+    for unit in "$S4H_TIMER" "$S4H_SERVICE"; do
+        loaded=$(s4m_systemctl show --property=LoadState --value "$unit") || return 1
+        if [[ $loaded == loaded ]]; then
+            s4m_systemctl stop "$unit" && s4m_property "$unit" ActiveState inactive || return 1
+        elif [[ $loaded != not-found ]]; then
+            return 1
+        fi
+    done
+    s4h_configure && s4h_kernel || return 1
+    for unit in "$S4H_SERVICE" "$S4H_TIMER"; do
+        s4m_atomic "$S4M_SYSTEMD/$unit" "$S4H_LIBRARY/$unit" || return 1
+    done
+    s4m_systemctl daemon-reload && s4m_systemctl enable "$S4H_TIMER" &&
+        s4m_enabled "$S4H_TIMER" || return 1
+    wants=$S4M_SYSTEMD/timers.target.wants
+    [[ -d $wants && -L $wants/$S4H_TIMER ]] && s4m_trusted "$wants" || return 1
+    resolved=$(readlink --canonicalize-existing -- "$wants/$S4H_TIMER") || return 1
+    [[ $resolved == "$S4M_SYSTEMD/$S4H_TIMER" ]] || return 1
+    s4m_sync "$S4M_SYSTEMD" "$wants" "$S4M_SYSTEMD/$S4H_TIMER" "$S4M_SYSTEMD/$S4H_SERVICE" || return 1
+    s4m_systemctl start "$S4H_TIMER" && s4h_controller || return 1
+    temporary=$(mktemp -- "$S4M_STATE/hardening-intent.XXXXXX") || return 1
+    if ! s4h_identity > "$temporary" || ! chmod 0600 -- "$temporary" ||
+        ! s4m_atomic "$S4M_STATE/hardening.ready" "$temporary" 0600; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    rm -f -- "$temporary" || return 1
+    s4h_verify
+}
+
+s4h_repair() {
+    [[ ! -e $S4M_STATE/bootstrap/pending && ! -L $S4M_STATE/bootstrap/pending ]] || return 75
+    s4m_lock || return 75
+    trap s4m_unlock EXIT
+    # The task owns initial unit/readiness publication. Recurring repair admits
+    # config drift without treating changed code/controller identity as healthy.
+    s4h_ready && s4h_configure && s4h_kernel || return 75
+}
+S4_PAYLOAD_b7e4737e20c27894bbd2613f8df131614b6d0ebfc9aa589c758df9aac2de8efc
+    cat > "$S4B_STAGE/lib/hardening/repair.sh" <<'S4_PAYLOAD_7d84a4dd2ff8134daaf14cd35175acb429e89c64404db5f48a0850b5579b4fe2' || return 1
+#!/bin/bash -p
+set -Eeuo pipefail
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+(( EUID == 0 )) || exit 77
+
+# shellcheck source=Hardening/common.sh
+. /usr/local/lib/debian13s4/hardening/common.sh
+s4h_repair
+S4_PAYLOAD_7d84a4dd2ff8134daaf14cd35175acb429e89c64404db5f48a0850b5579b4fe2
+    cat > "$S4B_STAGE/lib/hardening/verify.py" <<'S4_PAYLOAD_08603c329a5de83416253604ca14bf538773dd2b7fc7a39cdd97ee0afa72b424' || return 1
+"""Observe required host controls and plan only their drifting sysctl keys."""
+
+import os
+from pathlib import Path
+import re
+import stat
+import sys
+
+
+PROC = Path("/proc/sys")
+TRUSTED_UID = 0
+POLICY = {
+    "kernel/randomize_va_space": 2,
+    "kernel/kptr_restrict": 2,
+    "kernel/dmesg_restrict": 1,
+    "kernel/perf_event_paranoid": 3,
+    "kernel/yama/ptrace_scope": 2,
+    "kernel/unprivileged_bpf_disabled": 1,
+    "kernel/sysrq": 0,
+    "fs/suid_dumpable": 0,
+    "fs/protected_symlinks": 1,
+    "fs/protected_hardlinks": 1,
+    "fs/protected_fifos": 2,
+    "fs/protected_regular": 2,
+    "vm/unprivileged_userfaultfd": 0,
+}
+
+
+def trusted(path, kind):
+    path = Path(path)
+    if not path.is_absolute() or os.path.normpath(str(path)) != str(path):
+        raise ValueError("noncanonical host-control path")
+    current = path
+    while True:
+        info = current.lstat()
+        expected = kind if current == path else stat.S_ISDIR
+        if not expected(info.st_mode) or info.st_uid != TRUSTED_UID or info.st_mode & 0o022:
+            raise ValueError("untrusted host-control path: " + str(current))
+        if current == current.parent:
+            return path.lstat()
+        current = current.parent
+
+
+def signature(info):
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid,
+            info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def value(path):
+    before = trusted(path, stat.S_ISREG)
+    descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_NONBLOCK)
+    try:
+        if signature(os.fstat(descriptor)) != signature(before):
+            raise ValueError("host-control descriptor changed")
+        data = os.read(descriptor, 65)
+        if len(data) > 64 or os.read(descriptor, 1) or not re.fullmatch(rb"-?[0-9]+\n?", data):
+            raise ValueError("invalid host-control scalar")
+        number = int(data)
+        if not -2147483648 <= number <= 2147483647:
+            raise ValueError("host-control scalar outside native integer range")
+        if signature(os.fstat(descriptor)) != signature(before) or signature(path.lstat()) != signature(before):
+            raise ValueError("host-control scalar changed")
+        return number
+    finally:
+        os.close(descriptor)
+
+
+def complies(key, number):
+    if key == "kernel/perf_event_paranoid":
+        return number >= POLICY[key]
+    if key == "kernel/yama/ptrace_scope":
+        return number in (2, 3)
+    return number == POLICY[key]
+
+
+def plan():
+    # Every control is required. Missing/partial/unverifiable namespaces fail
+    # before emitting a write plan, including kernels lacking the needed LSM.
+    before = {key: value(PROC / key) for key in POLICY}
+    after = {key: value(PROC / key) for key in POLICY}
+    if before != after:
+        raise ValueError("host controls changed during observation; retry required")
+    return [key for key, number in before.items() if not complies(key, number)]
+
+
+def main():
+    if sys.argv[1:] not in ([], ["--plan"]):
+        return 64
+    try:
+        pending = plan()
+        if sys.argv[1:]:
+            if pending:
+                print("\n".join(pending))
+        elif pending:
+            raise ValueError("host policy differs: " + ", ".join(pending))
+        return 0
+    except (OSError, ValueError) as error:
+        print("debian13s4 host verification: " + str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+S4_PAYLOAD_08603c329a5de83416253604ca14bf538773dd2b7fc7a39cdd97ee0afa72b424
+    cat > "$S4B_STAGE/lib/hardening/kernel.conf" <<'S4_PAYLOAD_383ca561603ed05e64f68cd788ff3f223c2ec48ad2c8d665526b96c66b0e5c7d' || return 1
+# Fixed host policy; stronger live ptrace/perf values are admitted by repair.
+kernel/randomize_va_space = 2
+kernel/kptr_restrict = 2
+kernel/dmesg_restrict = 1
+kernel/perf_event_paranoid = 3
+kernel/yama/ptrace_scope = 2
+# Value 1 cannot be cleared from this running kernel, including by root.
+kernel/unprivileged_bpf_disabled = 1
+kernel/sysrq = 0
+fs/suid_dumpable = 0
+fs/protected_symlinks = 1
+fs/protected_hardlinks = 1
+fs/protected_fifos = 2
+fs/protected_regular = 2
+vm/unprivileged_userfaultfd = 0
+S4_PAYLOAD_383ca561603ed05e64f68cd788ff3f223c2ec48ad2c8d665526b96c66b0e5c7d
+    cat > "$S4B_STAGE/lib/hardening/debian13s4-hardening.service" <<'S4_PAYLOAD_6360caf81c8e4c93cbfc6cd0e62e9ddd6ddd207b843eed0b17deae08cdea811b' || return 1
+[Unit]
+Description=Verify and restore Debian 13 host kernel exploit-mitigation policy
+After=systemd-sysctl.service
+RequiresMountsFor=/usr/local/lib/debian13s4 /var/lib/debian13s4 /etc/sysctl.d
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/hardening/repair.sh
+User=root
+Group=root
+UMask=0077
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+# Six manager checks, two persistence barriers and three kernel controls: 121s,
+# with 30s local allowance, fit this fixed deadline without interface scaling.
+TimeoutStartSec=180s
+TimeoutStopSec=15s
+Restart=on-failure
+RestartSec=1min
+KillMode=control-group
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_SYS_PTRACE
+ProtectSystem=strict
+ReadOnlyPaths=/proc/sys /sys
+ReadWritePaths=/etc/sysctl.d /var/lib/debian13s4 /proc/sys/kernel /proc/sys/fs /proc/sys/vm
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHome=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX
+SystemCallArchitectures=native
+SystemCallFilter=~@mount
+S4_PAYLOAD_6360caf81c8e4c93cbfc6cd0e62e9ddd6ddd207b843eed0b17deae08cdea811b
+    cat > "$S4B_STAGE/lib/hardening/debian13s4-hardening.timer" <<'S4_PAYLOAD_e2de7086c2159bf4cd8a2775d8a3aba484b1c5c5237f9c4a36f7e0db4c8e371a' || return 1
+[Unit]
+Description=Reconcile host hardening policy after boot and periodically
+
+[Timer]
+OnBootSec=10s
+OnUnitInactiveSec=2min
+AccuracySec=5s
+Unit=debian13s4-hardening.service
+
+[Install]
+WantedBy=timers.target
+S4_PAYLOAD_e2de7086c2159bf4cd8a2775d8a3aba484b1c5c5237f9c4a36f7e0db4c8e371a
+    cat > "$S4B_STAGE/lib/tasks/hardening/apply.sh" <<'S4_PAYLOAD_896f7ea78d7f63a5858bbbe278c13fbfc1b49e34875b22c7fcf32567c32d836b' || return 1
+#!/bin/bash
+# shellcheck source=Hardening/common.sh
+. /usr/local/lib/debian13s4/hardening/common.sh
+s4h_apply
+S4_PAYLOAD_896f7ea78d7f63a5858bbbe278c13fbfc1b49e34875b22c7fcf32567c32d836b
+    cat > "$S4B_STAGE/lib/tasks/hardening/verify.sh" <<'S4_PAYLOAD_93f98e5dac2f0a3a4e7479eadfa4b52941ac936d4cce43adf7360ad4d08ec8f7' || return 1
+#!/bin/bash
+# shellcheck source=Hardening/common.sh
+. /usr/local/lib/debian13s4/hardening/common.sh
+s4h_verify
+S4_PAYLOAD_93f98e5dac2f0a3a4e7479eadfa4b52941ac936d4cce43adf7360ad4d08ec8f7
     cat > "$S4B_STAGE/files.sha256" <<'S4_CHECKSUMS' || return 1
 5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936  lib/repair.sh
-87a3d96648f9ba1445c77e808e351ad4a250e0596620e4cd4f316ced24dad8fc  lib/tasks.list
+9a30924a1a877c8da9feb63c068689e3edbba69cf354d27b46f4bbbbbbfae275  lib/tasks.list
 f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934  lib/tasks/prerequisites/apply.sh
 5c2bb90b18725176df85061f2fd7556fc5f00c286991f7ff34445d7b880693fc  lib/tasks/prerequisites/verify.sh
 f99079435a5917ee3a1a69aa9f18e32e4a98ddcd787007336997b5a4fbc2eab9  lib/tasks/prerequisites/common.sh
@@ -3466,7 +3813,7 @@ a107d7016113884baa5f42ef8c5523410d1193f9970c3d320647dc0ee3d3a5f9  units/debian13
 c9c5a3f1e2a4182b94132b25709ff4fdb95405457ac41372fd353437e3a55d04  lib/maintenance/common.sh
 49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1  lib/maintenance/update.sh
 bc7e6d139257f55d2b8b77c87263709c5fafb72242d728d4372d81d2915d478f  lib/maintenance/policy.conf
-1b0ac8cac419ad7e839911403ceb8487a5b689643a06a3e321e8e94df10c8a18  lib/maintenance/needrestart.conf
+9f464f118004aba860998254cb5ce0a4f6b4dce6ca84c38e861ec0f179656eec  lib/maintenance/needrestart.conf
 4459b2afa9b1914dad46d50758e533160d1f5e63deb017310fa296b170bb4cfe  lib/maintenance/restart-policy.pl
 b213906bff69cad34a5f2a547727622474f545c207bfca681f8a3dcac521b5ac  lib/maintenance/retain-kernels.py
 d2681c6dde48e6cfbd0232cc1303f589fa042b39224489331574aa49c79bd890  lib/maintenance/debian13s4-maintenance.service
@@ -3502,6 +3849,14 @@ dfdda3c5c5f008fc693b0fb1e47a04df8ff33aae4ddc90f4c2126f612115d6ef  lib/retention/
 3484989b87fe25b6eed5e8759d0ff036007e85e10d1e2a6fa129d6294fb18048  lib/retention/debian13s4-retention.timer
 6a932d600d6894880eaa54c51b274d7bee8cb081fc7018371a43ecf9ac103fb2  lib/tasks/retention/apply.sh
 eaf8d9e89061834624d417ebec6211c3257dcecf52030178597b2c93859503dc  lib/tasks/retention/verify.sh
+b7e4737e20c27894bbd2613f8df131614b6d0ebfc9aa589c758df9aac2de8efc  lib/hardening/common.sh
+7d84a4dd2ff8134daaf14cd35175acb429e89c64404db5f48a0850b5579b4fe2  lib/hardening/repair.sh
+08603c329a5de83416253604ca14bf538773dd2b7fc7a39cdd97ee0afa72b424  lib/hardening/verify.py
+383ca561603ed05e64f68cd788ff3f223c2ec48ad2c8d665526b96c66b0e5c7d  lib/hardening/kernel.conf
+6360caf81c8e4c93cbfc6cd0e62e9ddd6ddd207b843eed0b17deae08cdea811b  lib/hardening/debian13s4-hardening.service
+e2de7086c2159bf4cd8a2775d8a3aba484b1c5c5237f9c4a36f7e0db4c8e371a  lib/hardening/debian13s4-hardening.timer
+896f7ea78d7f63a5858bbbe278c13fbfc1b49e34875b22c7fcf32567c32d836b  lib/tasks/hardening/apply.sh
+93f98e5dac2f0a3a4e7479eadfa4b52941ac936d4cce43adf7360ad4d08ec8f7  lib/tasks/hardening/verify.sh
 S4_CHECKSUMS
 }
 

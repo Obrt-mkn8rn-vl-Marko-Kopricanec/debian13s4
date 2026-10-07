@@ -13,7 +13,8 @@ S4B_QUIESCE=("$S4B_TIMER" "$S4B_SERVICE" "$S4B_RESUME"
     debian13s4-maintenance.timer debian13s4-maintenance.service
     debian13s4-dotnet.timer debian13s4-dotnet.service
     debian13s4-network.timer debian13s4-network.service
-    debian13s4-retention.timer debian13s4-retention.service)
+    debian13s4-retention.timer debian13s4-retention.service
+    debian13s4-hardening.timer debian13s4-hardening.service)
 S4B_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4B_LOCK_FD=
 S4B_REPAIR_FD=

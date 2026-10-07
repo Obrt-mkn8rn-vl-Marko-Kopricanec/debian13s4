@@ -1,0 +1,40 @@
+[Unit]
+Description=Verify and restore Debian 13 host kernel exploit-mitigation policy
+After=systemd-sysctl.service
+RequiresMountsFor=/usr/local/lib/debian13s4 /var/lib/debian13s4 /etc/sysctl.d
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/hardening/repair.sh
+User=root
+Group=root
+UMask=0077
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+# Six manager checks, two persistence barriers and three kernel controls: 121s,
+# with 30s local allowance, fit this fixed deadline without interface scaling.
+TimeoutStartSec=180s
+TimeoutStopSec=15s
+Restart=on-failure
+RestartSec=1min
+KillMode=control-group
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_SYS_PTRACE
+ProtectSystem=strict
+ReadOnlyPaths=/proc/sys /sys
+ReadWritePaths=/etc/sysctl.d /var/lib/debian13s4 /proc/sys/kernel /proc/sys/fs /proc/sys/vm
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHome=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX
+SystemCallArchitectures=native
+SystemCallFilter=~@mount
