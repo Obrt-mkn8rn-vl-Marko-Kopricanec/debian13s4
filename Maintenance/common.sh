@@ -8,6 +8,8 @@ S4M_SERVICE=debian13s4-maintenance.service
 S4M_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4M_REPAIR_FD=
 S4M_REBOOT_MARKER=/run/reboot-required
+S4M_BOOT_FILE=/proc/sys/kernel/random/boot_id
+S4M_RESTARTS=()
 
 s4m_load_packages() {
     s4m_trusted /usr/local/lib/debian13s4/tasks/prerequisites/common.sh || return 1
@@ -123,7 +125,7 @@ s4m_enabled() {
 s4m_verify_files() {
     local name
     s4m_trusted "$S4M_STATE" && [[ -d $S4M_STATE ]] || return 1
-    for name in common.sh update.sh policy.conf needrestart.conf \
+    for name in common.sh update.sh policy.conf needrestart.conf restart-policy.pl \
         debian13s4-maintenance.service debian13s4-maintenance.timer; do
         [[ -f $S4M_LIBRARY/$name ]] && s4m_trusted "$S4M_LIBRARY/$name" || return 1
     done
@@ -139,7 +141,7 @@ s4m_verify_files() {
 
 s4m_identity() {
     local name digest
-    for name in common.sh update.sh policy.conf needrestart.conf \
+    for name in common.sh update.sh policy.conf needrestart.conf restart-policy.pl \
         debian13s4-maintenance.service debian13s4-maintenance.timer; do
         digest=$(sha256sum -- "$S4M_LIBRARY/$name") || return 1
         printf '%s %s\n' "${digest%% *}" "$name" || return 1
@@ -223,12 +225,153 @@ s4m_verify() {
     s4m_packages && s4p_verify && s4m_ready
 }
 
-s4m_request_reboot() {
-    local audit
-    if [[ ! -e $S4M_REBOOT_MARKER && ! -L $S4M_REBOOT_MARKER ]]; then
-        return 0
+s4m_boot_id() {
+    local identity
+    [[ -f $S4M_BOOT_FILE ]] && s4m_trusted "$S4M_BOOT_FILE" || return 1
+    identity=$(cat -- "$S4M_BOOT_FILE") || return 1
+    [[ $identity =~ ^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$ ]] || return 1
+    printf '%s\n' "$identity"
+}
+
+s4m_save_restarts() {
+    local temporary
+    temporary=$(mktemp -- "$S4M_STATE/restart-intent.XXXXXX") || return 1
+    if ! { [[ ${#S4M_RESTARTS[@]} == 0 ]] || printf '%s\n' "${S4M_RESTARTS[@]}"; } > "$temporary" ||
+        ! chmod 0600 -- "$temporary" ||
+        ! s4m_atomic "$S4M_STATE/maintenance.restarts" "$temporary" 0600; then
+        rm -f -- "$temporary"
+        return 1
     fi
-    [[ -f $S4M_REBOOT_MARKER ]] && s4m_trusted "$S4M_REBOOT_MARKER" || return 1
+    rm -f -- "$temporary"
+}
+
+s4m_select_restarts() {
+    s4m_trusted /etc/needrestart/needrestart.conf &&
+        s4m_trusted "$S4M_LIBRARY/needrestart.conf" &&
+        s4m_trusted "$S4M_LIBRARY/restart-policy.pl" || return 1
+    s4m_package perl "$S4M_LIBRARY/restart-policy.pl" "$S4M_LIBRARY/needrestart.conf"
+}
+
+s4m_load_restarts() {
+    local path=$S4M_STATE/maintenance.restarts target boot plan selected
+    local -a units=() retained=()
+    S4M_RESTARTS=()
+    [[ -e $path || -L $path ]] || return 0
+    [[ -f $path ]] && s4m_trusted "$path" || return 1
+    mapfile -t S4M_RESTARTS < "$path" || return 1
+    for target in "${S4M_RESTARTS[@]}"; do
+        if [[ $target == @reboot:* ]]; then
+            boot=$(s4m_boot_id) || return 1
+            [[ ${target#@reboot:} =~ ^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$ ]] || return 1
+            [[ $target != "@reboot:$boot" ]] || retained+=("$target")
+        else
+            [[ $target =~ ^[A-Za-z0-9_.@][A-Za-z0-9_.@:\\-]*\.service$ && ${#target} -le 255 ]] || return 1
+            units+=("$target")
+        fi
+    done
+    plan=$(for target in "${units[@]}"; do printf 'NEEDRESTART-SVC: %s\n' "$target"; done) || return 1
+    selected=$(s4m_select_restarts <<< "$plan") || return 1
+    while IFS= read -r target; do
+        [[ -n $target ]] || continue
+        if [[ $target == @reboot ]]; then
+            boot=$(s4m_boot_id) || return 1
+            target=@reboot:$boot
+        fi
+        [[ " ${retained[*]} " == *" $target "* ]] || retained+=("$target")
+    done <<< "$selected"
+    S4M_RESTARTS=("${retained[@]}")
+    # Persist exclusion/boot reconciliation even for an empty journal. Keeping
+    # an empty regular file avoids an uncertain delete/recreation transaction.
+    s4m_save_restarts
+}
+
+s4m_discover_restarts() {
+    local output selected target boot
+    output=$(NEEDRESTART_MODE=l s4m_package needrestart -c "$S4M_LIBRARY/needrestart.conf" -b -r l -l) || return 1
+    selected=$(s4m_select_restarts <<< "$output") || return 1
+    while IFS= read -r target; do
+        [[ -n $target ]] || continue
+        if [[ $target == @reboot ]]; then
+            boot=$(s4m_boot_id) || return 1
+            target=@reboot:$boot
+        fi
+        [[ " ${S4M_RESTARTS[*]} " == *" $target "* ]] || S4M_RESTARTS+=("$target")
+    done <<< "$selected"
+    # No stop/restart may occur before every admitted intent is durable.
+    s4m_save_restarts
+}
+
+s4m_restart_command() (
+    local descriptor=$S4M_REPAIR_FD hook
+    local -a command
+    trap - EXIT
+    hook=$(s4m_package perl "$S4M_LIBRARY/restart-policy.pl" "$S4M_LIBRARY/needrestart.conf" "$1") || return 1
+    if [[ -n $hook ]]; then
+        [[ -f $hook && -x $hook ]] && s4m_trusted "$hook" || return 1
+        command=("$hook")
+    else
+        command=(systemctl restart -- "$1")
+    fi
+    [[ -z $descriptor ]] || exec {descriptor}>&-
+    timeout --signal=TERM --kill-after=10s 300s \
+        env -i PATH="$S4M_PATH" LANG=C LC_ALL=C "${command[@]}"
+)
+
+s4m_restart_unit() {
+    local target=$1 property value active type
+    s4m_property "$target" LoadState loaded || return 1
+    for property in RefuseManualStop RefuseManualStart; do
+        value=$(s4m_systemctl show --property="$property" --value "$target") || return 1
+        if [[ $value == yes ]]; then
+            printf 'debian13s4: restart deliberately refused by %s: %s\n' "$property" "$target" >&2
+            return 2
+        fi
+        [[ $value == no ]] || return 1
+    done
+    s4m_restart_command "$target" || return 1
+    s4m_property "$target" Result success || return 1
+    active=$(s4m_systemctl show --property=ActiveState --value "$target") || return 1
+    [[ $active != active ]] || return 0
+    type=$(s4m_systemctl show --property=Type --value "$target") || return 1
+    [[ $active == inactive && $type == oneshot ]] &&
+        s4m_property "$target" RemainAfterExit no
+}
+
+s4m_run_restarts() {
+    local target entry result failed=0
+    local -a admitted=("${S4M_RESTARTS[@]}") kept=()
+    for target in "${admitted[@]}"; do
+        [[ $target != @reboot:* ]] || continue
+        kept=()
+        for entry in "${S4M_RESTARTS[@]}"; do
+            [[ $entry == "$target" ]] || kept+=("$entry")
+        done
+        # Rotate before the bounded attempt. A killed or perpetually failing
+        # prefix cannot monopolize the next attempt's journal traversal.
+        S4M_RESTARTS=("${kept[@]}" "$target")
+        s4m_save_restarts || return 1
+        if s4m_restart_unit "$target"; then result=0; else result=$?; fi
+        if (( result == 0 || result == 2 )); then
+            S4M_RESTARTS=("${kept[@]}")
+            s4m_save_restarts || return 1
+        else
+            printf 'debian13s4: service restart remains pending: %s\n' "$target" >&2
+            failed=1
+        fi
+    done
+    return "$failed"
+}
+
+s4m_request_reboot() {
+    local audit target needed=0
+    for target in "${S4M_RESTARTS[@]}"; do
+        [[ $target != @reboot:* ]] || needed=1
+    done
+    if [[ ! -e $S4M_REBOOT_MARKER && ! -L $S4M_REBOOT_MARKER ]]; then
+        (( needed != 0 )) || return 0
+    else
+        [[ -f $S4M_REBOOT_MARKER ]] && s4m_trusted "$S4M_REBOOT_MARKER" || return 1
+    fi
     audit=$(s4m_package s4p_dpkg --audit) || return 1
     [[ -z $audit ]] || return 1
     s4m_systemctl reboot || return 1
@@ -239,7 +382,7 @@ s4m_request_reboot() {
 }
 
 s4m_update() (
-    local audit
+    local audit target
     s4m_ready || return 75
     s4m_lock || return 75
     trap s4m_unlock EXIT
@@ -249,6 +392,21 @@ s4m_update() (
     export APT_CONFIG=$S4M_LIBRARY/policy.conf
     export DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none
     export UCF_FORCE_CONFFOLD=1 NEEDRESTART_MODE=l
+    s4m_load_restarts || return 1
+    if (( ${#S4M_RESTARTS[@]} != 0 )); then
+        audit=$(s4m_package s4p_dpkg --audit) || return 1
+        if [[ -z $audit ]]; then
+            # Already configured services recover even while refresh is offline.
+            # Retain failures, but allow later online package repair to proceed.
+            s4m_run_restarts || :
+            for target in "${S4M_RESTARTS[@]}"; do
+                if [[ $target == @reboot:* ]]; then
+                    s4m_request_reboot
+                    return $?
+                fi
+            done
+        fi
+    fi
     if [[ -e $S4M_REBOOT_MARKER || -L $S4M_REBOOT_MARKER ]]; then
         # A previously installed kernel can be activated without fresh internet,
         # but partial package configuration/audit must never authorize reboot.
@@ -271,7 +429,6 @@ s4m_update() (
     s4m_package unattended-upgrade --verbose || return 1
     audit=$(s4m_package s4p_dpkg --audit) || return 1
     [[ -z $audit ]] || return 1
-    s4m_trusted /etc/needrestart/needrestart.conf || return 1
-    NEEDRESTART_MODE=a s4m_package needrestart -c "$S4M_LIBRARY/needrestart.conf" -r a || return 1
+    s4m_discover_restarts && s4m_run_restarts || return 1
     s4m_request_reboot
 )

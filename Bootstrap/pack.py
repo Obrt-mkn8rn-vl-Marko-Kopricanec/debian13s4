@@ -19,7 +19,7 @@ def assets():
     for name in ("debian13s4-repair.service", "debian13s4-repair.timer",
                  "debian13s4-resume.service"):
         result[f"units/{name}"] = ((ROOT / "Recovery" / name).read_bytes(), "0644")
-    for name in ("common.sh", "update.sh", "policy.conf", "needrestart.conf",
+    for name in ("common.sh", "update.sh", "policy.conf", "needrestart.conf", "restart-policy.pl",
                  "debian13s4-maintenance.service", "debian13s4-maintenance.timer"):
         result[f"lib/maintenance/{name}"] = (
             (ROOT / "Maintenance" / name).read_bytes(), "0755" if name == "update.sh" else "0644")

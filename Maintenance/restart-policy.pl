@@ -1,0 +1,45 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Apply the same sorted, first-match service exclusions as Debian needrestart.
+# Batch output precedes native override_rc/refusal handling, so it is only input
+# to this selector; it is never permission to restart every reported service.
+our %nrconf = (defno => 0, verbosity => 0, blacklist_rc => [], override_rc => {},
+              restart_d => '/etc/needrestart/restart.d');
+@ARGV == 1 || @ARGV == 2 or die "Expected the trusted needrestart configuration and optional unit.\n";
+my $loaded = do $ARGV[0];
+die "Cannot load restart policy: $@ $!\n" if $@ || (!defined($loaded) && $!);
+if (@ARGV == 2) {
+    my $unit = $ARGV[1];
+    $unit =~ /\A[A-Za-z0-9_.@][A-Za-z0-9_.@:\\-]*\.service\z/ && length($unit) <= 255
+        or die "Invalid restart unit.\n";
+    my $hook = "$nrconf{restart_d}/$unit";
+    print "$hook\n" or die "Cannot write hook path: $!\n" if -x $hook;
+    exit 0;
+}
+my %seen;
+while (my $line = <STDIN>) {
+    next unless $line =~ /^NEEDRESTART-SVC: (.*)\n$/;
+    my $name = $1;
+    $name =~ /\A[A-Za-z0-9_.@][A-Za-z0-9_.@:\\-]*\z/ && length($name) <= 255
+        or die "Invalid restart target.\n";
+    next if grep { $name =~ /$_/ } @{$nrconf{blacklist_rc}};
+    my $allowed = !$nrconf{defno};
+    for my $pattern (sort keys %{$nrconf{override_rc}}) {
+        next unless $name =~ /$pattern/;
+        $allowed = $nrconf{override_rc}->{$pattern};
+        last;
+    }
+    next unless $allowed;
+    # These pseudo-targets describe init managers, not individual services.
+    # A controlled reboot activates their replacement without running the
+    # unchecked multi-process init-manager hooks.
+    my $target = $name;
+    if ($name =~ /\A(?:systemd-manager|systemd-user|sysv-init)\z/) {
+        $target = '@reboot';
+    }
+    $target .= '.service' unless $target eq '@reboot' || $target =~ /\.service\z/;
+    length($target) <= 255 or die "Restart unit name is too long.\n";
+    print "$target\n" or die "Cannot write restart plan: $!\n" unless $seen{$target}++;
+}

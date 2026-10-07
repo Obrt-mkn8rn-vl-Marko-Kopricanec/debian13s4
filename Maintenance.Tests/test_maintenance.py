@@ -8,6 +8,7 @@ import shlex
 import subprocess
 import tempfile
 import unittest
+import uuid
 
 
 if os.geteuid() == 0:
@@ -35,7 +36,11 @@ stage = ""
 code = 0
 output = ""
 if action == "sync":
-    if any("maintenance.ready." in arg or "maintenance-intent." in arg for arg in args):
+    if str(state_dir / "maintenance.restarts") in args:
+        stage = "restart_commit"
+    elif any("maintenance.restarts." in arg or "restart-intent." in arg for arg in args):
+        stage = "restart_data"
+    elif any("maintenance.ready." in arg or "maintenance-intent." in arg for arg in args):
         stage = "ready_data"
     elif str(state_dir / "maintenance.ready") in args:
         stage = "ready_commit"
@@ -47,9 +52,12 @@ if action == "sync":
         stage = "unit_data"
     if faults.get("sync_" + stage):
         code = 1
+    elif stage == "restart_commit" and faults.get("sync_restart_empty") and not (state_dir / "maintenance.restarts").read_text():
+        code = 1
     else:
         if any(arg == str(state_dir) or str(state_dir) + "/" in arg for arg in args):
             state["disk"]["ready"] = (state_dir / "maintenance.ready").read_text() if (state_dir / "maintenance.ready").exists() else None
+            state["disk"]["restarts"] = (state_dir / "maintenance.restarts").read_text() if (state_dir / "maintenance.restarts").exists() else None
         if any(arg == str(systemd) or str(systemd) + "/" in arg for arg in args):
             state["disk"]["units"] = {path.name: path.read_text() for path in (systemd / timer, systemd / service) if path.is_file()}
         if str(systemd / "timers.target.wants") in args:
@@ -61,10 +69,19 @@ elif action == "systemctl":
         code = 1
     elif command == "show":
         prop = args[1].split("=", 1)[1]
+        properties = state["services"].get(unit, {})
+        if faults.get("show_target") == unit or faults.get("show_property") == prop:
+            code = 1
         if prop == "LoadState":
-            output = "loaded" if (systemd / unit).exists() else "not-found"
+            output = properties.get(prop, "loaded" if unit in state["services"] or (systemd / unit).exists() else "not-found")
         elif prop == "ActiveState":
-            output = "active" if state["active"].get(unit) else "inactive"
+            output = properties.get(prop, "active" if state["active"].get(unit) else "inactive")
+        elif prop in ("RefuseManualStart", "RefuseManualStop", "RemainAfterExit"):
+            output = properties.get(prop, "no")
+        elif prop == "Result":
+            output = properties.get(prop, "success")
+        elif prop == "Type":
+            output = properties.get(prop, "simple")
         elif prop == "FragmentPath":
             output = str(systemd / unit)
         elif prop == "DropInPaths":
@@ -89,6 +106,20 @@ elif action == "systemctl":
     elif command == "start":
         if not faults.get("start_incomplete"):
             state["active"][unit] = True
+    elif command == "restart":
+        properties = state["services"][unit]
+        properties["ActiveState"] = "inactive"
+        if unit in faults.get("restart_targets", []):
+            properties["Result"] = "exit-code"
+            code = 1
+        else:
+            properties["ActiveState"] = "inactive" if faults.get("restart_inactive") else properties.get("after_restart", "active")
+            properties["Result"] = "exit-code" if faults.get("restart_bad_result") else "success"
+        if faults.get("exit_after_restart"):
+            # Kill this disposable owner before it can publish completion.
+            import os
+            import signal
+            os.kill(int(caller), signal.SIGKILL)
     elif command == "reboot":
         state["reboot_requested"] = True
     else:
@@ -121,8 +152,11 @@ class MaintenanceTests(unittest.TestCase):
         self.packages = self.root / "packages.log"
         self.model = self.root / "model.py"
         self.model.write_text(MODEL)
-        self.database.write_text(json.dumps({"enabled": False, "active": {},
-                                            "disk": {"ready": None, "units": {}, "enabled": False}, "faults": {}}))
+        self.database.write_text(json.dumps({"enabled": False, "active": {}, "services": {},
+                                            "disk": {"ready": None, "units": {}, "enabled": False, "restarts": None}, "faults": {}}))
+        self.boot_count = 1
+        (self.root / "boot-id").write_text(str(uuid.UUID(int=self.boot_count)) + "\n")
+        (self.root / "boot-id").chmod(0o600)
         for source in (ROOT / "Maintenance").iterdir():
             (self.library / source.name).write_bytes(source.read_bytes())
             (self.library / source.name).chmod(0o755 if source.name == "update.sh" else 0o644)
@@ -138,6 +172,7 @@ S4M_LIBRARY={q(str(self.library))}
 S4M_STATE={q(str(self.state_dir))}
 S4M_SYSTEMD={q(str(self.systemd))}
 S4M_REBOOT_MARKER={q(str(self.root / 'reboot-required'))}
+S4M_BOOT_FILE={q(str(self.root / 'boot-id'))}
 FAULT=
 s4m_trusted() {{
     local path=$1 mode
@@ -153,6 +188,7 @@ s4m_trusted() {{
     done
 }}
 s4m_systemctl() {{ python3 {q(str(self.model))} {q(str(self.database))} {q(str(self.log))} systemctl "${{FUNCNAME[1]}}" "$@"; }}
+s4m_restart_command() {{ python3 {q(str(self.model))} {q(str(self.database))} {q(str(self.log))} systemctl "$BASHPID" restart -- "$1"; }}
 s4m_sync() {{ python3 {q(str(self.model))} {q(str(self.database))} {q(str(self.log))} sync "${{FUNCNAME[1]}}" "$@"; }}
 s4p_prepare() {{ printf 'prepare\\n' >> {q(str(self.packages))}; }}
 s4p_apt() {{ printf 'setup-apt:%s\\n' "$*" >> {q(str(self.packages))}; [[ $FAULT != install ]]; }}
@@ -182,13 +218,14 @@ unattended-upgrade() {{
 }}
 needrestart() {{
     printf 'restart:%s|mode:%s\\n' "$*" "$NEEDRESTART_MODE" >> {q(str(self.packages))}
+    [[ ! -f {q(str(self.root / 'scan-output'))} ]] || cat {q(str(self.root / 'scan-output'))}
     [[ $FAULT != restart ]]
 }}
 '''
 
-    def run_fixture(self, action="s4m_apply", additions=""):
+    def run_fixture(self, action="s4m_apply", additions="", timeout=30):
         return subprocess.run(["bash", "--noprofile", "--norc", "-c", self.harness() + additions + "\n" + action],
-                              capture_output=True, text=True, timeout=30)
+                              capture_output=True, text=True, timeout=timeout)
 
     def state(self):
         return json.loads(self.database.read_text())
@@ -203,6 +240,16 @@ needrestart() {{
 
     def package_calls(self):
         return self.packages.read_text().splitlines() if self.packages.exists() else []
+
+    def targets(self, names, **properties):
+        state = self.state()
+        state["services"].update({name: {"ActiveState": "active", **properties} for name in names})
+        self.database.write_text(json.dumps(state))
+        (self.root / "scan-output").write_text("".join("NEEDRESTART-SVC: " + name + "\n" for name in names))
+
+    def pending(self):
+        path = self.state_dir / "maintenance.restarts"
+        return path.read_text().splitlines() if path.exists() else []
 
     def assert_success(self, result):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -224,6 +271,13 @@ needrestart() {{
         state["enabled"] = disk["enabled"]
         state["active"] = {TIMER: disk["enabled"]}
         state["faults"] = {}
+        pending = self.state_dir / "maintenance.restarts"
+        pending.unlink(missing_ok=True)
+        if disk["restarts"] is not None:
+            pending.write_text(disk["restarts"])
+            pending.chmod(0o600)
+        self.boot_count += 1
+        (self.root / "boot-id").write_text(str(uuid.UUID(int=self.boot_count)) + "\n")
         self.database.write_text(json.dumps(state))
 
     def test_policy_becomes_ready_only_after_durable_units_and_enablement(self):
@@ -342,7 +396,202 @@ needrestart() {{
         calls = self.package_calls()
         self.assertIn(f"config:{self.library / 'policy.conf'}|frontend:noninteractive|ucf:1", calls[1])
         self.assertIn(f"config:{self.library / 'policy.conf'}", calls[3])
-        self.assertTrue(calls[-1].endswith("|mode:a"))
+        self.assertTrue(calls[-1].endswith("|mode:l"))
+
+    def test_zero_exit_discovery_failed_restart_retains_inactive_target(self):
+        self.assert_success(self.run_fixture())
+        self.targets(["nginx.service"])
+        self.faults(restart_targets=["nginx.service"])
+        result = self.run_fixture("s4m_update")
+        self.assertNotEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.pending(), ["nginx.service"])
+        self.assertEqual(self.state()["disk"]["restarts"], "nginx.service\n")
+        self.assertEqual(self.state()["services"]["nginx.service"]["ActiveState"], "inactive")
+        restart = [event for event in self.events() if event["args"][0] == "restart"]
+        self.assertEqual(len(restart), 1)
+        self.assertEqual(restart[0]["code"], 1)
+        self.assertIn("-b -r l -l|mode:l", self.package_calls()[-1])
+
+    def test_inactive_pending_target_recovers_without_scan_or_internet(self):
+        self.assert_success(self.run_fixture())
+        self.targets(["nginx.service"])
+        self.faults(restart_targets=["nginx.service"])
+        self.assertNotEqual(self.run_fixture("s4m_update").returncode, 0)
+        self.faults()
+        (self.root / "scan-output").write_text("")
+        result = self.run_fixture("s4m_update", "FAULT=offline\n")
+        self.assertNotEqual(result.returncode, 0)  # refresh still retries later
+        self.assertEqual(self.state()["services"]["nginx.service"]["ActiveState"], "active")
+        self.assertEqual(self.pending(), [])
+        self.assertEqual(self.state()["disk"]["restarts"], "")
+        self.assert_success(self.run_fixture("s4m_update"))
+
+    def test_zero_exit_restart_requires_observed_state_and_result(self):
+        self.assert_success(self.run_fixture())
+        self.targets(["nginx.service"])
+        for fault in ({"restart_inactive": True}, {"restart_bad_result": True}, {"show_property": "Result"}):
+            with self.subTest(fault=fault):
+                self.faults(**fault)
+                self.assertNotEqual(self.run_fixture("s4m_update").returncode, 0)
+                self.assertEqual(self.pending(), ["nginx.service"])
+        self.faults()
+        self.assert_success(self.run_fixture("s4m_update"))
+        self.assertEqual(self.pending(), [])
+
+    def test_oneshot_completion_and_manual_refusals_preserve_unit_semantics(self):
+        self.assert_success(self.run_fixture())
+        self.targets(["fixture.service"], Type="oneshot", RemainAfterExit="no", after_restart="inactive")
+        self.assert_success(self.run_fixture("s4m_update"))
+        self.assertEqual(self.pending(), [])
+        for property_name in ("RefuseManualStop", "RefuseManualStart"):
+            with self.subTest(property=property_name):
+                self.targets(["fixture.service"], **{property_name: "yes"})
+                before = len([e for e in self.events() if e["args"][0] == "restart"])
+                self.assert_success(self.run_fixture("s4m_update"))
+                self.assertEqual(len([e for e in self.events() if e["args"][0] == "restart"]), before)
+                self.assertEqual(self.pending(), [])
+
+    def test_native_and_controller_exclusions_never_restart(self):
+        self.assert_success(self.run_fixture())
+        self.targets(["dbus.service", "networking.service", "apt-daily.service",
+                      "debian13s4-maintenance.service", "debian13s4-bootstrap.service",
+                      "debian13s4-repair.service", "debian13s4-resume.service", "nginx.service"])
+        self.assert_success(self.run_fixture("s4m_update"))
+        targets = [e["args"][-1] for e in self.events() if e["args"][0] == "restart"]
+        self.assertEqual(targets, ["nginx.service"])
+        self.assertEqual(self.pending(), [])
+
+    def test_restart_intent_sync_failures_precede_all_service_mutation(self):
+        self.assert_success(self.run_fixture())
+        self.targets(["nginx.service"])
+        for stage in ("restart_data", "restart_commit"):
+            with self.subTest(stage=stage):
+                self.faults(**{"sync_" + stage: True})
+                self.assertNotEqual(self.run_fixture("s4m_update").returncode, 0)
+                self.assertFalse(any(e["args"][0] == "restart" for e in self.events()))
+                self.reboot()
+        self.assert_success(self.run_fixture("s4m_update"))
+        self.assertEqual(self.pending(), [])
+
+    def test_restart_cleanup_sync_error_is_recovered_after_reboot(self):
+        self.assert_success(self.run_fixture())
+        self.targets(["nginx.service"])
+        self.faults(sync_restart_empty=True)
+        self.assertNotEqual(self.run_fixture("s4m_update").returncode, 0)
+        self.assertEqual(self.state()["disk"]["restarts"], "nginx.service\n")
+        self.reboot()
+        (self.root / "scan-output").write_text("")
+        self.assertEqual(self.pending(), ["nginx.service"])
+        self.assert_success(self.run_fixture("s4m_update"))
+        self.assertEqual(self.pending(), [])
+
+    def test_interrupted_prefix_rotates_durable_targets_for_later_retry(self):
+        self.assert_success(self.run_fixture())
+        self.targets(["alpha.service", "omega.service"])
+        self.faults(exit_after_restart=True)
+        self.assertNotEqual(self.run_fixture("s4m_update").returncode, 0)
+        self.assertEqual(self.state()["disk"]["restarts"], "omega.service\nalpha.service\n")
+        self.reboot()
+        (self.root / "scan-output").write_text("")
+        self.faults(restart_targets=["alpha.service"])
+        before = len(self.events())
+        self.assertNotEqual(self.run_fixture("s4m_update").returncode, 0)
+        targets = [e["args"][-1] for e in self.events()[before:] if e["args"][0] == "restart"]
+        self.assertEqual(targets[:2], ["omega.service", "alpha.service"])
+        self.assertEqual(self.state()["services"]["omega.service"]["ActiveState"], "active")
+        self.assertEqual(self.pending(), ["alpha.service"])
+
+    def test_pending_journal_refuses_wrong_kinds_and_malformed_records(self):
+        self.assert_success(self.run_fixture())
+        path = self.state_dir / "maintenance.restarts"
+        victim = self.root / "victim"
+        victim.write_text("keep\n")
+        inode = victim.stat().st_ino
+        path.symlink_to(victim)
+        self.assertNotEqual(self.run_fixture("s4m_update", timeout=10).returncode, 0)
+        self.assertEqual(victim.read_text(), "keep\n")
+        self.assertEqual(victim.stat().st_ino, inode)
+        path.unlink()
+        os.mkfifo(path, 0o600)
+        self.assertNotEqual(self.run_fixture("s4m_update", timeout=10).returncode, 0)
+        path.unlink()
+        for record in ("--help\n", "../../victim.service\n", "nginx.service extra\n", "@reboot:invalid\n"):
+            path.write_text(record)
+            path.chmod(0o600)
+            self.assertNotEqual(self.run_fixture("s4m_update").returncode, 0)
+        self.assertFalse(any(e["args"][0] == "restart" for e in self.events()))
+
+    def test_special_restart_hook_requires_durable_reboot_and_new_boot_id(self):
+        self.assert_success(self.run_fixture())
+        self.targets(["systemd-manager"])
+        self.assertEqual(self.run_fixture("s4m_update").returncode, 75)
+        boot = (self.root / "boot-id").read_text().strip()
+        self.assertEqual(self.pending(), ["@reboot:" + boot])
+        self.assertEqual(self.state()["disk"]["restarts"], "@reboot:" + boot + "\n")
+        self.assertFalse(any(e["args"][0] == "restart" for e in self.events()))
+        (self.root / "scan-output").write_text("")
+        self.faults(reboot=True)
+        self.assertNotEqual(self.run_fixture("s4m_update", "FAULT=offline\n").returncode, 0)
+        self.assertEqual(self.pending(), ["@reboot:" + boot])
+        self.reboot()
+        self.assert_success(self.run_fixture("s4m_update"))
+        self.assertEqual(self.pending(), [])
+
+    def test_restart_command_closes_lock_and_has_its_own_finite_budget(self):
+        definition = subprocess.run(["bash", "--noprofile", "--norc", "-c",
+                                     '. "$1"; declare -f s4m_restart_command', "fixture", str(ROOT / "Maintenance/common.sh")],
+                                    text=True, capture_output=True, timeout=3)
+        self.assertEqual(definition.returncode, 0, definition.stderr)
+        script = self.harness() + definition.stdout + '''
+s4m_lock
+timeout() {
+    [[ ! -e /proc/$BASHPID/fd/$S4M_REPAIR_FD ]]
+    [[ $* == '--signal=TERM --kill-after=10s 300s env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin LANG=C LC_ALL=C systemctl restart -- nginx.service' ]]
+}
+s4m_restart_command nginx.service
+s4m_unlock
+'''
+        self.assertEqual(subprocess.run(["bash", "--noprofile", "--norc", "-c", script],
+                                        text=True, capture_output=True, timeout=3).returncode, 0)
+
+    def test_custom_restart_hook_failure_and_untrusted_leaf_stay_pending(self):
+        hooks = self.root / "hooks"
+        hooks.mkdir(mode=0o700)
+        hook = hooks / "fixture.service"
+        marker = self.root / "hook-ran"
+        hook.write_text("#!/bin/sh\nprintf 'attempt\\n' >> " + shlex.quote(str(marker)) + "\nexit 1\n")
+        hook.chmod(0o755)
+        with (self.library / "needrestart.conf").open("a") as config:
+            config.write("$nrconf{restart_d} = '" + str(hooks) + "';\n")
+        self.assert_success(self.run_fixture())
+        self.targets(["fixture.service"])
+        definition = subprocess.run(["bash", "--noprofile", "--norc", "-c",
+                                     '. "$1"; declare -f s4m_restart_command', "fixture", str(ROOT / "Maintenance/common.sh")],
+                                    text=True, capture_output=True, timeout=3)
+        self.assertEqual(definition.returncode, 0, definition.stderr)
+        result = self.run_fixture("s4m_update", definition.stdout)
+        self.assertNotEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(marker.read_text(), "attempt\n")
+        self.assertEqual(self.pending(), ["fixture.service"])
+        self.assertEqual(self.state()["disk"]["restarts"], "fixture.service\n")
+        victim = self.root / "hook-victim"
+        victim.write_text("#!/bin/sh\nexit 0\n")
+        victim.chmod(0o755)
+        identity = victim.stat().st_ino
+        hook.unlink()
+        hook.symlink_to(victim)
+        self.assertNotEqual(self.run_fixture("s4m_update", definition.stdout).returncode, 0)
+        self.assertEqual(self.pending(), ["fixture.service"])
+        self.assertEqual(marker.read_text(), "attempt\n")
+        self.assertEqual(victim.stat().st_ino, identity)
+        self.assertEqual(victim.read_text(), "#!/bin/sh\nexit 0\n")
+        hook.unlink()
+        hook.write_text("#!/bin/sh\nprintf 'attempt\\n' >> " + shlex.quote(str(marker)) + "\nexit 0\n")
+        hook.chmod(0o755)
+        self.assert_success(self.run_fixture("s4m_update", definition.stdout))
+        self.assertEqual(self.pending(), [])
+        self.assertEqual(self.state()["disk"]["restarts"], "")
+        self.assertEqual(marker.read_text(), "attempt\nattempt\nattempt\n")
 
     def test_kernel_selector_preserves_stock_cloud_and_rt_flavours(self):
         vectors = [("amd64", "6.12-amd64", "linux-image-amd64"),
@@ -528,6 +777,39 @@ s4p_apt() {
 
 
 class NativePolicyTests(unittest.TestCase):
+    def test_native_ui_does_not_propagate_a_failed_child_exit(self):
+        script = '''use NeedRestart::UI;
+my $status;
+my $ui = NeedRestart::UI->new(0);
+$ui->runcmd(sub { $status = system('/bin/false'); });
+print "child_status=$status\\n";
+'''
+        result = subprocess.run(["perl", "-e", script], text=True, capture_output=True, timeout=5)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "child_status=256\n")
+
+    def test_real_selector_preserves_policy_and_rejects_invalid_targets(self):
+        helper = ROOT / "Maintenance/restart-policy.pl"
+        result = subprocess.run(["perl", str(helper), str(ROOT / "Maintenance/needrestart.conf")],
+                                input="NEEDRESTART-SVC: nginx.service\nNEEDRESTART-SVC: dbus.service\nNEEDRESTART-SVC: networking.service\nNEEDRESTART-SVC: debian13s4-repair.service\nNEEDRESTART-SVC: systemd-manager\n",
+                                text=True, capture_output=True, timeout=5)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "nginx.service\n@reboot\n")
+        with tempfile.TemporaryDirectory(prefix="debian13s4-policy-selector.") as directory:
+            config = Path(directory) / "policy.conf"
+            # A valid configuration returning false is not a Perl import error.
+            config.write_text("$nrconf{defno}=1; $nrconf{override_rc}={qr(^allow)=>1}; $nrconf{blacklist_rc}=[qr(^allow-block)]; 0;\n")
+            result = subprocess.run(["perl", str(helper), str(config)],
+                                    input="NEEDRESTART-SVC: allow.service\nNEEDRESTART-SVC: allow-block.service\nNEEDRESTART-SVC: other.service\n",
+                                    text=True, capture_output=True, timeout=5)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout, "allow.service\n")
+            config.write_text("$nrconf{defno}=0; 0;\n")
+            for target in ("--help", "../../victim", "nginx.service extra", "x" * 255):
+                result = subprocess.run(["perl", str(helper), str(config)], input="NEEDRESTART-SVC: " + target + "\n",
+                                        text=True, capture_output=True, timeout=5)
+                self.assertNotEqual(result.returncode, 0, target)
+
     def test_actual_apt_parser_isolates_and_enforces_the_policy(self):
         environment = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "APT_CONFIG": str(ROOT / "Maintenance/policy.conf")}
         result = subprocess.run(["apt-config", "dump"], env=environment, text=True, capture_output=True, timeout=5)
@@ -583,7 +865,7 @@ for codename, origin, label, trusted, expected in [
         self.assertEqual(timer["Timer"]["OnBootSec"], "5min")
         self.assertEqual(timer["Timer"]["OnUnitInactiveSec"], "1h")
         policy = (ROOT / "Maintenance/needrestart.conf").read_text()
-        self.assertIn("require '/etc/needrestart/needrestart.conf'", policy)
+        self.assertIn("do '/etc/needrestart/needrestart.conf'", policy)
         self.assertIn("maintenance|bootstrap|repair|resume", policy)
 
     def test_bundle_admits_maintenance_after_prerequisites(self):
