@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import shlex
 import subprocess
 import tempfile
@@ -107,6 +108,7 @@ elif action == "systemctl":
         if not faults.get("start_incomplete"):
             state["active"][unit] = True
     elif command == "restart":
+        state["clock"] = state.get("clock", 0) + faults.get("restart_ticks", 0)
         properties = state["services"][unit]
         properties["ActiveState"] = "inactive"
         if unit in faults.get("restart_targets", []):
@@ -555,6 +557,100 @@ needrestart() {{
             self.assertNotEqual(self.run_fixture("s4m_update").returncode, 0)
         self.assertFalse(any(e["args"][0] == "restart" for e in self.events()))
 
+    def scaled_restart_budget(self):
+        q = shlex.quote
+        return f'''
+S4M_ATTEMPT_SECONDS=48
+S4M_PRE_RESTART_SECONDS=12
+S4M_POST_RESTART_SECONDS=12
+S4M_FINAL_RESERVE_SECONDS=4
+S4M_RESTART_BOUND_SECONDS=4
+s4m_now() {{
+    python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("clock",0))' {q(str(self.database))}
+}}
+'''
+
+    def test_slow_pending_queue_cannot_starve_package_repair_or_reboot(self):
+        self.assert_success(self.run_fixture())
+        names = [f"slow{index:02d}" for index in range(13)]
+        self.targets(names)
+        self.assert_success(self.run_fixture("s4m_discover_restarts"))
+        # 13 bounded failures need 52 ticks, exceeding a whole 48-tick attempt.
+        self.assertGreater(len(names) * 4, 48)
+        q = shlex.quote
+        additions = self.scaled_restart_budget() + f'''
+FAULT=configure
+s4m_restart_command() {{
+    local target code=0
+    target=$(s4m_unit_name "$1") || return 1
+    timeout --signal=TERM --kill-after=0.02s 0.04s /bin/sh -c 'sleep 2' || code=$?
+    [[ $code == 124 ]] || return 99
+    python3 {q(str(self.model))} {q(str(self.database))} {q(str(self.log))} systemctl "$BASHPID" restart -- "$target" || :
+    return "$code"
+}}
+'''
+        for attempt in range(4):
+            with self.subTest(attempt=attempt):
+                before_order = [name for name in self.pending() if not name.startswith("@reboot:")]
+                before_clock = self.state().get("clock", 0)
+                before_events, before_packages = len(self.events()), len(self.package_calls())
+                if attempt == 2:
+                    (self.root / "scan-output").write_text("NEEDRESTART-SVC: systemd-manager\n")
+                else:
+                    (self.root / "scan-output").write_text("")
+                self.faults(restart_targets=[name + ".service" for name in names],
+                            restart_ticks=4, reboot=attempt == 3)
+                result = self.run_fixture("s4m_update", additions, timeout=45)
+                self.assertEqual(result.returncode, 75 if attempt == 2 else 1, result.stderr)
+                events = self.events()[before_events:]
+                restarts = [e["args"][-1] for e in events if e["args"][0] == "restart"]
+                self.assertEqual(restarts, [name + ".service" for name in before_order[:6]])
+                self.assertEqual(self.state()["clock"] - before_clock, 24)
+                pending = [name for name in self.pending() if not name.startswith("@reboot:")]
+                self.assertEqual(pending, before_order[6:] + before_order[:6])
+                self.assertEqual(set(pending), set(names))
+                self.assertEqual(set(self.state()["disk"]["restarts"].splitlines()), set(self.pending()))
+                calls = self.package_calls()[before_packages:]
+                self.assertTrue(any(c.startswith("apt:update|") for c in calls))
+                self.assertTrue(any(c.startswith("apt:--assume-yes --no-remove --fix-broken install|") for c in calls))
+                self.assertTrue(any(c.startswith("unattended:--verbose|") for c in calls))
+                if attempt == 2:
+                    self.assertTrue(any(e["args"][0] == "reboot" and e["code"] == 0 for e in events))
+                if attempt == 3:
+                    reboots = [e for e in events if e["args"][0] == "reboot"]
+                    self.assertEqual(len(reboots), 2)  # early retry and final retry, with repair between
+                    self.assertTrue(all(e["code"] == 1 for e in reboots))
+                    self.assertTrue(any(name.startswith("@reboot:") for name in self.pending()))
+
+    def test_restart_slice_defers_before_mutation_when_full_target_cannot_fit(self):
+        self.assert_success(self.run_fixture())
+        self.targets(["legacy"])
+        self.assert_success(self.run_fixture("s4m_discover_restarts"))
+        before = len(self.events())
+        result = self.run_fixture('s4m_load_restarts; s4m_run_restarts "$((100 + S4M_RESTART_BOUND_SECONDS - 1))"',
+                                  's4m_now() { printf "100\\n"; }\n')
+        self.assertEqual(result.returncode, 75, result.stderr)
+        self.assertEqual(self.pending(), ["legacy"])
+        self.assertEqual(self.state()["disk"]["restarts"], "legacy\n")
+        self.assertFalse(any(e["args"][0] == "restart" for e in self.events()[before:]))
+
+    def test_late_package_completion_preserves_final_reboot_reserve(self):
+        self.assert_success(self.run_fixture())
+        self.targets(["legacy"])
+        q = shlex.quote
+        additions = self.scaled_restart_budget() + f'''
+unattended-upgrade() {{
+    python3 -c 'import json,sys; from pathlib import Path; p=Path(sys.argv[1]); s=json.loads(p.read_text()); s["clock"]=43; p.write_text(json.dumps(s))' {q(str(self.database))}
+    printf 'kernel installed\\n' > "$S4M_REBOOT_MARKER"
+    chmod 0600 "$S4M_REBOOT_MARKER"
+}}
+'''
+        result = self.run_fixture("s4m_update", additions)
+        self.assertEqual(result.returncode, 75, result.stderr)
+        self.assertEqual(self.pending(), ["legacy"])
+        self.assertFalse(any(e["args"][0] == "restart" for e in self.events()))
+        self.assertTrue(self.state()["reboot_requested"])
+
     def test_special_restart_hook_requires_durable_reboot_and_new_boot_id(self):
         self.assert_success(self.run_fixture())
         self.targets(["systemd-manager"])
@@ -580,6 +676,11 @@ needrestart() {{
 s4m_lock
 timeout() {
     [[ ! -e /proc/$BASHPID/fd/$S4M_REPAIR_FD ]]
+    if [[ $3 == 10s ]]; then
+        shift 3
+        "$@"
+        return $?
+    fi
     [[ $* == '--signal=TERM --kill-after=10s 300s env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin LANG=C LC_ALL=C systemctl restart -- nginx.service' ]]
 }
 s4m_restart_command nginx.service
@@ -857,6 +958,37 @@ s4p_apt() {
 
 
 class NativePolicyTests(unittest.TestCase):
+    def test_native_uptime_clock_is_numeric_and_monotonic(self):
+        before = int(Path("/proc/uptime").read_text().split()[0].split(".")[0])
+        result = subprocess.run(["bash", "--noprofile", "--norc", "-c",
+                                 '. "$1"; s4m_now', "fixture", str(ROOT / "Maintenance/common.sh")],
+                                capture_output=True, text=True, timeout=3)
+        after = int(Path("/proc/uptime").read_text().split()[0].split(".")[0])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(result.stdout.strip().isdigit())
+        self.assertLessEqual(before, int(result.stdout))
+        self.assertLessEqual(int(result.stdout), after)
+
+    def test_shipped_restart_slices_reserve_package_and_final_control_time(self):
+        result = subprocess.run(["bash", "--noprofile", "--norc", "-c", '''
+. "$1"
+printf '%s\\n' "$S4M_ATTEMPT_SECONDS" "$S4M_PRE_RESTART_SECONDS" "$S4M_POST_RESTART_SECONDS" \\
+    "$S4M_FINAL_RESERVE_SECONDS" "$S4M_RESTART_BOUND_SECONDS" "$S4M_RESTART_SECONDS" \\
+    "$S4M_RESTART_GRACE_SECONDS" "$S4M_CONTROL_SECONDS" "$S4M_CONTROL_GRACE_SECONDS"
+''', "fixture", str(ROOT / "Maintenance/common.sh")], capture_output=True, text=True, timeout=3)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        total, pre, post, final, bound, restart, grace, control, control_grace = map(int, result.stdout.splitlines())
+        unit = configparser.ConfigParser(interpolation=None)
+        unit.read(ROOT / "Maintenance" / SERVICE)
+        timeout = re.fullmatch(r"([0-9]+)(s|min|h)", unit["Service"]["TimeoutStartSec"])
+        self.assertIsNotNone(timeout)
+        self.assertEqual(total, int(timeout.group(1)) * {"s": 1, "min": 60, "h": 3600}[timeout.group(2)])
+        self.assertEqual(bound, restart + grace + 12 * (control + control_grace) + 30)
+        self.assertLessEqual(bound, min(pre, post))
+        self.assertEqual(total - pre - post - final, 2100)
+        self.assertGreaterEqual(final, 2 * (control + control_grace))
+        self.assertGreater(13 * restart, total)
+
     def test_native_ui_does_not_propagate_a_failed_child_exit(self):
         script = '''use NeedRestart::UI;
 my $status;

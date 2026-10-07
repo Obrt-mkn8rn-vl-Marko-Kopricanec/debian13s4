@@ -9,6 +9,21 @@ S4M_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4M_REPAIR_FD=
 S4M_REBOOT_MARKER=/run/reboot-required
 S4M_BOOT_FILE=/proc/sys/kernel/random/boot_id
+# Match the shipped one-hour oneshot. Restart slices leave 2100 seconds for
+# package work and 300 seconds for final controls; they never grow with a queue.
+S4M_ATTEMPT_SECONDS=3600
+S4M_PRE_RESTART_SECONDS=600
+S4M_POST_RESTART_SECONDS=600
+S4M_FINAL_RESERVE_SECONDS=300
+S4M_CONTROL_SECONDS=10
+S4M_CONTROL_GRACE_SECONDS=1
+S4M_RESTART_SECONDS=300
+S4M_RESTART_GRACE_SECONDS=10
+# Two intent syncs, three initial properties, hook selection, four final
+# properties and two completion syncs: at most twelve bounded control calls.
+# Include 30 seconds for local work, scheduling and uptime-second rounding.
+S4M_RESTART_BOUND_SECONDS=$((S4M_RESTART_SECONDS + S4M_RESTART_GRACE_SECONDS + \
+    12 * (S4M_CONTROL_SECONDS + S4M_CONTROL_GRACE_SECONDS) + 30))
 # Ordinary intents retain their original needrestart policy and hook names.
 S4M_RESTARTS=()
 
@@ -36,7 +51,7 @@ s4m_control() (
     local descriptor=$S4M_REPAIR_FD
     trap - EXIT
     [[ -z $descriptor ]] || exec {descriptor}>&-
-    timeout --signal=TERM --kill-after=1s 10s \
+    timeout --signal=TERM --kill-after="${S4M_CONTROL_GRACE_SECONDS}s" "${S4M_CONTROL_SECONDS}s" \
         env -i PATH="$S4M_PATH" LANG=C LC_ALL=C "$@"
 )
 
@@ -250,7 +265,16 @@ s4m_select_restarts() {
     s4m_trusted /etc/needrestart/needrestart.conf &&
         s4m_trusted "$S4M_LIBRARY/needrestart.conf" &&
         s4m_trusted "$S4M_LIBRARY/restart-policy.pl" || return 1
-    s4m_package perl "$S4M_LIBRARY/restart-policy.pl" "$S4M_LIBRARY/needrestart.conf"
+    s4m_control perl "$S4M_LIBRARY/restart-policy.pl" "$S4M_LIBRARY/needrestart.conf"
+}
+
+s4m_now() {
+    local uptime idle
+    [[ -f /proc/uptime && ! -L /proc/uptime ]] || return 1
+    read -r uptime idle < /proc/uptime || return 1
+    [[ $uptime =~ ^[0-9]{1,15}[.][0-9]+$ && $idle =~ ^[0-9]+[.][0-9]+$ ]] || return 1
+    uptime=${uptime%.*}
+    printf '%s\n' "$((10#$uptime))"
 }
 
 s4m_unit_name() {
@@ -316,7 +340,7 @@ s4m_restart_command() (
     local -a command
     trap - EXIT
     target=$(s4m_unit_name "$1") || return 1
-    hook=$(s4m_package perl "$S4M_LIBRARY/restart-policy.pl" "$S4M_LIBRARY/needrestart.conf" "$1") || return 1
+    hook=$(s4m_control perl "$S4M_LIBRARY/restart-policy.pl" "$S4M_LIBRARY/needrestart.conf" "$1") || return 1
     if [[ -n $hook ]]; then
         [[ -f $hook && -x $hook ]] && s4m_trusted "$hook" || return 1
         command=("$hook")
@@ -324,7 +348,7 @@ s4m_restart_command() (
         command=(systemctl restart -- "$target")
     fi
     [[ -z $descriptor ]] || exec {descriptor}>&-
-    timeout --signal=TERM --kill-after=10s 300s \
+    timeout --signal=TERM --kill-after="${S4M_RESTART_GRACE_SECONDS}s" "${S4M_RESTART_SECONDS}s" \
         env -i PATH="$S4M_PATH" LANG=C LC_ALL=C "${command[@]}"
 )
 
@@ -350,10 +374,19 @@ s4m_restart_unit() {
 }
 
 s4m_run_restarts() {
-    local target entry result failed=0
+    local deadline=$1 target entry result now failed=0 deferred=0
     local -a admitted=("${S4M_RESTARTS[@]}") kept=()
+    [[ $deadline =~ ^[0-9]{1,15}$ ]] || return 1
+    deadline=$((10#$deadline))
     for target in "${admitted[@]}"; do
         [[ $target != @reboot:* ]] || continue
+        now=$(s4m_now) || return 1
+        if (( now + S4M_RESTART_BOUND_SECONDS > deadline )); then
+            # The next intent remains untouched. Its full bounded operation
+            # must fit without spending the downstream package/reboot reserve.
+            deferred=1
+            break
+        fi
         kept=()
         for entry in "${S4M_RESTARTS[@]}"; do
             [[ $entry == "$target" ]] || kept+=("$entry")
@@ -371,7 +404,9 @@ s4m_run_restarts() {
             failed=1
         fi
     done
-    return "$failed"
+    (( failed == 0 )) || return 1
+    (( deferred == 0 )) || return 75
+    return 0
 }
 
 s4m_request_reboot() {
@@ -394,7 +429,12 @@ s4m_request_reboot() {
 }
 
 s4m_update() (
-    local audit target
+    local audit target start now deadline last_restart restart_status reboot_status
+    start=$(s4m_now) || return 1
+    (( S4M_PRE_RESTART_SECONDS >= S4M_RESTART_BOUND_SECONDS &&
+        S4M_POST_RESTART_SECONDS >= S4M_RESTART_BOUND_SECONDS &&
+        S4M_PRE_RESTART_SECONDS + S4M_POST_RESTART_SECONDS +
+        S4M_FINAL_RESERVE_SECONDS < S4M_ATTEMPT_SECONDS )) || return 1
     s4m_ready || return 75
     s4m_lock || return 75
     trap s4m_unlock EXIT
@@ -408,15 +448,17 @@ s4m_update() (
     if (( ${#S4M_RESTARTS[@]} != 0 )); then
         audit=$(s4m_package s4p_dpkg --audit) || return 1
         if [[ -z $audit ]]; then
-            # Already configured services recover even while refresh is offline.
-            # Retain failures, but allow later online package repair to proceed.
-            s4m_run_restarts || :
+            # Reboot ownership gets a turn before any slow service recovery.
             for target in "${S4M_RESTARTS[@]}"; do
                 if [[ $target == @reboot:* ]]; then
-                    s4m_request_reboot
-                    return $?
+                    if s4m_request_reboot; then reboot_status=0; else reboot_status=$?; fi
+                    (( reboot_status != 75 )) || return 75
+                    break
                 fi
             done
+            # Already configured services recover offline, but only inside a
+            # fixed fair slice. Failures/deferred intents cannot block refresh.
+            s4m_run_restarts "$((start + S4M_PRE_RESTART_SECONDS))" || :
         fi
     fi
     if [[ -e $S4M_REBOOT_MARKER || -L $S4M_REBOOT_MARKER ]]; then
@@ -426,8 +468,8 @@ s4m_update() (
         if s4m_package s4p_dpkg --force-confdef --force-confold --configure --pending; then
             audit=$(s4m_package s4p_dpkg --audit) || return 1
             if [[ -z $audit ]]; then
-                s4m_request_reboot
-                return $?
+                if s4m_request_reboot; then reboot_status=0; else reboot_status=$?; fi
+                (( reboot_status != 75 )) || return 75
             fi
         fi
         # Missing dependencies/partial configuration still reach authenticated
@@ -441,6 +483,16 @@ s4m_update() (
     s4m_package unattended-upgrade --verbose || return 1
     audit=$(s4m_package s4p_dpkg --audit) || return 1
     [[ -z $audit ]] || return 1
-    s4m_discover_restarts && s4m_run_restarts || return 1
-    s4m_request_reboot
+    s4m_discover_restarts || return 1
+    now=$(s4m_now) || return 1
+    deadline=$((now + S4M_POST_RESTART_SECONDS))
+    last_restart=$((start + S4M_ATTEMPT_SECONDS - S4M_FINAL_RESERVE_SECONDS))
+    (( deadline <= last_restart )) || deadline=$last_restart
+    if s4m_run_restarts "$deadline"; then restart_status=0; else restart_status=$?; fi
+    # A failed/deferred restart cannot suppress a healthy-package reboot intent.
+    if s4m_request_reboot; then reboot_status=0; else reboot_status=$?; fi
+    (( reboot_status == 0 )) || return "$reboot_status"
+    (( restart_status == 0 )) || return "$restart_status"
+    (( ${#S4M_RESTARTS[@]} == 0 )) || return 75
+    return 0
 )
