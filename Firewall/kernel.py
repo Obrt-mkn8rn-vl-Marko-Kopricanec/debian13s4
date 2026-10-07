@@ -7,6 +7,7 @@ cannot be passed straight to the firewall compiler or certify firewall readiness
 
 import ipaddress
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -190,14 +191,48 @@ def flags(value):
     return set(value)
 
 
+def finite_deadline(value):
+    if type(value) not in (int, float):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
+
+
 def native_query(name, deadline):
     if type(name) is not str or name not in COMMANDS:
         raise Pending("native command is not an admitted read-only query")
+    return _query_json(COMMANDS[name], deadline,
+                       MAX_LINKS if name in ("links", "addresses") else MAX_ITEMS)
+
+
+def native_route(destination, interface, deadline):
+    if type(destination) is not str or len(destination) > 45 or "%" in destination:
+        raise Pending("invalid route lookup destination")
+    try:
+        ip = ipaddress.ip_address(destination)
+    except ValueError as error:
+        raise Pending("invalid route lookup destination") from error
+    address(destination, ip.version)
+    arguments = (f"-{ip.version}", "route", "get", destination)
+    if ip.version == 6 and ip.is_link_local and interface is None:
+        raise Pending("link-local route lookup lacks an interface")
+    if interface is not None:
+        if ip.version != 6 or not ip.is_link_local or type(interface) is not str or NAME.fullmatch(interface) is None or interface == "lo":
+            raise Pending("invalid scoped route lookup")
+        arguments += ("oif", interface)
+    return _query_json(arguments, deadline, 1)
+
+
+def _query_json(arguments, deadline, limit):
+    if not finite_deadline(deadline):
+        raise Pending("invalid native deadline")
     identity = trusted_binary(IP_BINARY)
     end = min(deadline, now() + QUERY_SECONDS)
     if now() >= end:
         raise Pending("observation deadline expired")
-    process = subprocess.Popen([str(IP_BINARY), "-j", "-N", *COMMANDS[name]],
+    process = subprocess.Popen([str(IP_BINARY), "-j", "-N", *arguments],
                                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                env={"PATH": "/usr/bin:/usr/sbin", "LC_ALL": "C"},
                                close_fds=True, start_new_session=True)
@@ -229,7 +264,7 @@ def native_query(name, deadline):
             value = json.loads(buffers["stdout"].decode("utf-8"), object_pairs_hook=unique_object)
         except (ValueError, UnicodeError, RecursionError) as error:
             raise Pending("invalid native JSON") from error
-        return rows(value, MAX_LINKS if name in ("links", "addresses") else MAX_ITEMS)
+        return rows(value, limit)
     except subprocess.TimeoutExpired as error:
         raise Pending("native query timed out after pipe closure") from error
     finally:
@@ -435,8 +470,11 @@ def namespace():
     return int(match[1])
 
 
-def observe(query=native_query, scope=namespace):
-    deadline = now() + ATTEMPT_SECONDS
+def observe(query=native_query, scope=namespace, deadline=None):
+    started = now()
+    if deadline is not None and (not finite_deadline(deadline) or deadline <= started):
+        raise Pending("invalid or expired inherited observation deadline")
+    deadline = min(deadline, started + ATTEMPT_SECONDS) if deadline is not None else started + ATTEMPT_SECONDS
     identity = scope()
     first = normalize({name: query(name, deadline) for name in COMMANDS})
     second = normalize({name: query(name, deadline) for name in COMMANDS})

@@ -336,6 +336,23 @@ class NormalizationTests(unittest.TestCase):
 
 
 class ObservationTests(unittest.TestCase):
+    def test_inherited_deadline_caps_all_queries_without_extending_native_window(self):
+        for inherited, expected in ((25, 25), (1000, 70)):
+            calls = []
+            def query(name, deadline):
+                calls.append(deadline)
+                return copy.deepcopy(snapshot()[name])
+            with patch.object(KERNEL, "now", side_effect=[10, 11]):
+                KERNEL.observe(query=query, scope=lambda: 77, deadline=inherited)
+            self.assertEqual(calls, [expected] * 20)
+
+    def test_invalid_or_expired_inherited_deadlines_fail_before_queries(self):
+        for value in (True, "20", [], 10 ** 1000, float("nan"), float("inf"), float("-inf"), 9, 10):
+            with self.subTest(value=value), patch.object(KERNEL, "now", return_value=10), patch.object(KERNEL, "native_query") as query:
+                with self.assertRaises(KERNEL.Pending):
+                    KERNEL.observe(query=query, deadline=value)
+                query.assert_not_called()
+
     def test_two_complete_readonly_rounds_and_scope(self):
         data, calls = snapshot(), []
         def query(name, deadline):
@@ -444,6 +461,42 @@ class NativeQueryTests(unittest.TestCase):
 
     def query(self):
         return KERNEL.native_query("links", KERNEL.now() + 5)
+
+    def test_route_capture_has_fixed_unscoped_and_link_local_arguments(self):
+        marker = self.root / "argv.json"
+        self.script(f"import json,sys\nfrom pathlib import Path\nPath({str(marker)!r}).write_text(json.dumps(sys.argv[1:]))\nprint('[{{\"dst\":\"8.8.8.8\",\"dev\":\"eth0\"}}]')")
+        for destination, interface, arguments in (
+                ("8.8.8.8", None, ["-4", "route", "get", "8.8.8.8"]),
+                ("2606:4700:4700::1111", None, ["-6", "route", "get", "2606:4700:4700::1111"]),
+                ("fe80::1", "enp1.7", ["-6", "route", "get", "fe80::1", "oif", "enp1.7"])):
+            KERNEL.native_route(destination, interface, KERNEL.now() + 5)
+            self.assertEqual(json.loads(marker.read_text()), ["-j", "-N", *arguments])
+
+    def test_route_lookup_rejects_wrong_kind_noncanonical_and_injectable_input_before_exec(self):
+        marker = self.root / "executed"
+        self.script(f"from pathlib import Path\nPath({str(marker)!r}).write_text('ran')\nprint('[]')")
+        for destination, interface in ((True, None), ("x" * 1000, None), ("8.8.8.8;echo", None),
+                ("127.0.0.1", None), ("::", None), ("ff02::1", None), ("::ffff:192.0.2.1", None),
+                ("2606:4700:4700:0:0:0:0:1111", None), ("fe80::1%eth0", None),
+                ("fe80::1", None), ("8.8.8.8", "eth0"), ("2606:4700:4700::1111", "eth0"),
+                ("fe80::1", "lo"), ("fe80::1", "eth0 add"), ("fe80::1", [])):
+            with self.subTest(destination=destination, interface=interface), self.assertRaises(KERNEL.Pending):
+                KERNEL.native_route(destination, interface, KERNEL.now() + 5)
+        self.assertFalse(marker.exists())
+
+    def test_route_lookup_refuses_multiple_rows_warnings_and_expired_or_invalid_deadlines(self):
+        self.script("print('[{},{}]')")
+        with self.assertRaises(KERNEL.Pending):
+            KERNEL.native_route("8.8.8.8", None, KERNEL.now() + 5)
+        self.script("import sys\nprint('[]')\nprint('warning',file=sys.stderr)")
+        with self.assertRaises(KERNEL.Pending):
+            KERNEL.native_route("8.8.8.8", None, KERNEL.now() + 5)
+        marker = self.root / "executed"
+        self.script(f"from pathlib import Path\nPath({str(marker)!r}).write_text('ran')\nprint('[]')")
+        for deadline in (True, "30", None, 10 ** 1000, float("nan"), float("inf"), KERNEL.now() - 1):
+            with self.subTest(deadline=deadline), self.assertRaises(KERNEL.Pending):
+                KERNEL.native_route("8.8.8.8", None, deadline)
+        self.assertFalse(marker.exists())
 
     def test_real_private_executable_capture_arguments_cleared_environment_and_fds(self):
         marker = self.root / "observed.json"
