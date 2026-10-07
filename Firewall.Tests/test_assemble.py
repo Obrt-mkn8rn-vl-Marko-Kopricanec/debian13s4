@@ -20,6 +20,12 @@ SPEC = importlib.util.spec_from_file_location('firewall_assemble', ROOT / 'Firew
 ASSEMBLY = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ASSEMBLY)
 SERVERS, DHCP, TIME, DNS, KERNEL, POLICY = ASSEMBLY.SERVERS, ASSEMBLY.DHCP, ASSEMBLY.TIMESYNC, ASSEMBLY.RESOLVER, ASSEMBLY.KERNEL, ASSEMBLY.POLICY
+NFT = ASSEMBLY.NFT
+
+
+def nft_receipt(namespace):
+    return {'schema': 'debian13s4-nft-empty-1', 'namespace': namespace, 'empty': True,
+            'source': {'binary': str(NFT.BINARY), 'version': '1.1.3', 'release_name': 'fixture', 'json_schema_version': 1}}
 
 
 def records():
@@ -41,9 +47,11 @@ def records():
 class AssemblyTests(unittest.TestCase):
     def setUp(self):
         self.records = records()
+        self.namespace = self.records['dhcp4']['kernel']['namespace']
 
     def observe(self, **overrides):
         settings = {name: (lambda deadline, key=key: copy.deepcopy(self.records[key])) for name, key in (('dhcp', 'dhcp4'), ('dns', 'dns'), ('ntp', 'ntp'))}
+        settings['nft'] = lambda deadline: nft_receipt(self.namespace)
         settings.update(overrides)
         return ASSEMBLY.observe(**settings)
 
@@ -225,6 +233,34 @@ class AssemblyTests(unittest.TestCase):
         for text in (None, '', b'nft', 'x' * (POLICY.MAX_OUTPUT + 1)):
             with self.subTest(type=type(text).__name__), self.assertRaises(ASSEMBLY.Pending):self.observe(compiler=lambda raw: text)
 
+    def test_nft_refusal_or_invalid_receipt_prevents_infrastructure_and_compiler_admission(self):
+        def failure(deadline):raise NFT.Pending('existing nft objects')
+        with self.assertRaises(NFT.Pending):
+            self.observe(nft=failure, dhcp=lambda **kw: self.fail('unadmitted infrastructure'), compiler=lambda raw: self.fail('unadmitted compiler'))
+        for empty in (False, 1, None, 'true'):
+            receipt = nft_receipt(self.records['dhcp4']['kernel']['namespace']);receipt['empty'] = empty
+            with self.subTest(empty=empty), self.assertRaises(ValueError):self.observe(nft=lambda deadline: receipt, dhcp=lambda **kw: self.fail('unverified receipt admitted'))
+
+    def test_nft_and_infrastructure_namespace_mismatch_refuses_before_dns(self):
+        with self.assertRaisesRegex(ASSEMBLY.Pending, 'nft and infrastructure'):
+            self.observe(nft=lambda deadline: nft_receipt(self.records['dhcp4']['kernel']['namespace'] + 1), dns=lambda **kw: self.fail('foreign namespace advanced'))
+
+    def test_nft_source_changes_in_second_round_or_after_compile_cannot_publish(self):
+        for turn in (2, 3):
+            calls = []
+            def read(deadline):
+                calls.append(deadline);result = nft_receipt(self.records['dhcp4']['kernel']['namespace'])
+                if len(calls)==turn:result['source']['version'] = '1.1.4'
+                return result
+            with self.subTest(turn=turn), self.assertRaises(ASSEMBLY.Pending):self.observe(nft=read)
+
+    def test_nft_rounds_and_final_barrier_share_the_existing_inherited_window(self):
+        seen = [];deadline = KERNEL.now() + 20
+        def read(deadline):seen.append(deadline);return nft_receipt(self.namespace)
+        result = self.observe(nft=read, deadline=deadline)
+        self.assertEqual(seen, [deadline] * 3)
+        self.assertEqual(result['sources']['nft']['binary'], str(NFT.BINARY))
+
 
 class CLITests(unittest.TestCase):
     def test_arguments_and_refusal_do_not_emit_a_partial_policy(self):
@@ -248,10 +284,12 @@ class PrivateNative(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory(prefix='debian13s4-assembly-', dir='/dev/shm')
         self.root = Path(self.directory.name)
         self.bus, self.ip, self.ledger = self.root / 'busctl', self.root / 'ip', self.root / 'ledger'
+        self.nft = self.root / 'nft'
         self.source = self.root / 'resolv.conf'
         self.settings = [patch.object(DHCP, 'BUS_BINARY', self.bus), patch.object(TIME, 'BUS_BINARY', self.bus),
                          patch.object(KERNEL, 'IP_BINARY', self.ip), patch.object(KERNEL, 'TRUST_ROOT', self.root), patch.object(KERNEL, 'TRUSTED_UID', os.geteuid()),
                          patch.object(DNS, 'RESOLV_CONF', self.source), patch.object(DNS, 'TRUST_ROOT', self.root), patch.object(DNS, 'TRUSTED_UID', os.geteuid())]
+        self.settings += [patch.object(NFT, 'BINARY', self.nft), patch.object(NFT.KERNEL, 'TRUST_ROOT', self.root), patch.object(NFT.KERNEL, 'TRUSTED_UID', os.geteuid())]
         for setting in self.settings:setting.start()
 
     def tearDown(self):
@@ -272,6 +310,7 @@ class PrivateNative(unittest.TestCase):
         for path in (desc_count, peer_count):
             if path.exists():path.unlink()
         self.ledger.write_text('')
+        self.executable(self.nft, f"import json,os,sys\nargs=sys.argv[1:]\nwith open({str(self.ledger)!r},'a') as log:log.write(json.dumps(['nft',args,dict(os.environ)])+'\\n')\nif args!={list(NFT.COMMAND)!r}:raise SystemExit(1)\nprint({json.dumps({'nftables': [{'metainfo': {'version': '1.1.3', 'release_name': 'fixture', 'json_schema_version': 1}}]})!r})")
         self.executable(self.bus, f"""import json,os,sys
 from pathlib import Path
 args=sys.argv[1:]
