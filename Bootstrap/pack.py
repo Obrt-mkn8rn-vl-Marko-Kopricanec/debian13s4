@@ -26,7 +26,7 @@ def assets():
     for name in ("apply.sh", "verify.sh"):
         result[f"lib/tasks/maintenance/{name}"] = (
             (ROOT / "Tasks/maintenance" / name).read_bytes(), "0644")
-    for name in ("common.sh", "update.sh", "policy.conf", "preferences",
+    for name in ("common.sh", "update.sh", "verify-payload.pl", "policy.conf", "preferences",
                  "microsoft-2025.asc", "debian13s4-dotnet.service", "debian13s4-dotnet.timer"):
         result[f"lib/dotnet/{name}"] = (
             (ROOT / "Dotnet" / name).read_bytes(), "0755" if name == "update.sh" else "0644")

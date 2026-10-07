@@ -74,13 +74,98 @@ class DotnetTests(unittest.TestCase):
             (ROOT / "Tasks/prerequisites/debian.sources").read_bytes() + b"\n" +
             (ROOT / "Dotnet/microsoft.sources").read_bytes())
         (self.library / "sources.sources").chmod(0o644)
-        self.program = self.root / "dotnet"
+        self.install_root = self.root / "installed"
+        self.install_root.mkdir(mode=0o700)
+        self.program = self.install_root / "usr/share/dotnet/dotnet"
+        self.program.parent.mkdir(parents=True, mode=0o755)
         self.program.write_text("#!/bin/sh\nprintf '%s\\n' "
                                 "'Microsoft.AspNetCore.App 10.0.12 [/usr/share/dotnet/shared/Microsoft.AspNetCore.App]' "
                                 "'Microsoft.NETCore.App 10.0.12 [/usr/share/dotnet/shared/Microsoft.NETCore.App]'\n")
         self.program.chmod(0o755)
         self.command_link = self.root / "dotnet-link"
         self.command_link.symlink_to(self.program)
+        helper = self.library / "verify-payload.pl"
+        helper.write_text(helper.read_text().replace("my $install_root = '/';",
+                                                    f"my $install_root = '{self.install_root}';")
+                          .replace("my $trusted_uid = 0;", f"my $trusted_uid = {os.geteuid()};"))
+        helper.chmod(0o644)
+        self.admindir = self.install_root / "var/lib/dpkg"
+        (self.admindir / "info").mkdir(parents=True, mode=0o755)
+        self.payloads = {"dotnet-host": {"usr/share/dotnet/dotnet": self.program.read_bytes()},
+                         "dotnet-hostfxr-10.0": {"usr/share/dotnet/host/fxr/10.0.12/libhostfxr.so": b"hostfxr"},
+                         "dotnet-runtime-deps-10.0": {"usr/share/doc/dotnet-runtime-deps-10.0/copyright": b"notice"}}
+        for package, family, names in (
+                ("dotnet-runtime-10.0", "Microsoft.NETCore.App",
+                 "libcoreclr.so libclrjit.so libhostpolicy.so libSystem.Native.so "
+                 "libSystem.Globalization.Native.so libSystem.IO.Compression.Native.so "
+                 "libSystem.Net.Security.Native.so libSystem.Security.Cryptography.Native.OpenSsl.so "
+                 "System.Private.CoreLib.dll System.Runtime.dll System.Net.Http.dll "
+                 "Microsoft.NETCore.App.deps.json Microsoft.NETCore.App.runtimeconfig.json"),
+                ("aspnetcore-runtime-10.0", "Microsoft.AspNetCore.App",
+                 "Microsoft.AspNetCore.dll Microsoft.AspNetCore.Hosting.dll Microsoft.AspNetCore.Http.dll "
+                 "Microsoft.AspNetCore.Server.Kestrel.dll Microsoft.AspNetCore.Routing.dll "
+                 "Microsoft.AspNetCore.App.deps.json Microsoft.AspNetCore.App.runtimeconfig.json")):
+            self.payloads[package] = {f"usr/share/dotnet/shared/{family}/10.0.12/{name}":
+                                      (name+" fixture bytes\n").encode() for name in names.split()}
+        (self.admindir / "status").write_text("".join(
+            f"Package: {package}\nStatus: install ok installed\nVersion: 10.0.12-1\n"
+            "Architecture: amd64\nMaintainer: fixture\nDescription: fixture\n\n"
+            for package in self.payloads))
+        (self.admindir / "status").chmod(0o644)
+        self.restore_payloads()
+
+    def restore_payloads(self):
+        for package, files in self.payloads.items():
+            directories = set()
+            for name, data in files.items():
+                target = self.install_root / name
+                target.parent.mkdir(parents=True, exist_ok=True, mode=0o755)
+                target.write_bytes(data)
+                target.chmod(0o755 if target == self.program else 0o644)
+                directories.update("/"+str(parent) for parent in Path(name).parents if str(parent) != ".")
+            (self.admindir / "info" / (package+".list")).write_text(
+                "/.\n"+"".join(name+"\n" for name in sorted(directories | {"/"+name for name in files} |
+                                                               {"/usr/share/dotnet"})))
+            self.refresh_manifest(package)
+            (self.admindir / "info" / (package+".list")).chmod(0o644)
+        # mkdir(parents=True) uses the process umask for intermediate directories.
+        for directory in self.install_root.rglob("*"):
+            if directory.is_dir():
+                directory.chmod(0o755)
+
+    def refresh_manifest(self, package):
+        metadata = self.admindir / "info" / (package+".md5sums")
+        metadata.write_text("".join(hashlib.md5((self.install_root / name).read_bytes()).hexdigest()+
+                                    "  "+name+"\n" for name in self.payloads[package]))
+        metadata.chmod(0o644)
+
+    def payload(self, family, name):
+        return self.install_root / "usr/share/dotnet/shared" / family / "10.0.12" / name
+
+    def assert_registered_and_enumerated(self):
+        result = subprocess.run(["dpkg-query", f"--admindir={self.admindir}", "--show",
+                                 "--showformat=${Status}\n"], capture_output=True, text=True, timeout=3)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), ["install ok installed"]*5)
+        result = subprocess.run([str(self.program), "--list-runtimes"],
+                                capture_output=True, text=True, timeout=3)
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("Microsoft.NETCore.App 10.0.12", result.stdout)
+        self.assertIn("Microsoft.AspNetCore.App 10.0.12", result.stdout)
+
+    def repairing_apt(self):
+        # Substitute package delivery only; production health and hashing run unchanged.
+        restore = "\n".join("printf %s "+shlex.quote(data.decode())+" > "+
+                             shlex.quote(str(self.install_root / name))
+                             for files in self.payloads.values() for name,data in files.items())
+        return """apt-get() {
+    printf 'apt:%s\\n' "$*" >> """+shlex.quote(str(self.packages))+"""
+    if [[ $* == *--reinstall* ]]; then
+"""+restore+"""
+    fi
+    return 0
+}
+"""
 
     def harness(self):
         q = shlex.quote
@@ -150,6 +235,7 @@ stat() {{
                        "Microsoft.AspNetCore.App 10.0.0-preview.1 [/usr/share/dotnet/shared/Microsoft.AspNetCore.App]"):
             with self.subTest(output=output):
                 self.program.write_text("#!/bin/sh\nprintf '%s\\n' " + shlex.quote(output) + "\n")
+                self.refresh_manifest("dotnet-host")
                 self.assertNotEqual(self.run_fixture("s4d_runtime").returncode, 0)
 
     def test_wrong_command_link_never_executes_the_victim(self):
@@ -261,22 +347,215 @@ stat() {{
     def test_removed_runtime_is_reinstalled_before_final_observation(self):
         self.assert_success(self.apply())
         self.packages.unlink()
-        result = self.update('s4d_runtime() { grep -q "install aspnetcore-runtime-10.0" ' +
-                             shlex.quote(str(self.packages)) + '; }\n')
+        status = self.admindir / "status"
+        original = status.read_text()
+        status.write_text(original.replace("Package: aspnetcore-runtime-10.0\nStatus: install ok installed",
+                                           "Package: aspnetcore-runtime-10.0\nStatus: deinstall ok not-installed"))
+        restore_status = "printf %s "+shlex.quote(original)+" > "+shlex.quote(str(status))+"\n"
+        result = self.update(self.repairing_apt().replace("    fi\n",restore_status+"    fi\n"))
         self.assert_success(result)
+        self.assertTrue(any("--reinstall" in call for call in self.package_calls()))
+        self.assert_success(self.verify())
 
     def test_missing_runtime_bytes_request_reinstallation_before_verification(self):
         self.assert_success(self.apply())
         self.packages.unlink()
-        result = self.update('''
-s4d_runtime() { [[ -f $S4D_LIBRARY/reinstalled.fixture ]]; }
-apt-get() {
-    printf 'apt:%s\\n' "$*" >> '''+shlex.quote(str(self.packages))+'''
-    if [[ $* == *--reinstall* ]]; then touch "$S4D_LIBRARY/reinstalled.fixture"; fi
-}
-''')
+        self.payload("Microsoft.NETCore.App", "libcoreclr.so").unlink()
+        self.assert_registered_and_enumerated()
+        self.assertNotEqual(self.verify().returncode, 0)
+        result = self.update(self.repairing_apt())
         self.assert_success(result)
         self.assertTrue(any("--reinstall install aspnetcore-runtime-10.0" in call for call in self.package_calls()))
+        self.assert_success(self.verify())
+
+    def test_healthy_payload_requires_positive_native_manifest_verification(self):
+        self.assert_registered_and_enumerated()
+        self.assert_success(self.run_fixture("s4d_runtime"))
+        self.assert_success(self.apply())
+        self.assertFalse(any("--reinstall" in call for call in self.package_calls()))
+
+    def test_missing_native_core_payload_is_unhealthy_with_successful_enumeration(self):
+        self.payload("Microsoft.NETCore.App", "libcoreclr.so").unlink()
+        self.assert_registered_and_enumerated()
+        result = self.run_fixture("s4d_runtime")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("untrusted path", result.stderr)
+
+    def test_corrupt_core_and_aspnet_payloads_are_unhealthy_with_successful_enumeration(self):
+        for family, name in (("Microsoft.NETCore.App", "System.Private.CoreLib.dll"),
+                             ("Microsoft.NETCore.App", "System.Net.Http.dll"),
+                             ("Microsoft.AspNetCore.App", "Microsoft.AspNetCore.Routing.dll")):
+            with self.subTest(name=name):
+                self.restore_payloads()
+                target = self.payload(family, name)
+                original = target.read_bytes()
+                target.write_bytes(bytes([original[0]^1])+original[1:])
+                self.assert_registered_and_enumerated()
+                result = self.run_fixture("s4d_runtime")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("checksum mismatch", result.stderr)
+
+    def test_initial_apply_reinstalls_corrupt_aspnet_and_fully_revalidates(self):
+        self.payload("Microsoft.AspNetCore.App", "Microsoft.AspNetCore.dll").write_bytes(b"damaged")
+        self.assert_registered_and_enumerated()
+        self.assertNotEqual(self.verify().returncode, 0)
+        self.assert_success(self.apply(self.repairing_apt()))
+        self.assertTrue(any("--reinstall install aspnetcore-runtime-10.0" in call for call in self.package_calls()))
+        self.assert_success(self.verify())
+
+    def test_zero_exit_install_without_payload_repair_cannot_publish_readiness(self):
+        self.payload("Microsoft.NETCore.App", "System.Private.CoreLib.dll").unlink()
+        self.assert_registered_and_enumerated()
+        self.assertNotEqual(self.apply().returncode, 0)
+        self.assertFalse((self.state_dir / "dotnet.ready").exists())
+        self.assertFalse(self.state()["enabled"])
+        self.assertTrue(any("--reinstall" in call for call in self.package_calls()))
+
+    def test_recurring_corruption_retains_failure_then_reinstalls_core_and_aspnet(self):
+        self.assert_success(self.apply())
+        for family,name in (("Microsoft.NETCore.App", "System.Private.CoreLib.dll"),
+                            ("Microsoft.AspNetCore.App", "Microsoft.AspNetCore.Routing.dll")):
+            with self.subTest(name=name):
+                self.payload(family, name).write_bytes(b"damaged")
+                self.assert_registered_and_enumerated()
+                self.assertNotEqual(self.verify().returncode, 0)
+                self.assertNotEqual(self.update().returncode, 0)
+                self.assertNotEqual(self.verify().returncode, 0)
+                self.assert_success(self.update(self.repairing_apt()))
+                self.assert_success(self.verify())
+
+    def test_missing_integrity_metadata_cannot_certify_and_offline_retry_is_preserved(self):
+        self.assert_success(self.apply())
+        sums = self.admindir / "info/dotnet-runtime-10.0.md5sums"
+        sums.unlink()
+        self.assertNotEqual(self.verify().returncode, 0)
+        self.assertNotEqual(self.update("FAULT=offline\n").returncode, 0)
+        self.assertTrue(self.state()["disk"]["ready"])
+        self.refresh_manifest("dotnet-runtime-10.0")
+        self.assert_success(self.update())
+
+    def test_all_installed_assembly_files_require_checksum_coverage(self):
+        for package, name in (("dotnet-runtime-10.0", "System.Net.Http.dll"),
+                              ("aspnetcore-runtime-10.0", "Microsoft.AspNetCore.Routing.dll")):
+            with self.subTest(package=package):
+                self.restore_payloads()
+                sums = self.admindir / "info" / (package+".md5sums")
+                sums.write_text("".join(line for line in sums.read_text().splitlines(keepends=True)
+                                        if not line.endswith("/"+name+"\n")))
+                result = self.run_fixture("s4d_runtime")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("no checksum coverage", result.stderr)
+
+    def test_required_native_core_and_aspnet_cannot_disappear_from_both_metadata_sets(self):
+        for package, name in (("dotnet-runtime-10.0", "libcoreclr.so"),
+                              ("dotnet-runtime-10.0", "System.Private.CoreLib.dll"),
+                              ("aspnetcore-runtime-10.0", "Microsoft.AspNetCore.dll")):
+            with self.subTest(name=name):
+                self.restore_payloads()
+                for suffix in (".list", ".md5sums"):
+                    metadata = self.admindir / "info" / (package+suffix)
+                    metadata.write_text("".join(line for line in metadata.read_text().splitlines(keepends=True)
+                                                if not line.endswith("/"+name+"\n")))
+                result = self.run_fixture("s4d_runtime")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("required payload is not verifiable", result.stderr)
+
+    def test_empty_invalid_duplicate_and_oversized_manifests_fail_closed(self):
+        sums = self.admindir / "info/dotnet-runtime-10.0.md5sums"
+        original = sums.read_text()
+        for text in ("", "bad digest\n", original+original, "x"*(1024*1024+1)):
+            with self.subTest(length=len(text)):
+                sums.write_text(text)
+                self.assertNotEqual(self.run_fixture("s4d_runtime", timeout=4).returncode, 0)
+        sums.write_text(original)
+        self.assert_success(self.run_fixture("s4d_runtime"))
+
+    def test_unlisted_checksum_and_missing_inventory_are_not_verifiable(self):
+        inventory = self.admindir / "info/dotnet-runtime-10.0.list"
+        original = inventory.read_text()
+        inventory.write_text("".join(line for line in original.splitlines(keepends=True)
+                                     if not line.endswith("/System.Net.Http.dll\n")))
+        result = self.run_fixture("s4d_runtime")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("checksum absent from inventory", result.stderr)
+        inventory.unlink()
+        self.assertNotEqual(self.run_fixture("s4d_runtime").returncode, 0)
+
+    def test_native_fifo_payload_is_rejected_without_blocking(self):
+        target = self.payload("Microsoft.NETCore.App", "libcoreclr.so")
+        target.unlink()
+        os.mkfifo(target, 0o600)
+        result = self.run_fixture("s4d_runtime", timeout=3)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("wrong path kind", result.stderr)
+
+    def test_directory_replacing_required_assembly_is_unverifiable(self):
+        target = self.payload("Microsoft.AspNetCore.App", "Microsoft.AspNetCore.dll")
+        target.unlink()
+        target.mkdir(mode=0o755)
+        self.assertNotEqual(self.run_fixture("s4d_runtime", timeout=3).returncode, 0)
+
+    def test_metadata_fifo_is_rejected_before_native_query(self):
+        target = self.admindir / "info/dotnet-runtime-10.0.md5sums"
+        target.unlink()
+        os.mkfifo(target, 0o600)
+        self.assertNotEqual(self.run_fixture("s4d_runtime", timeout=3).returncode, 0)
+
+    def test_native_root_owner_rule_is_not_relaxed_by_payload_contents(self):
+        helper = self.library / "verify-payload.pl"
+        helper.write_text(helper.read_text().replace(f"my $trusted_uid = {os.geteuid()};",
+                                                    "my $trusted_uid = 0;"))
+        result = self.run_fixture("s4d_runtime")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("untrusted path", result.stderr)
+
+    def test_native_database_locates_unqualified_foreign_architecture_metadata(self):
+        status = self.admindir / "status"
+        status.write_text(status.read_text().replace("Architecture: amd64", "Architecture: arm64"))
+        self.assert_success(self.run_fixture("s4d_runtime"))
+
+    def test_native_database_locates_multiarch_qualified_metadata(self):
+        status = self.admindir / "status"
+        status.write_text(status.read_text().replace("Architecture: amd64", "Architecture: amd64\nMulti-Arch: same"))
+        for target in list((self.admindir / "info").iterdir()):
+            package,suffix = target.name.rsplit(".",1)
+            target.rename(target.with_name(package+":amd64."+suffix))
+        (self.admindir / "info/format").write_text("1\n")
+        (self.admindir / "info/format").chmod(0o644)
+        self.assert_success(self.run_fixture("s4d_runtime"))
+
+    def test_symbolic_payload_preserves_victim_bytes_and_inode(self):
+        target = self.payload("Microsoft.AspNetCore.App", "Microsoft.AspNetCore.dll")
+        victim = self.root / "payload-victim"
+        victim.write_bytes(target.read_bytes())
+        before = victim.stat()
+        target.unlink()
+        target.symlink_to(victim)
+        self.assertNotEqual(self.run_fixture("s4d_runtime").returncode, 0)
+        self.assertEqual((victim.stat().st_ino,victim.read_bytes()), (before.st_ino, self.payloads[
+            "aspnetcore-runtime-10.0"]["usr/share/dotnet/shared/Microsoft.AspNetCore.App/10.0.12/Microsoft.AspNetCore.dll"]))
+
+    def test_unsafe_payload_and_metadata_modes_are_unverifiable(self):
+        for target in (self.payload("Microsoft.NETCore.App", "System.Runtime.dll"),
+                       self.admindir / "info/aspnetcore-runtime-10.0.md5sums"):
+            with self.subTest(path=target):
+                target.chmod(0o666)
+                self.assertNotEqual(self.run_fixture("s4d_runtime").returncode, 0)
+                target.chmod(0o644)
+        self.assert_success(self.run_fixture("s4d_runtime"))
+
+    def test_wrong_registered_framework_version_cannot_validate_another_directory(self):
+        status = self.admindir / "status"
+        status.write_text(status.read_text().replace(
+            "Package: aspnetcore-runtime-10.0\nStatus: install ok installed\nVersion: 10.0.12-1",
+            "Package: aspnetcore-runtime-10.0\nStatus: install ok installed\nVersion: 10.0.13-1"))
+        self.assertNotEqual(self.run_fixture("s4d_runtime").returncode, 0)
+
+    def test_payload_verification_uses_the_finite_control_deadline(self):
+        helper = self.library / "verify-payload.pl"
+        helper.write_text(helper.read_text().replace("my $limit = 1024 * 1024;", "sleep 5; my $limit = 1024 * 1024;"))
+        result = self.run_fixture("s4d_runtime", "S4M_CONTROL_SECONDS=0.1\nS4M_CONTROL_GRACE_SECONDS=0.1\n", timeout=3)
+        self.assertNotEqual(result.returncode, 0)
 
     def test_failed_post_update_runtime_is_not_success(self):
         self.assert_success(self.apply())

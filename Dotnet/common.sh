@@ -12,7 +12,7 @@ S4D_LINK=/usr/bin/dotnet
 S4D_APT_DIR=/var/lib/apt/debian13s4-dotnet
 S4D_PACKAGES=(aspnetcore-runtime-10.0 dotnet-runtime-10.0
     dotnet-runtime-deps-10.0 dotnet-hostfxr-10.0 dotnet-host)
-S4D_FILES=(common.sh update.sh policy.conf preferences sources.sources
+S4D_FILES=(common.sh update.sh verify-payload.pl policy.conf preferences sources.sources
     microsoft-2025.asc debian13s4-dotnet.service debian13s4-dotnet.timer)
 
 s4d_supported() {
@@ -38,6 +38,9 @@ s4d_runtime() {
     [[ $(stat --format='%u' -- "$S4D_LINK") == 0 ]] || return 1
     resolved=$(readlink --canonicalize-existing -- "$S4D_LINK") || return 1
     [[ $resolved == "$S4D_DOTNET" ]] || return 1
+    [[ -f $S4D_LIBRARY/verify-payload.pl ]] &&
+        s4m_trusted "$S4D_LIBRARY/verify-payload.pl" &&
+        s4m_control perl "$S4D_LIBRARY/verify-payload.pl" || return 1
     output=$(s4m_control env DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 \
         "$S4D_DOTNET" --list-runtimes) || return 1
     while IFS= read -r line; do
@@ -84,7 +87,7 @@ s4d_ready() {
 }
 
 s4d_upgrade() {
-    # Explicit installation also repairs an accidentally removed runtime.
+    # Reinstall registered packages when their installed bytes cannot be verified.
     local -a repair=()
     s4d_runtime || repair=(--reinstall)
     s4m_package apt-get --assume-yes --no-remove --no-install-recommends \
