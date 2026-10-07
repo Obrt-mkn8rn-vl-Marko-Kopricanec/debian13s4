@@ -227,6 +227,7 @@ needrestart() {{
     [[ ! -f {q(str(self.root / 'scan-output'))} ]] || cat {q(str(self.root / 'scan-output'))}
     [[ $FAULT != restart ]]
 }}
+s4m_kernel_cleanup() {{ [[ $FAULT != cleanup ]] || return 75; }}
 '''
 
     def run_fixture(self, action="s4m_apply", additions="", timeout=30):
@@ -396,6 +397,82 @@ needrestart() {{
         additions = "FAULT=broken\ns4p_dpkg() { return 1; }\n"
         self.assertNotEqual(self.run_fixture("s4m_update", additions).returncode, 0)
         self.assertFalse(any(call.startswith("unattended:") for call in self.package_calls()))
+
+    def test_pending_kernel_cleanup_still_reaches_authenticated_delivery_and_retries(self):
+        self.assert_success(self.run_fixture())
+        self.packages.unlink()
+        result = self.run_fixture("s4m_update", "FAULT=cleanup\n")
+        self.assertEqual(result.returncode,75,result.stderr)
+        calls = self.package_calls()
+        self.assertTrue(any(call.startswith("apt:update|") for call in calls))
+        self.assertTrue(any(call.startswith("unattended:--verbose|") for call in calls))
+        self.assert_success(self.run_fixture("s4m_update"))
+
+    def test_initial_cleanup_failure_does_not_prevent_persistent_retry_installation(self):
+        self.assert_success(self.run_fixture(additions="FAULT=cleanup\n"))
+        self.assertTrue(self.state()["enabled"])
+        self.assertTrue((self.state_dir/"maintenance.ready").exists())
+        self.assertEqual(self.run_fixture("s4m_update", "FAULT=cleanup\n").returncode,75)
+
+    def test_native_cleanup_timeout_is_bounded_and_cannot_suppress_package_repair(self):
+        definition = subprocess.run(["bash","--noprofile","--norc","-c",'. "$1"; declare -f s4m_kernel_cleanup',
+                                     "fixture",str(ROOT/"Maintenance/common.sh")],capture_output=True,text=True,timeout=3)
+        self.assertEqual(definition.returncode,0,definition.stderr)
+        self.assert_success(self.run_fixture())
+        helper=self.library/"retain-kernels.py"
+        helper.write_text("import time\ntime.sleep(10)\n")
+        helper.chmod(0o644)
+        # Updating the fixture's admitted identity models bootstrap publication;
+        # it does not bypass update's real identity comparison.
+        additions = definition.stdout + '''
+S4M_CLEANUP_SECONDS=1
+S4M_CLEANUP_GRACE_SECONDS=1
+S4M_CLEANUP_BOUND_SECONDS=32
+s4m_identity > "$S4M_STATE/maintenance.ready"
+'''
+        self.packages.unlink()
+        result=self.run_fixture("s4m_update", additions)
+        self.assertEqual(result.returncode,124,result.stderr)
+        self.assertTrue(any(call.startswith("unattended:--verbose|") for call in self.package_calls()))
+
+    def test_native_cleanup_child_clears_environment_and_relinquishes_lock(self):
+        definition = subprocess.run(["bash","--noprofile","--norc","-c",'. "$1"; declare -f s4m_kernel_cleanup',
+                                     "fixture",str(ROOT/"Maintenance/common.sh")],capture_output=True,text=True,timeout=3)
+        self.assertEqual(definition.returncode,0,definition.stderr)
+        helper=self.library/"retain-kernels.py"
+        expected=self.root/"cleanup-descriptor"
+        helper.write_text(f'''import os
+from pathlib import Path
+assert "S4_FIXTURE_LEAK" not in os.environ
+assert os.environ["DEBIAN_FRONTEND"] == "noninteractive"
+assert os.environ["NEEDRESTART_MODE"] == "l"
+assert os.environ["APT_CONFIG"] == {str(self.library/'policy.conf')!r}
+descriptor = int(Path({str(expected)!r}).read_text())
+lock = Path({str(self.state_dir/'repair.lock')!r}).stat()
+try:
+    opened = os.fstat(descriptor)
+except OSError:
+    pass
+else:
+    assert (opened.st_dev,opened.st_ino) != (lock.st_dev,lock.st_ino)
+''')
+        helper.chmod(0o644)
+        q=shlex.quote
+        additions=definition.stdout+f'''
+export S4_FIXTURE_LEAK=untrusted
+APT_CONFIG={q(str(self.library/'policy.conf'))}
+s4m_lock
+trap s4m_unlock EXIT
+printf '%s\\n' "$S4M_REPAIR_FD" > {q(str(expected))}
+'''
+        self.assert_success(self.run_fixture("s4m_kernel_cleanup", additions))
+
+    def test_changed_kernel_helper_invalidates_installed_maintenance_identity(self):
+        self.assert_success(self.run_fixture())
+        helper=self.library/"retain-kernels.py"
+        helper.write_text(helper.read_text()+"\n# changed fixture identity\n")
+        helper.chmod(0o644)
+        self.assertEqual(self.run_fixture("s4m_update").returncode,75)
 
     def test_upgrade_audit_and_restart_errors_remain_failed(self):
         self.assert_success(self.run_fixture())
@@ -572,6 +649,9 @@ S4M_PRE_RESTART_SECONDS=12
 S4M_POST_RESTART_SECONDS=12
 S4M_FINAL_RESERVE_SECONDS=4
 S4M_RESTART_BOUND_SECONDS=4
+S4M_CLEANUP_SECONDS=1
+S4M_CLEANUP_GRACE_SECONDS=1
+S4M_CLEANUP_BOUND_SECONDS=3
 s4m_now() {{
     python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("clock",0))' {q(str(self.database))}
 }}
@@ -981,10 +1061,11 @@ class NativePolicyTests(unittest.TestCase):
 . "$1"
 printf '%s\\n' "$S4M_ATTEMPT_SECONDS" "$S4M_PRE_RESTART_SECONDS" "$S4M_POST_RESTART_SECONDS" \\
     "$S4M_FINAL_RESERVE_SECONDS" "$S4M_RESTART_BOUND_SECONDS" "$S4M_RESTART_SECONDS" \\
-    "$S4M_RESTART_GRACE_SECONDS" "$S4M_CONTROL_SECONDS" "$S4M_CONTROL_GRACE_SECONDS"
+    "$S4M_RESTART_GRACE_SECONDS" "$S4M_CONTROL_SECONDS" "$S4M_CONTROL_GRACE_SECONDS" \\
+    "$S4M_CLEANUP_SECONDS" "$S4M_CLEANUP_GRACE_SECONDS" "$S4M_CLEANUP_BOUND_SECONDS"
 ''', "fixture", str(ROOT / "Maintenance/common.sh")], capture_output=True, text=True, timeout=3)
         self.assertEqual(result.returncode, 0, result.stderr)
-        total, pre, post, final, bound, restart, grace, control, control_grace = map(int, result.stdout.splitlines())
+        total, pre, post, final, bound, restart, grace, control, control_grace, cleanup, cleanup_grace, cleanup_bound = map(int, result.stdout.splitlines())
         unit = configparser.ConfigParser(interpolation=None)
         unit.read(ROOT / "Maintenance" / SERVICE)
         timeout = re.fullmatch(r"([0-9]+)(s|min|h)", unit["Service"]["TimeoutStartSec"])
@@ -992,7 +1073,8 @@ printf '%s\\n' "$S4M_ATTEMPT_SECONDS" "$S4M_PRE_RESTART_SECONDS" "$S4M_POST_REST
         self.assertEqual(total, int(timeout.group(1)) * {"s": 1, "min": 60, "h": 3600}[timeout.group(2)])
         self.assertEqual(bound, restart + grace + 12 * (control + control_grace) + 30)
         self.assertLessEqual(bound, min(pre, post))
-        self.assertEqual(total - pre - post - final, 2100)
+        self.assertEqual(cleanup_bound, cleanup + cleanup_grace + 30)
+        self.assertEqual(total - pre - post - final - cleanup_bound, 1760)
         self.assertGreaterEqual(final, 2 * (control + control_grace))
         self.assertGreater(13 * restart, total)
 

@@ -161,5 +161,6 @@ s4d_update() (
     S4M_UPDATE_PREPARE=s4d_prepare
     S4M_UPDATE_UPGRADE=s4d_upgrade
     S4M_UPDATE_VERIFY=s4d_runtime
+    S4M_UPDATE_CLEANUP=s4m_skip_cleanup
     s4m_update
 )

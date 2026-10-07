@@ -6,6 +6,7 @@ S4M_UPDATE_READY=s4m_ready
 S4M_UPDATE_PREPARE=s4p_prepare
 S4M_UPDATE_UPGRADE=s4m_debian_upgrade
 S4M_UPDATE_VERIFY=s4m_debian_verify
+S4M_UPDATE_CLEANUP=s4m_kernel_cleanup
 S4M_STATE=/var/lib/debian13s4
 S4M_SYSTEMD=/etc/systemd/system
 S4M_TIMER=debian13s4-maintenance.timer
@@ -20,6 +21,9 @@ S4M_ATTEMPT_SECONDS=3600
 S4M_PRE_RESTART_SECONDS=600
 S4M_POST_RESTART_SECONDS=600
 S4M_FINAL_RESERVE_SECONDS=300
+S4M_CLEANUP_SECONDS=300
+S4M_CLEANUP_GRACE_SECONDS=10
+S4M_CLEANUP_BOUND_SECONDS=$((S4M_CLEANUP_SECONDS + S4M_CLEANUP_GRACE_SECONDS + 30))
 S4M_CONTROL_SECONDS=10
 S4M_CONTROL_GRACE_SECONDS=1
 S4M_RESTART_SECONDS=300
@@ -146,7 +150,7 @@ s4m_enabled() {
 s4m_verify_files() {
     local name
     s4m_trusted "$S4M_STATE" && [[ -d $S4M_STATE ]] || return 1
-    for name in common.sh update.sh policy.conf needrestart.conf restart-policy.pl \
+    for name in common.sh update.sh policy.conf needrestart.conf restart-policy.pl retain-kernels.py \
         debian13s4-maintenance.service debian13s4-maintenance.timer; do
         [[ -f $S4M_LIBRARY/$name ]] && s4m_trusted "$S4M_LIBRARY/$name" || return 1
     done
@@ -162,7 +166,7 @@ s4m_verify_files() {
 
 s4m_identity() {
     local name digest
-    for name in common.sh update.sh policy.conf needrestart.conf restart-policy.pl \
+    for name in common.sh update.sh policy.conf needrestart.conf restart-policy.pl retain-kernels.py \
         debian13s4-maintenance.service debian13s4-maintenance.timer; do
         digest=$(sha256sum -- "$S4M_LIBRARY/$name") || return 1
         printf '%s %s\n' "${digest%% *}" "$name" || return 1
@@ -218,7 +222,12 @@ s4m_apply() {
             return 1
         fi
     done
-    s4p_prepare && s4m_packages && s4p_apply && s4p_verify || return 1
+    s4p_prepare && s4m_packages || return 1
+    # An existing kernel history may need space before initial delivery too.
+    # Missing prerequisites/unsafe state cannot authorize removal or prevent
+    # installation and the later persistent maintenance retry from being armed.
+    APT_CONFIG=$S4M_LIBRARY/policy.conf s4m_kernel_cleanup || :
+    s4p_apply && s4p_verify || return 1
     # The packaged kernel hook marks /run/reboot-required for the controller.
     [[ -x /etc/kernel/postinst.d/unattended-upgrades ]] &&
         s4m_trusted /etc/kernel/postinst.d/unattended-upgrades || return 1
@@ -436,16 +445,31 @@ s4m_request_reboot() {
 # Trusted package profiles share the same locking, restart and reboot ownership.
 s4m_debian_upgrade() { s4m_package unattended-upgrade --verbose; }
 s4m_debian_verify() { return 0; }
+s4m_skip_cleanup() { return 0; }
+
+s4m_kernel_cleanup() (
+    trap - EXIT
+    [[ -z $S4M_REPAIR_FD ]] || exec {S4M_REPAIR_FD}>&-
+    [[ -f $S4M_LIBRARY/retain-kernels.py && -n ${APT_CONFIG:-} && -f $APT_CONFIG ]] &&
+        s4m_trusted "$S4M_LIBRARY/retain-kernels.py" && s4m_trusted "$APT_CONFIG" || return 1
+    exec timeout --signal=TERM --kill-after="${S4M_CLEANUP_GRACE_SECONDS}s" "${S4M_CLEANUP_SECONDS}s" \
+        env -i PATH="$S4M_PATH" LANG=C LC_ALL=C APT_CONFIG="$APT_CONFIG" \
+        DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none \
+        UCF_FORCE_CONFFOLD=1 NEEDRESTART_MODE=l \
+        /usr/bin/python3 -I -B "$S4M_LIBRARY/retain-kernels.py" --apply
+)
 
 s4m_update() (
-    local audit target start now deadline last_restart restart_status reboot_status callback
-    for callback in "$S4M_UPDATE_READY" "$S4M_UPDATE_PREPARE" "$S4M_UPDATE_UPGRADE" "$S4M_UPDATE_VERIFY"; do
+    local audit target start now deadline last_restart restart_status reboot_status callback cleanup_status
+    for callback in "$S4M_UPDATE_READY" "$S4M_UPDATE_PREPARE" "$S4M_UPDATE_UPGRADE" "$S4M_UPDATE_VERIFY" "$S4M_UPDATE_CLEANUP"; do
         declare -F -- "$callback" > /dev/null || return 1
     done
     start=$(s4m_now) || return 1
     (( S4M_PRE_RESTART_SECONDS >= S4M_RESTART_BOUND_SECONDS &&
         S4M_POST_RESTART_SECONDS >= S4M_RESTART_BOUND_SECONDS &&
-        S4M_PRE_RESTART_SECONDS + S4M_POST_RESTART_SECONDS +
+        S4M_CLEANUP_SECONDS > 0 && S4M_CLEANUP_GRACE_SECONDS > 0 &&
+        S4M_CLEANUP_BOUND_SECONDS >= S4M_CLEANUP_SECONDS + S4M_CLEANUP_GRACE_SECONDS &&
+        S4M_PRE_RESTART_SECONDS + S4M_POST_RESTART_SECONDS + S4M_CLEANUP_BOUND_SECONDS +
         S4M_FINAL_RESERVE_SECONDS < S4M_ATTEMPT_SECONDS )) || return 1
     "$S4M_UPDATE_READY" || return 75
     s4m_lock || return 75
@@ -488,6 +512,9 @@ s4m_update() (
         # Missing dependencies/partial configuration still reach authenticated
         # refresh and repair on later online attempts, rather than starving here.
     fi
+    # One bounded offline-capable cleanup gets a turn before download/configure
+    # pressure. Failure cannot suppress authenticated repair of interrupted dpkg.
+    if "$S4M_UPDATE_CLEANUP"; then cleanup_status=0; else cleanup_status=$?; fi
     s4m_package apt-get update || return 1
     if ! s4m_package s4p_dpkg --force-confdef --force-confold --configure --pending; then
         s4m_package apt-get --assume-yes --no-remove --fix-broken install || return 1
@@ -507,6 +534,7 @@ s4m_update() (
     if s4m_request_reboot; then reboot_status=0; else reboot_status=$?; fi
     (( reboot_status == 0 )) || return "$reboot_status"
     (( restart_status == 0 )) || return "$restart_status"
+    (( cleanup_status == 0 )) || return "$cleanup_status"
     (( ${#S4M_RESTARTS[@]} == 0 )) || return 75
     return 0
 )

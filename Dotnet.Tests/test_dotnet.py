@@ -338,6 +338,11 @@ stat() {{
         self.assertTrue(all(str(self.library / "policy.conf") in c for c in calls if c.startswith("apt:")))
         self.assertFalse(any(c.startswith("unattended:") for c in calls))
 
+    def test_runtime_profile_leaves_kernel_removal_with_debian_controller(self):
+        self.assert_success(self.apply())
+        result=self.update("s4m_kernel_cleanup() { return 77; }\n")
+        self.assert_success(result)
+
     def test_offline_runtime_does_not_change_debian_profile(self):
         self.assert_success(self.apply())
         result = self.run_fixture('s4d_update || :; [[ -z $S4M_UPDATE_POLICY && $S4M_UPDATE_READY == s4m_ready ]]',

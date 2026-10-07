@@ -399,9 +399,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=79f4df3c723594a12a95be1492de6763e606af59adea0bc6fc895367b8a7adea
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=35442574dc47cfb48c2ea47963d3c9493cb0af15dd96ab75f2c26ee0e3d5bc10
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     local relative
@@ -1089,7 +1089,7 @@ RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
 [Install]
 WantedBy=multi-user.target
 S4_PAYLOAD_a107d7016113884baa5f42ef8c5523410d1193f9970c3d320647dc0ee3d3a5f9
-    cat > "$S4B_STAGE/lib/maintenance/common.sh" <<'S4_PAYLOAD_81662b812509fcf97d5207c42dd41c0085b76dfeeadcaff9598d3bea03a025f0' || return 1
+    cat > "$S4B_STAGE/lib/maintenance/common.sh" <<'S4_PAYLOAD_4e24ee80799045c7b56b90584924285ea7d55c9a91fbf8e278b67ff7642866d2' || return 1
 #!/bin/bash
 
 S4M_LIBRARY=/usr/local/lib/debian13s4/maintenance
@@ -1098,6 +1098,7 @@ S4M_UPDATE_READY=s4m_ready
 S4M_UPDATE_PREPARE=s4p_prepare
 S4M_UPDATE_UPGRADE=s4m_debian_upgrade
 S4M_UPDATE_VERIFY=s4m_debian_verify
+S4M_UPDATE_CLEANUP=s4m_kernel_cleanup
 S4M_STATE=/var/lib/debian13s4
 S4M_SYSTEMD=/etc/systemd/system
 S4M_TIMER=debian13s4-maintenance.timer
@@ -1112,6 +1113,9 @@ S4M_ATTEMPT_SECONDS=3600
 S4M_PRE_RESTART_SECONDS=600
 S4M_POST_RESTART_SECONDS=600
 S4M_FINAL_RESERVE_SECONDS=300
+S4M_CLEANUP_SECONDS=300
+S4M_CLEANUP_GRACE_SECONDS=10
+S4M_CLEANUP_BOUND_SECONDS=$((S4M_CLEANUP_SECONDS + S4M_CLEANUP_GRACE_SECONDS + 30))
 S4M_CONTROL_SECONDS=10
 S4M_CONTROL_GRACE_SECONDS=1
 S4M_RESTART_SECONDS=300
@@ -1238,7 +1242,7 @@ s4m_enabled() {
 s4m_verify_files() {
     local name
     s4m_trusted "$S4M_STATE" && [[ -d $S4M_STATE ]] || return 1
-    for name in common.sh update.sh policy.conf needrestart.conf restart-policy.pl \
+    for name in common.sh update.sh policy.conf needrestart.conf restart-policy.pl retain-kernels.py \
         debian13s4-maintenance.service debian13s4-maintenance.timer; do
         [[ -f $S4M_LIBRARY/$name ]] && s4m_trusted "$S4M_LIBRARY/$name" || return 1
     done
@@ -1254,7 +1258,7 @@ s4m_verify_files() {
 
 s4m_identity() {
     local name digest
-    for name in common.sh update.sh policy.conf needrestart.conf restart-policy.pl \
+    for name in common.sh update.sh policy.conf needrestart.conf restart-policy.pl retain-kernels.py \
         debian13s4-maintenance.service debian13s4-maintenance.timer; do
         digest=$(sha256sum -- "$S4M_LIBRARY/$name") || return 1
         printf '%s %s\n' "${digest%% *}" "$name" || return 1
@@ -1310,7 +1314,12 @@ s4m_apply() {
             return 1
         fi
     done
-    s4p_prepare && s4m_packages && s4p_apply && s4p_verify || return 1
+    s4p_prepare && s4m_packages || return 1
+    # An existing kernel history may need space before initial delivery too.
+    # Missing prerequisites/unsafe state cannot authorize removal or prevent
+    # installation and the later persistent maintenance retry from being armed.
+    APT_CONFIG=$S4M_LIBRARY/policy.conf s4m_kernel_cleanup || :
+    s4p_apply && s4p_verify || return 1
     # The packaged kernel hook marks /run/reboot-required for the controller.
     [[ -x /etc/kernel/postinst.d/unattended-upgrades ]] &&
         s4m_trusted /etc/kernel/postinst.d/unattended-upgrades || return 1
@@ -1528,16 +1537,31 @@ s4m_request_reboot() {
 # Trusted package profiles share the same locking, restart and reboot ownership.
 s4m_debian_upgrade() { s4m_package unattended-upgrade --verbose; }
 s4m_debian_verify() { return 0; }
+s4m_skip_cleanup() { return 0; }
+
+s4m_kernel_cleanup() (
+    trap - EXIT
+    [[ -z $S4M_REPAIR_FD ]] || exec {S4M_REPAIR_FD}>&-
+    [[ -f $S4M_LIBRARY/retain-kernels.py && -n ${APT_CONFIG:-} && -f $APT_CONFIG ]] &&
+        s4m_trusted "$S4M_LIBRARY/retain-kernels.py" && s4m_trusted "$APT_CONFIG" || return 1
+    exec timeout --signal=TERM --kill-after="${S4M_CLEANUP_GRACE_SECONDS}s" "${S4M_CLEANUP_SECONDS}s" \
+        env -i PATH="$S4M_PATH" LANG=C LC_ALL=C APT_CONFIG="$APT_CONFIG" \
+        DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none \
+        UCF_FORCE_CONFFOLD=1 NEEDRESTART_MODE=l \
+        /usr/bin/python3 -I -B "$S4M_LIBRARY/retain-kernels.py" --apply
+)
 
 s4m_update() (
-    local audit target start now deadline last_restart restart_status reboot_status callback
-    for callback in "$S4M_UPDATE_READY" "$S4M_UPDATE_PREPARE" "$S4M_UPDATE_UPGRADE" "$S4M_UPDATE_VERIFY"; do
+    local audit target start now deadline last_restart restart_status reboot_status callback cleanup_status
+    for callback in "$S4M_UPDATE_READY" "$S4M_UPDATE_PREPARE" "$S4M_UPDATE_UPGRADE" "$S4M_UPDATE_VERIFY" "$S4M_UPDATE_CLEANUP"; do
         declare -F -- "$callback" > /dev/null || return 1
     done
     start=$(s4m_now) || return 1
     (( S4M_PRE_RESTART_SECONDS >= S4M_RESTART_BOUND_SECONDS &&
         S4M_POST_RESTART_SECONDS >= S4M_RESTART_BOUND_SECONDS &&
-        S4M_PRE_RESTART_SECONDS + S4M_POST_RESTART_SECONDS +
+        S4M_CLEANUP_SECONDS > 0 && S4M_CLEANUP_GRACE_SECONDS > 0 &&
+        S4M_CLEANUP_BOUND_SECONDS >= S4M_CLEANUP_SECONDS + S4M_CLEANUP_GRACE_SECONDS &&
+        S4M_PRE_RESTART_SECONDS + S4M_POST_RESTART_SECONDS + S4M_CLEANUP_BOUND_SECONDS +
         S4M_FINAL_RESERVE_SECONDS < S4M_ATTEMPT_SECONDS )) || return 1
     "$S4M_UPDATE_READY" || return 75
     s4m_lock || return 75
@@ -1580,6 +1604,9 @@ s4m_update() (
         # Missing dependencies/partial configuration still reach authenticated
         # refresh and repair on later online attempts, rather than starving here.
     fi
+    # One bounded offline-capable cleanup gets a turn before download/configure
+    # pressure. Failure cannot suppress authenticated repair of interrupted dpkg.
+    if "$S4M_UPDATE_CLEANUP"; then cleanup_status=0; else cleanup_status=$?; fi
     s4m_package apt-get update || return 1
     if ! s4m_package s4p_dpkg --force-confdef --force-confold --configure --pending; then
         s4m_package apt-get --assume-yes --no-remove --fix-broken install || return 1
@@ -1599,10 +1626,11 @@ s4m_update() (
     if s4m_request_reboot; then reboot_status=0; else reboot_status=$?; fi
     (( reboot_status == 0 )) || return "$reboot_status"
     (( restart_status == 0 )) || return "$restart_status"
+    (( cleanup_status == 0 )) || return "$cleanup_status"
     (( ${#S4M_RESTARTS[@]} == 0 )) || return 75
     return 0
 )
-S4_PAYLOAD_81662b812509fcf97d5207c42dd41c0085b76dfeeadcaff9598d3bea03a025f0
+S4_PAYLOAD_4e24ee80799045c7b56b90584924285ea7d55c9a91fbf8e278b67ff7642866d2
     cat > "$S4B_STAGE/lib/maintenance/update.sh" <<'S4_PAYLOAD_49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1' || return 1
 #!/bin/bash -p
 set -Eeuo pipefail
@@ -1616,7 +1644,7 @@ export PATH
 s4m_load_packages
 s4m_update
 S4_PAYLOAD_49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1
-    cat > "$S4B_STAGE/lib/maintenance/policy.conf" <<'S4_PAYLOAD_ef244462f0855adfa878e7a746789ea1d2cfc9181ab31065a822a234a3afc5d4' || return 1
+    cat > "$S4B_STAGE/lib/maintenance/policy.conf" <<'S4_PAYLOAD_bc7e6d139257f55d2b8b77c87263709c5fafb72242d728d4372d81d2915d478f' || return 1
 // This file is loaded first through APT_CONFIG. Later system fragments/main
 // cannot widen these sources, origins or security options for this updater.
 Dir::Etc::parts "";
@@ -1629,6 +1657,9 @@ Dir::State::lists "/var/lib/apt/debian13s4/lists";
 APT::Update::Error-Mode "any";
 APT::Install-Recommends "false";
 APT::Install-Suggests "false";
+// Host fragments are disabled: supply kernel protection explicitly here.
+APT::Protect-Kernels "true";
+APT::VersionedKernelPackages { "linux-image"; };
 Acquire::Retries "2";
 Acquire::http::Timeout "30";
 Acquire::https::Timeout "30";
@@ -1652,6 +1683,7 @@ Unattended-Upgrade::AutoFixInterruptedDpkg "true";
 Unattended-Upgrade::MinimalSteps "true";
 Unattended-Upgrade::InstallOnShutdown "false";
 Unattended-Upgrade::Allow-downgrade "false";
+// The checked one-image controller handles both legacy and +deb13 names.
 Unattended-Upgrade::Remove-Unused-Kernel-Packages "false";
 Unattended-Upgrade::Remove-Unused-Dependencies "false";
 Unattended-Upgrade::Remove-New-Unused-Dependencies "false";
@@ -1663,7 +1695,7 @@ Unattended-Upgrade::Automatic-Reboot-Time "now";
 Unattended-Upgrade::OnlyOnACPower "false";
 Unattended-Upgrade::Skip-Updates-On-Metered-Connections "false";
 Unattended-Upgrade::SyslogEnable "true";
-S4_PAYLOAD_ef244462f0855adfa878e7a746789ea1d2cfc9181ab31065a822a234a3afc5d4
+S4_PAYLOAD_bc7e6d139257f55d2b8b77c87263709c5fafb72242d728d4372d81d2915d478f
     cat > "$S4B_STAGE/lib/maintenance/needrestart.conf" <<'S4_PAYLOAD_7082163c6cb6301ce36b1e9528a3d38f295abc2fbac0d29f52ad39abd5969fe3' || return 1
 # Keep Debian's service exclusions, then exclude the setup/update controllers.
 {
@@ -1726,6 +1758,159 @@ while (my $line = <STDIN>) {
     print "$target\n" or die "Cannot write restart plan: $!\n" unless $seen{$target}++;
 }
 S4_PAYLOAD_4459b2afa9b1914dad46d50758e533160d1f5e63deb017310fa296b170bb4cfe
+    cat > "$S4B_STAGE/lib/maintenance/retain-kernels.py" <<'S4_PAYLOAD_b213906bff69cad34a5f2a547727622474f545c207bfca681f8a3dcac521b5ac' || return 1
+"""Remove one obsolete automatic Debian kernel image, retaining boot choices."""
+
+from functools import cmp_to_key
+import json
+import os
+from pathlib import Path
+import re
+import stat
+import subprocess
+import sys
+
+
+POLICY = Path("/usr/local/lib/debian13s4/maintenance/policy.conf")
+TRUSTED_UID = 0
+KEEP = 3
+IMAGE = re.compile(
+    r"linux-image-(?P<release>[1-9][0-9]*\.[0-9]+\.[0-9]+"
+    r"(?:-[0-9]+|\+deb13)-(?P<flavour>(?:cloud-|rt-)?(?:amd64|arm64)))\Z"
+)
+
+
+def trusted(path, directory=False):
+    path = Path(path)
+    if not path.is_absolute() or str(path) != os.path.normpath(path):
+        raise RuntimeError("noncanonical kernel maintenance path")
+    leaf = True
+    while True:
+        info = path.lstat()
+        kind = stat.S_ISDIR if directory or not leaf else stat.S_ISREG
+        if info.st_uid != TRUSTED_UID or info.st_mode & 0o022 or not kind(info.st_mode):
+            raise RuntimeError("untrusted kernel maintenance path: " + str(path))
+        if path == path.parent:
+            return
+        path, leaf = path.parent, False
+
+
+def configured(package):
+    import apt_pkg
+    return (package.is_installed and
+            package._pkg.current_state == apt_pkg.CURSTATE_INSTALLED and
+            package._pkg.inst_state == apt_pkg.INSTSTATE_OK)
+
+
+def select(cache, running):
+    import apt_pkg
+    if cache.broken_count or cache.dpkg_journal_dirty or cache.get_changes():
+        raise RuntimeError("kernel cleanup requires a clean package state")
+    images = [p for p in cache if p.is_installed and IMAGE.fullmatch(p.name)]
+    current = [p for p in images if IMAGE.fullmatch(p.name)["release"] == running]
+    if not current or any(not configured(p) for p in images):
+        raise RuntimeError("running/installed kernel identities are unverifiable")
+    flavour = IMAGE.fullmatch(current[0].name)["flavour"]
+    meta = cache.get("linux-image-" + flavour)
+    if meta is None or not configured(meta):
+        raise RuntimeError("missing configured kernel metapackage")
+    protected = {p.name for p in current} | {meta.name}
+    for group in {IMAGE.fullmatch(p.name)["flavour"] for p in images}:
+        versions = {p.installed.version for p in images if IMAGE.fullmatch(p.name)["flavour"] == group}
+        latest = set(sorted(versions, key=cmp_to_key(apt_pkg.version_compare), reverse=True)[:KEEP])
+        protected.update(p.name for p in images
+                         if IMAGE.fullmatch(p.name)["flavour"] == group and p.installed.version in latest)
+    candidates = [p for p in images if p.name not in protected and p.is_auto_installed and
+                  p.is_auto_removable and p._pkg.selected_state == apt_pkg.SELSTATE_INSTALL and
+                  not p.essential and p.installed.priority not in ("required", "important")]
+    candidates.sort(key=cmp_to_key(lambda a, b: apt_pkg.version_compare(a.installed.version, b.installed.version)))
+    retained = {name: cache[name].installed.version for name in protected}
+    for package in candidates:
+        # No resolver: a removal needing reverse dependencies or any other
+        # transaction is deferred rather than broadening the removal scope.
+        package.mark_delete(auto_fix=False, purge=False)
+        changes = cache.get_changes()
+        if (not cache.broken_count and cache.install_count == 0 and cache.delete_count == 1 and
+                len(changes) == 1 and changes[0].name == package.name and changes[0].marked_delete):
+            return package.name, retained
+        cache.clear()
+    return None, retained
+
+
+def audit():
+    result = subprocess.run(["/usr/bin/dpkg", "--audit"], capture_output=True, timeout=10, check=True)
+    if result.stdout or result.stderr:
+        raise RuntimeError("kernel cleanup requires an empty dpkg audit")
+
+
+def transact(cache, running, apply):
+    name, retained = select(cache, running)
+    if name is None:
+        return 0, {"removed": None, "pending": False}
+    if not apply:
+        return 0, {"selected": name, "retained": sorted(retained)}
+    # The caller holds SystemLock from cache creation through postconditions.
+    # Native commit drops/reacquires only the inner dpkg lock when required.
+    if not cache.commit(allow_unauthenticated=False):
+        raise RuntimeError("native kernel removal failed")
+    cache.open()
+    audit()
+    if cache.dpkg_journal_dirty or cache.broken_count:
+        raise RuntimeError("kernel removal left incomplete package state")
+    if name in cache and cache[name].is_installed:
+        raise RuntimeError("native kernel removal did not remove its target")
+    for identity, version in retained.items():
+        if identity not in cache or not configured(cache[identity]) or cache[identity].installed.version != version:
+            raise RuntimeError("kernel removal changed a retained boot choice")
+    next_name, _ = select(cache, running)
+    cache.clear()
+    return (75 if next_name else 0), {"removed": name, "pending": next_name is not None}
+
+
+def main():
+    if sys.argv[1:] not in (["--plan"], ["--apply"]):
+        raise RuntimeError("expected --plan or --apply")
+    apply = sys.argv[1] == "--apply"
+    if apply and os.geteuid() != TRUSTED_UID:
+        raise RuntimeError("kernel removal requires the trusted owner")
+    trusted(POLICY)
+    if os.environ.get("APT_CONFIG") != str(POLICY):
+        raise RuntimeError("unexpected kernel APT profile")
+    import apt
+    import apt_pkg
+    config = apt_pkg.config
+    if (not config.find_b("APT::Protect-Kernels", False) or
+            config.find("APT::NeverAutoRemove::KernelCount") or
+            config.value_list("APT::VersionedKernelPackages") != ["linux-image"] or
+            config.find_b("Debug::NoLocking", True) or
+            config.find("Dir::Etc::parts") or config.find("Dir::Etc::main")):
+        raise RuntimeError("unverified kernel protection configuration")
+    status = Path(config.find_file("Dir::State::status"))
+    trusted(status)
+    trusted(status.parent, directory=True)
+    extended = Path(config.find_file("Dir::State::extended_states"))
+    trusted(extended.parent, directory=True)
+    if extended.exists() or extended.is_symlink():
+        trusted(extended)
+    # --plan only reads native caches; it never enters a package-system lock or
+    # commit. Production --apply takes the native lock BEFORE loading the cache.
+    if apply:
+        with apt_pkg.SystemLock():
+            audit()
+            result, message = transact(apt.Cache(memonly=True), os.uname().release, True)
+    else:
+        result, message = transact(apt.Cache(memonly=True), os.uname().release, False)
+    print(json.dumps(message, sort_keys=True))
+    return result
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (Exception, KeyboardInterrupt) as error:
+        print("debian13s4 kernel retention: " + str(error), file=sys.stderr)
+        sys.exit(1)
+S4_PAYLOAD_b213906bff69cad34a5f2a547727622474f545c207bfca681f8a3dcac521b5ac
     cat > "$S4B_STAGE/lib/maintenance/debian13s4-maintenance.service" <<'S4_PAYLOAD_d2681c6dde48e6cfbd0232cc1303f589fa042b39224489331574aa49c79bd890' || return 1
 [Unit]
 Description=Authenticated Debian 13 package and kernel maintenance
@@ -1786,7 +1971,7 @@ set -Eeuo pipefail
 s4m_load_packages
 s4m_verify
 S4_PAYLOAD_7aecaab921b4770b6034d966a36ed3b9d94a1e1ae35f901c067c1d4a45c2f762
-    cat > "$S4B_STAGE/lib/dotnet/common.sh" <<'S4_PAYLOAD_2f9f2c6196f0e2d749b8b88a90d6d851fc871d407caa9243796cc1a5345e3769' || return 1
+    cat > "$S4B_STAGE/lib/dotnet/common.sh" <<'S4_PAYLOAD_bc4da33d1b6068f61f3e88bf8251bc64ad5fe5dafcbbc9a98857712a177404e4' || return 1
 #!/bin/bash
 
 # shellcheck source=Maintenance/common.sh
@@ -1950,9 +2135,10 @@ s4d_update() (
     S4M_UPDATE_PREPARE=s4d_prepare
     S4M_UPDATE_UPGRADE=s4d_upgrade
     S4M_UPDATE_VERIFY=s4d_runtime
+    S4M_UPDATE_CLEANUP=s4m_skip_cleanup
     s4m_update
 )
-S4_PAYLOAD_2f9f2c6196f0e2d749b8b88a90d6d851fc871d407caa9243796cc1a5345e3769
+S4_PAYLOAD_bc4da33d1b6068f61f3e88bf8251bc64ad5fe5dafcbbc9a98857712a177404e4
     cat > "$S4B_STAGE/lib/dotnet/update.sh" <<'S4_PAYLOAD_e2c12a417b6849a97e09d14cd33592cb7e507a2ef5f9c0dbcdd472969f56c9b0' || return 1
 #!/bin/bash -p
 set -Eeuo pipefail
@@ -2257,16 +2443,17 @@ f99079435a5917ee3a1a69aa9f18e32e4a98ddcd787007336997b5a4fbc2eab9  lib/tasks/prer
 e21ba280c03e5c9848930e7a58b87febd59332e777a3a992e3bab1f992c1a3e5  units/debian13s4-repair.service
 8618edcc26838d9f7f56c39d538bcfdba099e101582e8fb0adb38df413c5ce28  units/debian13s4-repair.timer
 a107d7016113884baa5f42ef8c5523410d1193f9970c3d320647dc0ee3d3a5f9  units/debian13s4-resume.service
-81662b812509fcf97d5207c42dd41c0085b76dfeeadcaff9598d3bea03a025f0  lib/maintenance/common.sh
+4e24ee80799045c7b56b90584924285ea7d55c9a91fbf8e278b67ff7642866d2  lib/maintenance/common.sh
 49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1  lib/maintenance/update.sh
-ef244462f0855adfa878e7a746789ea1d2cfc9181ab31065a822a234a3afc5d4  lib/maintenance/policy.conf
+bc7e6d139257f55d2b8b77c87263709c5fafb72242d728d4372d81d2915d478f  lib/maintenance/policy.conf
 7082163c6cb6301ce36b1e9528a3d38f295abc2fbac0d29f52ad39abd5969fe3  lib/maintenance/needrestart.conf
 4459b2afa9b1914dad46d50758e533160d1f5e63deb017310fa296b170bb4cfe  lib/maintenance/restart-policy.pl
+b213906bff69cad34a5f2a547727622474f545c207bfca681f8a3dcac521b5ac  lib/maintenance/retain-kernels.py
 d2681c6dde48e6cfbd0232cc1303f589fa042b39224489331574aa49c79bd890  lib/maintenance/debian13s4-maintenance.service
 bce83c7102c31c4e9c5ee8f2bde3ba5a7e33b702b159d1b6f453058985142209  lib/maintenance/debian13s4-maintenance.timer
 488522a33f05b35c7c854074bdcb8d02510e2ea89f6025def2b493c4f81641ec  lib/tasks/maintenance/apply.sh
 7aecaab921b4770b6034d966a36ed3b9d94a1e1ae35f901c067c1d4a45c2f762  lib/tasks/maintenance/verify.sh
-2f9f2c6196f0e2d749b8b88a90d6d851fc871d407caa9243796cc1a5345e3769  lib/dotnet/common.sh
+bc4da33d1b6068f61f3e88bf8251bc64ad5fe5dafcbbc9a98857712a177404e4  lib/dotnet/common.sh
 e2c12a417b6849a97e09d14cd33592cb7e507a2ef5f9c0dbcdd472969f56c9b0  lib/dotnet/update.sh
 211f3767dacd64f61fecbcd630d8957709f8467ada76f8cea28508d34296f91b  lib/dotnet/verify-payload.pl
 13feae91abf511acb9efd9b1e4ea940e134d2f197050879f64e4b3436d519cf0  lib/dotnet/policy.conf
