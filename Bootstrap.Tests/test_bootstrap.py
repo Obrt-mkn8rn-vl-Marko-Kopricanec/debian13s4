@@ -11,6 +11,9 @@ import tempfile
 import time
 import unittest
 
+from fixture_process import run_bash
+from fixture_snapshots import SnapshotStore
+
 
 if os.geteuid() == 0:
     raise RuntimeError("Run the unprivileged fixture suite as an ordinary user.")
@@ -38,6 +41,8 @@ database = Path(database)
 state = json.loads(database.read_text())
 root = database.parent
 state_dir = root / "state"
+snapshots = SnapshotStore(root / "objects")
+state = snapshots.compact_state(state)
 boot = state_dir / "bootstrap"
 library = root / "library-parent/library"
 systemd = root / "systemd"
@@ -54,7 +59,7 @@ def content(path):
     return path.read_text() if path.is_file() and not path.is_symlink() else None
 
 def files(directory):
-    return {str(path.relative_to(directory)): path.read_text()
+    return {str(path.relative_to(directory)): snapshots.text(path.read_text())
             for path in directory.rglob("*")
             if path.is_file() and not path.is_symlink()
             and not any(part.startswith("bundle.") for part in path.parts)}
@@ -93,12 +98,12 @@ if action == "sync":
         if any(path == boot or boot in path.parents for path in targets):
             disk["boot"] = files(boot)
         if any(path == state_dir or (path.parent == state_dir and path != boot) for path in targets):
-            disk["state"] = {path.name: path.read_text() for path in state_dir.iterdir()
+            disk["state"] = {path.name: snapshots.text(path.read_text()) for path in state_dir.iterdir()
                              if path.is_file() and not path.is_symlink()}
         if any(path == library or library in path.parents for path in targets):
             disk["library"] = files(library)
         if any(path == systemd or path.parent == systemd for path in targets):
-            disk["units"] = {path.name: path.read_text() for path in systemd.iterdir()
+            disk["units"] = {path.name: snapshots.text(path.read_text()) for path in systemd.iterdir()
                              if path.is_file() and not path.is_symlink()}
         if systemd / "multi-user.target.wants" in targets:
             disk["boot_enabled"] = state["boot_enabled"]
@@ -174,7 +179,7 @@ class BootstrapTests(unittest.TestCase):
         self.database = self.root / "manager.json"
         self.log = self.root / "events.jsonl"
         self.model = self.root / "manager.py"
-        self.model.write_text(MODEL)
+        self.model.write_text((ROOT / "Bootstrap.Tests/fixture_snapshots.py").read_text() + '\n' + MODEL)
         for path in (self.root, self.library_parent, self.systemd):
             path.mkdir(exist_ok=True)
             path.chmod(0o700)
@@ -194,15 +199,23 @@ S4B_BOOT_DIR={quote(str(self.boot))}
 S4B_LIBRARY_DIR={quote(str(self.library))}
 S4B_SYSTEMD_DIR={quote(str(self.systemd))}
 s4b_trusted() {{
-    local path=$1 mode
+    local path=$1 mode output
+    local -a paths=() modes=()
     [[ $path == {quote(str(self.root))} || $path == {quote(str(self.root))}/* ]] || return 1
     [[ $path != *'/../'* && $path != */.. && $path != *'/./'* && $path != */. && $path != *'//'* ]] || return 1
     while :; do
         [[ -e $path && ! -L $path && -O $path ]] || return 1
-        mode=$(stat --format='%a' -- "$path") || return 1
-        (( (8#$mode & 8#022) == 0 )) || return 1
-        [[ $path == {quote(str(self.root))} ]] && return 0
+        paths+=("$path")
+        [[ $path == {quote(str(self.root))} ]] && break
         path=${{path%/*}}
+    done
+    # One native read covers the same complete fixture-owned ancestry.
+    output=$(stat --format='%a' -- "${{paths[@]}}") || return 1
+    mapfile -t modes <<< "$output"
+    [[ ${{#modes[@]}} == ${{#paths[@]}} ]] || return 1
+    for mode in "${{modes[@]}}"; do
+        [[ $mode =~ ^[0-7]{{1,4}}$ ]] || return 1
+        (( (8#$mode & 8#022) == 0 )) || return 1
     done
 }}
 s4b_install() {{ /usr/bin/install "$@"; }}
@@ -213,8 +226,7 @@ trap 's4b_unlock; s4b_cleanup' EXIT
 ''' + ('s4b_open_lock "$S4B_BOOT_DIR/lock" S4B_LOCK_FD\n' if lock else '')
 
     def run_script(self, script, timeout=30):
-        return subprocess.run(["/bin/bash", "--noprofile", "--norc", "-c", script],
-                              text=True, capture_output=True, timeout=timeout)
+        return run_bash(script, timeout)
 
     def finish(self, additions="", source=ENTRY):
         return self.run_script(self.harness(source) + additions + "\ns4b_finish\n")
@@ -241,7 +253,7 @@ fi
 ''', timeout=timeout)
 
     def state(self):
-        return json.loads(self.database.read_text())
+        return SnapshotStore(self.root / "objects").expand(json.loads(self.database.read_text()))
 
     def faults(self, **faults):
         state = self.state()
@@ -249,7 +261,8 @@ fi
         self.database.write_text(json.dumps(state))
 
     def events(self):
-        return [json.loads(line) for line in self.log.read_text().splitlines()] if self.log.exists() else []
+        encoded = [json.loads(line) for line in self.log.read_text().splitlines()] if self.log.exists() else []
+        return SnapshotStore(self.root / "objects").expand(encoded)
 
     def simulate_reboot(self):
         state = self.state()
