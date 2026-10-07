@@ -9,6 +9,8 @@ S4B_UNIT=debian13s4-bootstrap.service
 S4B_TIMER=debian13s4-repair.timer
 S4B_SERVICE=debian13s4-repair.service
 S4B_RESUME=debian13s4-resume.service
+S4B_QUIESCE=("$S4B_TIMER" "$S4B_SERVICE" "$S4B_RESUME"
+    debian13s4-maintenance.timer debian13s4-maintenance.service)
 S4B_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4B_LOCK_FD=
 S4B_REPAIR_FD=
@@ -167,7 +169,7 @@ s4b_write_runner() {
     # after granting root. Only these explicit functions enter the boot runner.
     printf '#!/bin/bash -p\nset -Eeuo pipefail\numask 077\n' || return 1
     declare -p S4B_STATE_DIR S4B_BOOT_DIR S4B_LIBRARY_DIR S4B_SYSTEMD_DIR \
-        S4B_UNIT S4B_TIMER S4B_SERVICE S4B_RESUME S4B_PATH S4B_BUNDLE_ID \
+        S4B_UNIT S4B_TIMER S4B_SERVICE S4B_RESUME S4B_QUIESCE S4B_PATH S4B_BUNDLE_ID \
         S4B_FILES S4B_MODES || return 1
     printf 'S4B_LOCK_FD=\nS4B_REPAIR_FD=\nS4B_STAGE=\n' || return 1
     printf 'PATH=%q\nexport PATH\n' "$S4B_PATH" || return 1
@@ -185,9 +187,9 @@ S4B_ENTRY
 
 s4b_write_unit() {
     local seconds
-    # At most 2N+28 bounded calls, including data-before-rename and readiness
-    # invalidation, with two spare slots and margins. Nine files need 693 seconds.
-    seconds=$(((2 * ${#S4B_FILES[@]} + 30) * 11 + ${#S4B_FILES[@]} * 5 + 120))
+    # At most 2N+19+3Q controls: each of Q old units may need load/stop/state.
+    # Add two spare slots, data-before-rename and ordinary local-file margins.
+    seconds=$(((2 * ${#S4B_FILES[@]} + 21 + 3 * ${#S4B_QUIESCE[@]}) * 11 + ${#S4B_FILES[@]} * 5 + 120))
     cat <<EOF
 [Unit]
 Description=Complete interrupted Debian 13 setup bootstrap
@@ -278,7 +280,7 @@ s4b_finish() {
     # This service owns bootstrap recovery before any admitted worker/task is
     # changed. The worker's lock serializes publication with running phases.
     s4b_arm || return 1
-    for target in "$S4B_TIMER" "$S4B_SERVICE" "$S4B_RESUME"; do
+    for target in "${S4B_QUIESCE[@]}"; do
         s4b_quiesce "$target" || return 1
     done
     s4b_open_lock "$S4B_STATE_DIR/repair.lock" S4B_REPAIR_FD || return 1

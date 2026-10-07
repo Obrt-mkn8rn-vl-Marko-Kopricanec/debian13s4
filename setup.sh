@@ -9,6 +9,8 @@ S4B_UNIT=debian13s4-bootstrap.service
 S4B_TIMER=debian13s4-repair.timer
 S4B_SERVICE=debian13s4-repair.service
 S4B_RESUME=debian13s4-resume.service
+S4B_QUIESCE=("$S4B_TIMER" "$S4B_SERVICE" "$S4B_RESUME"
+    debian13s4-maintenance.timer debian13s4-maintenance.service)
 S4B_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4B_LOCK_FD=
 S4B_REPAIR_FD=
@@ -167,7 +169,7 @@ s4b_write_runner() {
     # after granting root. Only these explicit functions enter the boot runner.
     printf '#!/bin/bash -p\nset -Eeuo pipefail\numask 077\n' || return 1
     declare -p S4B_STATE_DIR S4B_BOOT_DIR S4B_LIBRARY_DIR S4B_SYSTEMD_DIR \
-        S4B_UNIT S4B_TIMER S4B_SERVICE S4B_RESUME S4B_PATH S4B_BUNDLE_ID \
+        S4B_UNIT S4B_TIMER S4B_SERVICE S4B_RESUME S4B_QUIESCE S4B_PATH S4B_BUNDLE_ID \
         S4B_FILES S4B_MODES || return 1
     printf 'S4B_LOCK_FD=\nS4B_REPAIR_FD=\nS4B_STAGE=\n' || return 1
     printf 'PATH=%q\nexport PATH\n' "$S4B_PATH" || return 1
@@ -185,9 +187,9 @@ S4B_ENTRY
 
 s4b_write_unit() {
     local seconds
-    # At most 2N+28 bounded calls, including data-before-rename and readiness
-    # invalidation, with two spare slots and margins. Nine files need 693 seconds.
-    seconds=$(((2 * ${#S4B_FILES[@]} + 30) * 11 + ${#S4B_FILES[@]} * 5 + 120))
+    # At most 2N+19+3Q controls: each of Q old units may need load/stop/state.
+    # Add two spare slots, data-before-rename and ordinary local-file margins.
+    seconds=$(((2 * ${#S4B_FILES[@]} + 21 + 3 * ${#S4B_QUIESCE[@]}) * 11 + ${#S4B_FILES[@]} * 5 + 120))
     cat <<EOF
 [Unit]
 Description=Complete interrupted Debian 13 setup bootstrap
@@ -278,7 +280,7 @@ s4b_finish() {
     # This service owns bootstrap recovery before any admitted worker/task is
     # changed. The worker's lock serializes publication with running phases.
     s4b_arm || return 1
-    for target in "$S4B_TIMER" "$S4B_SERVICE" "$S4B_RESUME"; do
+    for target in "${S4B_QUIESCE[@]}"; do
         s4b_quiesce "$target" || return 1
     done
     s4b_open_lock "$S4B_STATE_DIR/repair.lock" S4B_REPAIR_FD || return 1
@@ -396,9 +398,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=64f467998a85e8cbf0de17cf459a90f78ad7f3c926a59a6f2bff21c6d79090a4
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=1fa877c9cffc5873249db63f7c57dfa9ba188c0aa67c3543314df74f64a7f69c
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     local relative
@@ -887,9 +889,10 @@ if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
     s4_main "$@"
 fi
 S4_PAYLOAD_5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936
-    cat > "$S4B_STAGE/lib/tasks.list" <<'S4_PAYLOAD_809e89587bfbaf6eeb1193fdbc4b73e664110810dbc9c5172108ddafeb6ce630' || return 1
+    cat > "$S4B_STAGE/lib/tasks.list" <<'S4_PAYLOAD_a909b573b6fbd0c22251db5d7398afcb7a53466d10cd3617d66f68e626b0b13b' || return 1
 prerequisites:
-S4_PAYLOAD_809e89587bfbaf6eeb1193fdbc4b73e664110810dbc9c5172108ddafeb6ce630
+maintenance:prerequisites
+S4_PAYLOAD_a909b573b6fbd0c22251db5d7398afcb7a53466d10cd3617d66f68e626b0b13b
     cat > "$S4B_STAGE/lib/tasks/prerequisites/apply.sh" <<'S4_PAYLOAD_f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934' || return 1
 #!/bin/bash
 set -Eeuo pipefail
@@ -1084,9 +1087,415 @@ RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
 [Install]
 WantedBy=multi-user.target
 S4_PAYLOAD_a107d7016113884baa5f42ef8c5523410d1193f9970c3d320647dc0ee3d3a5f9
+    cat > "$S4B_STAGE/lib/maintenance/common.sh" <<'S4_PAYLOAD_3ba39d9db43a218c7e29260dbcc50c22701334729ba373b348a05dea5821cf79' || return 1
+#!/bin/bash
+
+S4M_LIBRARY=/usr/local/lib/debian13s4/maintenance
+S4M_STATE=/var/lib/debian13s4
+S4M_SYSTEMD=/etc/systemd/system
+S4M_TIMER=debian13s4-maintenance.timer
+S4M_SERVICE=debian13s4-maintenance.service
+S4M_PATH=/usr/sbin:/usr/bin:/sbin:/bin
+S4M_REPAIR_FD=
+S4M_REBOOT_MARKER=/run/reboot-required
+
+s4m_load_packages() {
+    s4m_trusted /usr/local/lib/debian13s4/tasks/prerequisites/common.sh || return 1
+    # shellcheck source=Tasks/prerequisites/common.sh
+    . /usr/local/lib/debian13s4/tasks/prerequisites/common.sh
+}
+
+s4m_trusted() {
+    local path=$1 owner mode
+    [[ $path == /* && $path != *'/../'* && $path != */.. &&
+        $path != *'/./'* && $path != */. && $path != *'//'* ]] || return 1
+    while :; do
+        [[ -e $path && ! -L $path ]] || return 1
+        read -r owner mode < <(stat --format='%u %a' -- "$path") || return 1
+        [[ $owner == 0 ]] && (( (8#$mode & 8#022) == 0 )) || return 1
+        [[ $path == / ]] && return 0
+        path=${path%/*}
+        [[ -n $path ]] || path=/
+    done
+}
+
+s4m_control() (
+    local descriptor=$S4M_REPAIR_FD
+    trap - EXIT
+    [[ -z $descriptor ]] || exec {descriptor}>&-
+    timeout --signal=TERM --kill-after=1s 10s \
+        env -i PATH="$S4M_PATH" LANG=C LC_ALL=C "$@"
+)
+
+s4m_package() (
+    # Maintainer scripts may start long-lived processes: none may retain the
+    # installer's shared lock after this controller releases it.
+    local descriptor=$S4M_REPAIR_FD
+    trap - EXIT
+    [[ -z $descriptor ]] || exec {descriptor}>&-
+    "$@"
+)
+
+s4m_lock() {
+    local path=$S4M_STATE/repair.lock descriptor descriptor_path before after owner mode identity previous_umask
+    [[ -z $S4M_REPAIR_FD && -d $S4M_STATE ]] && s4m_trusted "$S4M_STATE" || return 1
+    if [[ -e $path || -L $path ]]; then
+        [[ ! -L $path && -f $path ]] && s4m_trusted "$path" || return 1
+    fi
+    previous_umask=$(umask) || return 1
+    umask 077
+    if ! exec {descriptor}>> "$path"; then
+        umask "$previous_umask"
+        return 1
+    fi
+    umask "$previous_umask"
+    descriptor_path=/proc/$BASHPID/fd/$descriptor
+    if [[ -f $descriptor_path && ! -L $path && -f $path ]] &&
+        s4m_trusted "$path" &&
+        before=$(stat --format='%u %a %d:%i' -- "$path") &&
+        after=$(stat --dereference --format='%u %a %d:%i' -- "$descriptor_path") &&
+        [[ -n $before && $before == "$after" ]] &&
+        read -r owner mode identity <<< "$after" &&
+        [[ $owner == "$EUID" && $mode =~ ^[0-7]{3,4}$ && $identity =~ ^[0-9]+:[0-9]+$ ]] &&
+        (( (8#$mode & 8#022) == 0 )) && flock --nonblock "$descriptor"; then
+        S4M_REPAIR_FD=$descriptor
+        return 0
+    fi
+    exec {descriptor}>&-
+    return 1
+}
+
+s4m_unlock() {
+    [[ -z $S4M_REPAIR_FD ]] || exec {S4M_REPAIR_FD}>&-
+    S4M_REPAIR_FD=
+}
+
+s4m_systemctl() {
+    s4m_control systemctl "$@"
+}
+
+s4m_sync() {
+    s4m_control sync --file-system -- "$@"
+}
+
+s4m_atomic() {
+    local target=$1 source=$2 mode=${3:-0644} temporary
+    s4m_trusted "${target%/*}" && s4m_trusted "$source" && [[ -f $source ]] || return 1
+    if [[ -e $target || -L $target ]]; then
+        [[ -f $target ]] && s4m_trusted "$target" || return 1
+    fi
+    temporary=$(mktemp -- "${target}.XXXXXX") || return 1
+    if ! cat -- "$source" > "$temporary" || ! chmod "$mode" -- "$temporary"; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    if [[ -f $target ]] && cmp --silent -- "$source" "$target"; then
+        rm -f -- "$temporary" || return 1
+    elif ! s4m_sync "$temporary" || ! mv -fT -- "$temporary" "$target"; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    s4m_sync "${target%/*}" "$target"
+}
+
+s4m_property() {
+    local unit=$1 property=$2 expected=$3 output
+    output=$(s4m_systemctl show --property="$property" --value "$unit") || return 1
+    [[ $output == "$expected" ]]
+}
+
+s4m_enabled() {
+    local output
+    output=$(s4m_systemctl is-enabled "$1") || return 1
+    [[ $output == enabled ]]
+}
+
+s4m_verify_files() {
+    local name
+    s4m_trusted "$S4M_STATE" && [[ -d $S4M_STATE ]] || return 1
+    for name in common.sh update.sh policy.conf needrestart.conf \
+        debian13s4-maintenance.service debian13s4-maintenance.timer; do
+        [[ -f $S4M_LIBRARY/$name ]] && s4m_trusted "$S4M_LIBRARY/$name" || return 1
+    done
+    [[ -x $S4M_LIBRARY/update.sh ]] || return 1
+    for name in "$S4M_SERVICE" "$S4M_TIMER"; do
+        [[ -f $S4M_SYSTEMD/$name ]] && s4m_trusted "$S4M_SYSTEMD/$name" &&
+            cmp --silent -- "$S4M_LIBRARY/$name" "$S4M_SYSTEMD/$name" || return 1
+        s4m_property "$name" FragmentPath "$S4M_SYSTEMD/$name" || return 1
+        s4m_property "$name" DropInPaths '' || return 1
+    done
+    s4m_enabled "$S4M_TIMER" && s4m_property "$S4M_TIMER" ActiveState active
+}
+
+s4m_identity() {
+    local name digest
+    for name in common.sh update.sh policy.conf needrestart.conf \
+        debian13s4-maintenance.service debian13s4-maintenance.timer; do
+        digest=$(sha256sum -- "$S4M_LIBRARY/$name") || return 1
+        printf '%s %s\n' "${digest%% *}" "$name" || return 1
+    done
+}
+
+s4m_ready() {
+    local expected actual
+    [[ ! -e $S4M_STATE/bootstrap/pending && ! -L $S4M_STATE/bootstrap/pending &&
+        -f $S4M_STATE/maintenance.ready ]] && s4m_trusted "$S4M_STATE/maintenance.ready" || return 1
+    s4m_verify_files || return 1
+    expected=$(s4m_identity) && actual=$(cat -- "$S4M_STATE/maintenance.ready") || return 1
+    [[ $expected == "$actual" ]]
+}
+
+s4m_kernel_package() {
+    local architecture release
+    architecture=$(dpkg --print-architecture) && release=$(uname -r) || return 1
+    case $architecture:$release in
+        amd64:*-cloud-amd64) printf 'linux-image-cloud-amd64\n' ;;
+        amd64:*-rt-amd64) printf 'linux-image-rt-amd64\n' ;;
+        amd64:*) printf 'linux-image-amd64\n' ;;
+        arm64:*-cloud-arm64) printf 'linux-image-cloud-arm64\n' ;;
+        arm64:*) printf 'linux-image-arm64\n' ;;
+        *) printf 'debian13s4: unattended kernel selection supports amd64/arm64 at this checkpoint.\n' >&2; return 78 ;;
+    esac
+}
+
+s4m_packages() {
+    local kernel
+    kernel=$(s4m_kernel_package) || return 1
+    S4P_PACKAGES=(unattended-upgrades needrestart "$kernel")
+}
+
+s4m_apply() {
+    local unit loaded temporary wants resolved
+    s4m_trusted "$S4M_STATE" && s4m_trusted "$S4M_SYSTEMD" || return 1
+    for unit in "$S4M_TIMER" "$S4M_SERVICE"; do
+        if [[ -e $S4M_SYSTEMD/$unit || -L $S4M_SYSTEMD/$unit ]]; then
+            [[ -f $S4M_SYSTEMD/$unit ]] && s4m_trusted "$S4M_SYSTEMD/$unit" || return 1
+        fi
+    done
+    if [[ -e $S4M_STATE/maintenance.ready || -L $S4M_STATE/maintenance.ready ]]; then
+        [[ -f $S4M_STATE/maintenance.ready ]] && s4m_trusted "$S4M_STATE/maintenance.ready" || return 1
+        rm -f -- "$S4M_STATE/maintenance.ready" || return 1
+    fi
+    s4m_sync "$S4M_STATE" || return 1
+    for unit in "$S4M_TIMER" "$S4M_SERVICE"; do
+        loaded=$(s4m_systemctl show --property=LoadState --value "$unit") || return 1
+        if [[ $loaded == loaded ]]; then
+            s4m_systemctl stop "$unit" && s4m_property "$unit" ActiveState inactive || return 1
+        elif [[ $loaded != not-found ]]; then
+            return 1
+        fi
+    done
+    s4p_prepare && s4m_packages && s4p_apply && s4p_verify || return 1
+    # The packaged kernel hook marks /run/reboot-required for the controller.
+    [[ -x /etc/kernel/postinst.d/unattended-upgrades ]] &&
+        s4m_trusted /etc/kernel/postinst.d/unattended-upgrades || return 1
+    for unit in "$S4M_SERVICE" "$S4M_TIMER"; do
+        s4m_atomic "$S4M_SYSTEMD/$unit" "$S4M_LIBRARY/$unit" || return 1
+    done
+    s4m_systemctl daemon-reload && s4m_systemctl enable "$S4M_TIMER" && s4m_enabled "$S4M_TIMER" || return 1
+    wants=$S4M_SYSTEMD/timers.target.wants
+    [[ -d $wants && -L $wants/$S4M_TIMER ]] && s4m_trusted "$wants" || return 1
+    resolved=$(readlink --canonicalize-existing -- "$wants/$S4M_TIMER") || return 1
+    [[ $resolved == "$S4M_SYSTEMD/$S4M_TIMER" ]] || return 1
+    s4m_sync "$S4M_SYSTEMD" "$wants" "$S4M_SYSTEMD/$S4M_TIMER" "$S4M_SYSTEMD/$S4M_SERVICE" || return 1
+    s4m_systemctl start "$S4M_TIMER" && s4m_verify_files || return 1
+    temporary=$(mktemp -- "$S4M_STATE/maintenance-intent.XXXXXX") || return 1
+    if ! s4m_identity > "$temporary" || ! chmod 0600 -- "$temporary" ||
+        ! s4m_atomic "$S4M_STATE/maintenance.ready" "$temporary" 0600; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    rm -f -- "$temporary" || return 1
+    s4m_ready
+}
+
+s4m_verify() {
+    s4m_packages && s4p_verify && s4m_ready
+}
+
+s4m_request_reboot() {
+    local audit
+    if [[ ! -e $S4M_REBOOT_MARKER && ! -L $S4M_REBOOT_MARKER ]]; then
+        return 0
+    fi
+    [[ -f $S4M_REBOOT_MARKER ]] && s4m_trusted "$S4M_REBOOT_MARKER" || return 1
+    audit=$(s4m_package s4p_dpkg --audit) || return 1
+    [[ -z $audit ]] || return 1
+    s4m_systemctl reboot || return 1
+    # A successful command requests a reboot; only the next boot clears /run.
+    # Keep the marker and report pending, so failed delivery is retried too.
+    printf 'debian13s4: maintenance reboot requested; awaiting the next boot.\n' >&2
+    return 75
+}
+
+s4m_update() (
+    local audit
+    s4m_ready || return 75
+    s4m_lock || return 75
+    trap s4m_unlock EXIT
+    s4m_ready || return 75
+    s4p_prepare || return 1
+    # The same isolated configuration/indexes govern refresh and libapt's u-u.
+    export APT_CONFIG=$S4M_LIBRARY/policy.conf
+    export DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none
+    export UCF_FORCE_CONFFOLD=1 NEEDRESTART_MODE=l
+    if [[ -e $S4M_REBOOT_MARKER || -L $S4M_REBOOT_MARKER ]]; then
+        # A previously installed kernel can be activated without fresh internet,
+        # but partial package configuration/audit must never authorize reboot.
+        [[ -f $S4M_REBOOT_MARKER ]] && s4m_trusted "$S4M_REBOOT_MARKER" || return 1
+        if s4m_package s4p_dpkg --force-confdef --force-confold --configure --pending; then
+            audit=$(s4m_package s4p_dpkg --audit) || return 1
+            if [[ -z $audit ]]; then
+                s4m_request_reboot
+                return $?
+            fi
+        fi
+        # Missing dependencies/partial configuration still reach authenticated
+        # refresh and repair on later online attempts, rather than starving here.
+    fi
+    s4m_package apt-get update || return 1
+    if ! s4m_package s4p_dpkg --force-confdef --force-confold --configure --pending; then
+        s4m_package apt-get --assume-yes --no-remove --fix-broken install || return 1
+        s4m_package s4p_dpkg --force-confdef --force-confold --configure --pending || return 1
+    fi
+    s4m_package unattended-upgrade --verbose || return 1
+    audit=$(s4m_package s4p_dpkg --audit) || return 1
+    [[ -z $audit ]] || return 1
+    s4m_trusted /etc/needrestart/needrestart.conf || return 1
+    NEEDRESTART_MODE=a s4m_package needrestart -c "$S4M_LIBRARY/needrestart.conf" -r a || return 1
+    s4m_request_reboot
+)
+S4_PAYLOAD_3ba39d9db43a218c7e29260dbcc50c22701334729ba373b348a05dea5821cf79
+    cat > "$S4B_STAGE/lib/maintenance/update.sh" <<'S4_PAYLOAD_49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1' || return 1
+#!/bin/bash -p
+set -Eeuo pipefail
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+(( EUID == 0 )) || exit 77
+
+# shellcheck source=Maintenance/common.sh
+. /usr/local/lib/debian13s4/maintenance/common.sh
+s4m_load_packages
+s4m_update
+S4_PAYLOAD_49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1
+    cat > "$S4B_STAGE/lib/maintenance/policy.conf" <<'S4_PAYLOAD_ef244462f0855adfa878e7a746789ea1d2cfc9181ab31065a822a234a3afc5d4' || return 1
+// This file is loaded first through APT_CONFIG. Later system fragments/main
+// cannot widen these sources, origins or security options for this updater.
+Dir::Etc::parts "";
+Dir::Etc::main "";
+Dir::Etc::sourcelist "/usr/local/lib/debian13s4/tasks/prerequisites/debian.sources";
+Dir::Etc::sourceparts "-";
+Dir::Etc::preferences "-";
+Dir::Etc::preferencesparts "-";
+Dir::State::lists "/var/lib/apt/debian13s4/lists";
+APT::Update::Error-Mode "any";
+APT::Install-Recommends "false";
+APT::Install-Suggests "false";
+Acquire::Retries "2";
+Acquire::http::Timeout "30";
+Acquire::https::Timeout "30";
+Acquire::Check-Date "true";
+Acquire::Check-Valid-Until "true";
+Acquire::AllowInsecureRepositories "false";
+Acquire::AllowDowngradeToInsecureRepositories "false";
+APT::Get::AllowUnauthenticated "false";
+APT::Get::allow-downgrades "false";
+APT::Get::allow-change-held-packages "false";
+APT::Get::allow-remove-essential "false";
+Debug::NoLocking "false";
+DPkg::Lock::Timeout "60";
+DPkg::Options { "--force-confdef"; "--force-confold"; };
+Unattended-Upgrade::Origins-Pattern {
+    "origin=Debian,codename=trixie,label=Debian";
+    "origin=Debian,codename=trixie-updates,label=Debian";
+    "origin=Debian,codename=trixie-security,label=Debian-Security";
+};
+Unattended-Upgrade::AutoFixInterruptedDpkg "true";
+Unattended-Upgrade::MinimalSteps "true";
+Unattended-Upgrade::InstallOnShutdown "false";
+Unattended-Upgrade::Allow-downgrade "false";
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "false";
+Unattended-Upgrade::Remove-Unused-Dependencies "false";
+Unattended-Upgrade::Remove-New-Unused-Dependencies "false";
+Unattended-Upgrade::Keep-Debs-After-Install "false";
+// The controller checks package health and propagates reboot-request errors.
+Unattended-Upgrade::Automatic-Reboot "false";
+Unattended-Upgrade::Automatic-Reboot-WithUsers "true";
+Unattended-Upgrade::Automatic-Reboot-Time "now";
+Unattended-Upgrade::OnlyOnACPower "false";
+Unattended-Upgrade::Skip-Updates-On-Metered-Connections "false";
+Unattended-Upgrade::SyslogEnable "true";
+S4_PAYLOAD_ef244462f0855adfa878e7a746789ea1d2cfc9181ab31065a822a234a3afc5d4
+    cat > "$S4B_STAGE/lib/maintenance/needrestart.conf" <<'S4_PAYLOAD_d9765f6f10936f380860553d01a7cfa407e767b1cfe739d9538e2535e4831e2e' || return 1
+# Keep Debian's service exclusions, then exclude the setup/update controllers.
+require '/etc/needrestart/needrestart.conf';
+$nrconf{restart} = 'a';
+$nrconf{override_rc}->{qr(^debian13s4-(maintenance|bootstrap|repair|resume)\.service$)} = 0;
+S4_PAYLOAD_d9765f6f10936f380860553d01a7cfa407e767b1cfe739d9538e2535e4831e2e
+    cat > "$S4B_STAGE/lib/maintenance/debian13s4-maintenance.service" <<'S4_PAYLOAD_d2681c6dde48e6cfbd0232cc1303f589fa042b39224489331574aa49c79bd890' || return 1
+[Unit]
+Description=Authenticated Debian 13 package and kernel maintenance
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/maintenance/update.sh
+User=root
+Group=root
+UMask=0077
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=1h
+TimeoutStopSec=5min
+Restart=on-failure
+RestartSec=5min
+KillMode=control-group
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+LockPersonality=yes
+RestrictRealtime=yes
+S4_PAYLOAD_d2681c6dde48e6cfbd0232cc1303f589fa042b39224489331574aa49c79bd890
+    cat > "$S4B_STAGE/lib/maintenance/debian13s4-maintenance.timer" <<'S4_PAYLOAD_bce83c7102c31c4e9c5ee8f2bde3ba5a7e33b702b159d1b6f453058985142209' || return 1
+[Unit]
+Description=Retry Debian 13 maintenance after boot and every hour
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=1h
+RandomizedDelaySec=5min
+Unit=debian13s4-maintenance.service
+
+[Install]
+WantedBy=timers.target
+S4_PAYLOAD_bce83c7102c31c4e9c5ee8f2bde3ba5a7e33b702b159d1b6f453058985142209
+    cat > "$S4B_STAGE/lib/tasks/maintenance/apply.sh" <<'S4_PAYLOAD_488522a33f05b35c7c854074bdcb8d02510e2ea89f6025def2b493c4f81641ec' || return 1
+#!/bin/bash
+set -Eeuo pipefail
+umask 077
+
+# shellcheck source=Maintenance/common.sh
+. /usr/local/lib/debian13s4/maintenance/common.sh
+s4m_load_packages
+DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none \
+    NEEDRESTART_MODE=l UCF_FORCE_CONFFOLD=1 s4m_apply
+S4_PAYLOAD_488522a33f05b35c7c854074bdcb8d02510e2ea89f6025def2b493c4f81641ec
+    cat > "$S4B_STAGE/lib/tasks/maintenance/verify.sh" <<'S4_PAYLOAD_7aecaab921b4770b6034d966a36ed3b9d94a1e1ae35f901c067c1d4a45c2f762' || return 1
+#!/bin/bash
+set -Eeuo pipefail
+
+# shellcheck source=Maintenance/common.sh
+. /usr/local/lib/debian13s4/maintenance/common.sh
+s4m_load_packages
+s4m_verify
+S4_PAYLOAD_7aecaab921b4770b6034d966a36ed3b9d94a1e1ae35f901c067c1d4a45c2f762
     cat > "$S4B_STAGE/files.sha256" <<'S4_CHECKSUMS' || return 1
 5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936  lib/repair.sh
-809e89587bfbaf6eeb1193fdbc4b73e664110810dbc9c5172108ddafeb6ce630  lib/tasks.list
+a909b573b6fbd0c22251db5d7398afcb7a53466d10cd3617d66f68e626b0b13b  lib/tasks.list
 f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934  lib/tasks/prerequisites/apply.sh
 5c2bb90b18725176df85061f2fd7556fc5f00c286991f7ff34445d7b880693fc  lib/tasks/prerequisites/verify.sh
 f99079435a5917ee3a1a69aa9f18e32e4a98ddcd787007336997b5a4fbc2eab9  lib/tasks/prerequisites/common.sh
@@ -1094,6 +1503,14 @@ f99079435a5917ee3a1a69aa9f18e32e4a98ddcd787007336997b5a4fbc2eab9  lib/tasks/prer
 e21ba280c03e5c9848930e7a58b87febd59332e777a3a992e3bab1f992c1a3e5  units/debian13s4-repair.service
 8618edcc26838d9f7f56c39d538bcfdba099e101582e8fb0adb38df413c5ce28  units/debian13s4-repair.timer
 a107d7016113884baa5f42ef8c5523410d1193f9970c3d320647dc0ee3d3a5f9  units/debian13s4-resume.service
+3ba39d9db43a218c7e29260dbcc50c22701334729ba373b348a05dea5821cf79  lib/maintenance/common.sh
+49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1  lib/maintenance/update.sh
+ef244462f0855adfa878e7a746789ea1d2cfc9181ab31065a822a234a3afc5d4  lib/maintenance/policy.conf
+d9765f6f10936f380860553d01a7cfa407e767b1cfe739d9538e2535e4831e2e  lib/maintenance/needrestart.conf
+d2681c6dde48e6cfbd0232cc1303f589fa042b39224489331574aa49c79bd890  lib/maintenance/debian13s4-maintenance.service
+bce83c7102c31c4e9c5ee8f2bde3ba5a7e33b702b159d1b6f453058985142209  lib/maintenance/debian13s4-maintenance.timer
+488522a33f05b35c7c854074bdcb8d02510e2ea89f6025def2b493c4f81641ec  lib/tasks/maintenance/apply.sh
+7aecaab921b4770b6034d966a36ed3b9d94a1e1ae35f901c067c1d4a45c2f762  lib/tasks/maintenance/verify.sh
 S4_CHECKSUMS
 }
 

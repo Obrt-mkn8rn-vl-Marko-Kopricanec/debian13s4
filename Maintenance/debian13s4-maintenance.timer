@@ -1,0 +1,11 @@
+[Unit]
+Description=Retry Debian 13 maintenance after boot and every hour
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=1h
+RandomizedDelaySec=5min
+Unit=debian13s4-maintenance.service
+
+[Install]
+WantedBy=timers.target
