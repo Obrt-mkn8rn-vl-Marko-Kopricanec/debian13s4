@@ -398,7 +398,7 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=cc6fef5f695b1662334afd1f44a9e50ec30c3f7f9a13238f4351e0b45854d7f8
+S4B_BUNDLE_ID=39699acd3729659d8ac247db452f9cdbd9b1b7ebcae09b24b793d40fbb374ebe
 S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh)
 S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644)
 
@@ -1087,7 +1087,7 @@ RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
 [Install]
 WantedBy=multi-user.target
 S4_PAYLOAD_a107d7016113884baa5f42ef8c5523410d1193f9970c3d320647dc0ee3d3a5f9
-    cat > "$S4B_STAGE/lib/maintenance/common.sh" <<'S4_PAYLOAD_f7039bc5dec376c3a37bbfb5e586580d1b3b50d0b9bfad3687113480aa8d0eed' || return 1
+    cat > "$S4B_STAGE/lib/maintenance/common.sh" <<'S4_PAYLOAD_52eea1badd240ce9c1b6f48f1cdaa33171f630cbad3db76a9209a96c63fbd6af' || return 1
 #!/bin/bash
 
 S4M_LIBRARY=/usr/local/lib/debian13s4/maintenance
@@ -1099,6 +1099,7 @@ S4M_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4M_REPAIR_FD=
 S4M_REBOOT_MARKER=/run/reboot-required
 S4M_BOOT_FILE=/proc/sys/kernel/random/boot_id
+# Ordinary intents retain their original needrestart policy and hook names.
 S4M_RESTARTS=()
 
 s4m_load_packages() {
@@ -1342,9 +1343,18 @@ s4m_select_restarts() {
     s4m_package perl "$S4M_LIBRARY/restart-policy.pl" "$S4M_LIBRARY/needrestart.conf"
 }
 
+s4m_unit_name() {
+    local name=$1
+    [[ $name =~ ^[A-Za-z0-9_.@][A-Za-z0-9_.@:\\-]*$ && ${#name} -le 255 &&
+        $name != @reboot && $name != @reboot:* ]] || return 1
+    [[ $name == *.service ]] || name+=.service
+    (( ${#name} <= 255 )) || return 1
+    printf '%s\n' "$name"
+}
+
 s4m_load_restarts() {
     local path=$S4M_STATE/maintenance.restarts target boot plan selected
-    local -a units=() retained=()
+    local -a names=() retained=()
     S4M_RESTARTS=()
     [[ -e $path || -L $path ]] || return 0
     [[ -f $path ]] && s4m_trusted "$path" || return 1
@@ -1355,11 +1365,11 @@ s4m_load_restarts() {
             [[ ${target#@reboot:} =~ ^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$ ]] || return 1
             [[ $target != "@reboot:$boot" ]] || retained+=("$target")
         else
-            [[ $target =~ ^[A-Za-z0-9_.@][A-Za-z0-9_.@:\\-]*\.service$ && ${#target} -le 255 ]] || return 1
-            units+=("$target")
+            s4m_unit_name "$target" > /dev/null || return 1
+            names+=("$target")
         fi
     done
-    plan=$(for target in "${units[@]}"; do printf 'NEEDRESTART-SVC: %s\n' "$target"; done) || return 1
+    plan=$(for target in "${names[@]}"; do printf 'NEEDRESTART-SVC: %s\n' "$target"; done) || return 1
     selected=$(s4m_select_restarts <<< "$plan") || return 1
     while IFS= read -r target; do
         [[ -n $target ]] || continue
@@ -1392,15 +1402,16 @@ s4m_discover_restarts() {
 }
 
 s4m_restart_command() (
-    local descriptor=$S4M_REPAIR_FD hook
+    local descriptor=$S4M_REPAIR_FD hook target
     local -a command
     trap - EXIT
+    target=$(s4m_unit_name "$1") || return 1
     hook=$(s4m_package perl "$S4M_LIBRARY/restart-policy.pl" "$S4M_LIBRARY/needrestart.conf" "$1") || return 1
     if [[ -n $hook ]]; then
         [[ -f $hook && -x $hook ]] && s4m_trusted "$hook" || return 1
         command=("$hook")
     else
-        command=(systemctl restart -- "$1")
+        command=(systemctl restart -- "$target")
     fi
     [[ -z $descriptor ]] || exec {descriptor}>&-
     timeout --signal=TERM --kill-after=10s 300s \
@@ -1408,7 +1419,8 @@ s4m_restart_command() (
 )
 
 s4m_restart_unit() {
-    local target=$1 property value active type
+    local name=$1 target property value active type
+    target=$(s4m_unit_name "$name") || return 1
     s4m_property "$target" LoadState loaded || return 1
     for property in RefuseManualStop RefuseManualStart; do
         value=$(s4m_systemctl show --property="$property" --value "$target") || return 1
@@ -1418,7 +1430,7 @@ s4m_restart_unit() {
         fi
         [[ $value == no ]] || return 1
     done
-    s4m_restart_command "$target" || return 1
+    s4m_restart_command "$name" || return 1
     s4m_property "$target" Result success || return 1
     active=$(s4m_systemctl show --property=ActiveState --value "$target") || return 1
     [[ $active != active ]] || return 0
@@ -1522,7 +1534,7 @@ s4m_update() (
     s4m_discover_restarts && s4m_run_restarts || return 1
     s4m_request_reboot
 )
-S4_PAYLOAD_f7039bc5dec376c3a37bbfb5e586580d1b3b50d0b9bfad3687113480aa8d0eed
+S4_PAYLOAD_52eea1badd240ce9c1b6f48f1cdaa33171f630cbad3db76a9209a96c63fbd6af
     cat > "$S4B_STAGE/lib/maintenance/update.sh" <<'S4_PAYLOAD_49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1' || return 1
 #!/bin/bash -p
 set -Eeuo pipefail
@@ -1584,7 +1596,7 @@ Unattended-Upgrade::OnlyOnACPower "false";
 Unattended-Upgrade::Skip-Updates-On-Metered-Connections "false";
 Unattended-Upgrade::SyslogEnable "true";
 S4_PAYLOAD_ef244462f0855adfa878e7a746789ea1d2cfc9181ab31065a822a234a3afc5d4
-    cat > "$S4B_STAGE/lib/maintenance/needrestart.conf" <<'S4_PAYLOAD_5b566dc88db8f8316d319ac7dd1851d4129be0320e663ff475a64f9397b1ae73' || return 1
+    cat > "$S4B_STAGE/lib/maintenance/needrestart.conf" <<'S4_PAYLOAD_afaebab8a3988c64cb770b532b6494fada271461dbf04a33c5d8c9fea428d03e' || return 1
 # Keep Debian's service exclusions, then exclude the setup/update controllers.
 {
     local ($@, $!);
@@ -1592,9 +1604,9 @@ S4_PAYLOAD_ef244462f0855adfa878e7a746789ea1d2cfc9181ab31065a822a234a3afc5d4
     die "Cannot load Debian restart policy: $@ $!\n" if $@ || (!defined($loaded) && $!);
 }
 $nrconf{restart} = 'a';
-$nrconf{override_rc}->{qr(^debian13s4-(maintenance|bootstrap|repair|resume)\.service$)} = 0;
-S4_PAYLOAD_5b566dc88db8f8316d319ac7dd1851d4129be0320e663ff475a64f9397b1ae73
-    cat > "$S4B_STAGE/lib/maintenance/restart-policy.pl" <<'S4_PAYLOAD_23e462e62fc3a0e3c90b0e953b7d307df60363eadcce11fb7fa85dcb24a92baf' || return 1
+$nrconf{override_rc}->{qr(^debian13s4-(maintenance|bootstrap|repair|resume)(\.service)?$)} = 0;
+S4_PAYLOAD_afaebab8a3988c64cb770b532b6494fada271461dbf04a33c5d8c9fea428d03e
+    cat > "$S4B_STAGE/lib/maintenance/restart-policy.pl" <<'S4_PAYLOAD_4459b2afa9b1914dad46d50758e533160d1f5e63deb017310fa296b170bb4cfe' || return 1
 #!/usr/bin/perl
 use strict;
 use warnings;
@@ -1604,23 +1616,28 @@ use warnings;
 # to this selector; it is never permission to restart every reported service.
 our %nrconf = (defno => 0, verbosity => 0, blacklist_rc => [], override_rc => {},
               restart_d => '/etc/needrestart/restart.d');
-@ARGV == 1 || @ARGV == 2 or die "Expected the trusted needrestart configuration and optional unit.\n";
+@ARGV == 1 || @ARGV == 2 or die "Expected the trusted needrestart configuration and optional original name.\n";
 my $loaded = do $ARGV[0];
 die "Cannot load restart policy: $@ $!\n" if $@ || (!defined($loaded) && $!);
+sub validate_name {
+    my ($name) = @_;
+    $name =~ /\A[A-Za-z0-9_.@][A-Za-z0-9_.@:\\-]*\z/ && length($name) <= 255 &&
+        $name ne '@reboot' && $name !~ /\A\@reboot:/
+        or die "Invalid restart target.\n";
+    my $unit = $name =~ /\.service\z/ ? $name : "$name.service";
+    length($unit) <= 255 or die "Restart unit name is too long.\n";
+    return $name;
+}
 if (@ARGV == 2) {
-    my $unit = $ARGV[1];
-    $unit =~ /\A[A-Za-z0-9_.@][A-Za-z0-9_.@:\\-]*\.service\z/ && length($unit) <= 255
-        or die "Invalid restart unit.\n";
-    my $hook = "$nrconf{restart_d}/$unit";
+    my $name = validate_name($ARGV[1]);
+    my $hook = "$nrconf{restart_d}/$name";
     print "$hook\n" or die "Cannot write hook path: $!\n" if -x $hook;
     exit 0;
 }
 my %seen;
 while (my $line = <STDIN>) {
     next unless $line =~ /^NEEDRESTART-SVC: (.*)\n$/;
-    my $name = $1;
-    $name =~ /\A[A-Za-z0-9_.@][A-Za-z0-9_.@:\\-]*\z/ && length($name) <= 255
-        or die "Invalid restart target.\n";
+    my $name = validate_name($1);
     next if grep { $name =~ /$_/ } @{$nrconf{blacklist_rc}};
     my $allowed = !$nrconf{defno};
     for my $pattern (sort keys %{$nrconf{override_rc}}) {
@@ -1636,11 +1653,11 @@ while (my $line = <STDIN>) {
     if ($name =~ /\A(?:systemd-manager|systemd-user|sysv-init)\z/) {
         $target = '@reboot';
     }
-    $target .= '.service' unless $target eq '@reboot' || $target =~ /\.service\z/;
-    length($target) <= 255 or die "Restart unit name is too long.\n";
+    # Journal the original policy/hook identity. The controller derives the
+    # systemd observation name without changing what future policy checks see.
     print "$target\n" or die "Cannot write restart plan: $!\n" unless $seen{$target}++;
 }
-S4_PAYLOAD_23e462e62fc3a0e3c90b0e953b7d307df60363eadcce11fb7fa85dcb24a92baf
+S4_PAYLOAD_4459b2afa9b1914dad46d50758e533160d1f5e63deb017310fa296b170bb4cfe
     cat > "$S4B_STAGE/lib/maintenance/debian13s4-maintenance.service" <<'S4_PAYLOAD_d2681c6dde48e6cfbd0232cc1303f589fa042b39224489331574aa49c79bd890' || return 1
 [Unit]
 Description=Authenticated Debian 13 package and kernel maintenance
@@ -1711,11 +1728,11 @@ f99079435a5917ee3a1a69aa9f18e32e4a98ddcd787007336997b5a4fbc2eab9  lib/tasks/prer
 e21ba280c03e5c9848930e7a58b87febd59332e777a3a992e3bab1f992c1a3e5  units/debian13s4-repair.service
 8618edcc26838d9f7f56c39d538bcfdba099e101582e8fb0adb38df413c5ce28  units/debian13s4-repair.timer
 a107d7016113884baa5f42ef8c5523410d1193f9970c3d320647dc0ee3d3a5f9  units/debian13s4-resume.service
-f7039bc5dec376c3a37bbfb5e586580d1b3b50d0b9bfad3687113480aa8d0eed  lib/maintenance/common.sh
+52eea1badd240ce9c1b6f48f1cdaa33171f630cbad3db76a9209a96c63fbd6af  lib/maintenance/common.sh
 49a7885c56c73c77b6c1a3466b1b6e6fafc263ad4903c89b7947f07f88d482c1  lib/maintenance/update.sh
 ef244462f0855adfa878e7a746789ea1d2cfc9181ab31065a822a234a3afc5d4  lib/maintenance/policy.conf
-5b566dc88db8f8316d319ac7dd1851d4129be0320e663ff475a64f9397b1ae73  lib/maintenance/needrestart.conf
-23e462e62fc3a0e3c90b0e953b7d307df60363eadcce11fb7fa85dcb24a92baf  lib/maintenance/restart-policy.pl
+afaebab8a3988c64cb770b532b6494fada271461dbf04a33c5d8c9fea428d03e  lib/maintenance/needrestart.conf
+4459b2afa9b1914dad46d50758e533160d1f5e63deb017310fa296b170bb4cfe  lib/maintenance/restart-policy.pl
 d2681c6dde48e6cfbd0232cc1303f589fa042b39224489331574aa49c79bd890  lib/maintenance/debian13s4-maintenance.service
 bce83c7102c31c4e9c5ee8f2bde3ba5a7e33b702b159d1b6f453058985142209  lib/maintenance/debian13s4-maintenance.timer
 488522a33f05b35c7c854074bdcb8d02510e2ea89f6025def2b493c4f81641ec  lib/tasks/maintenance/apply.sh

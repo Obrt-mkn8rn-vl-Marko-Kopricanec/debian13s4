@@ -188,7 +188,11 @@ s4m_trusted() {{
     done
 }}
 s4m_systemctl() {{ python3 {q(str(self.model))} {q(str(self.database))} {q(str(self.log))} systemctl "${{FUNCNAME[1]}}" "$@"; }}
-s4m_restart_command() {{ python3 {q(str(self.model))} {q(str(self.database))} {q(str(self.log))} systemctl "$BASHPID" restart -- "$1"; }}
+s4m_restart_command() {{
+    local target
+    target=$(s4m_unit_name "$1") || return 1
+    python3 {q(str(self.model))} {q(str(self.database))} {q(str(self.log))} systemctl "$BASHPID" restart -- "$target"
+}}
 s4m_sync() {{ python3 {q(str(self.model))} {q(str(self.database))} {q(str(self.log))} sync "${{FUNCNAME[1]}}" "$@"; }}
 s4p_prepare() {{ printf 'prepare\\n' >> {q(str(self.packages))}; }}
 s4p_apt() {{ printf 'setup-apt:%s\\n' "$*" >> {q(str(self.packages))}; [[ $FAULT != install ]]; }}
@@ -243,7 +247,8 @@ needrestart() {{
 
     def targets(self, names, **properties):
         state = self.state()
-        state["services"].update({name: {"ActiveState": "active", **properties} for name in names})
+        state["services"].update({name if name.endswith(".service") else name + ".service":
+                                  {"ActiveState": "active", **properties} for name in names})
         self.database.write_text(json.dumps(state))
         (self.root / "scan-output").write_text("".join("NEEDRESTART-SVC: " + name + "\n" for name in names))
 
@@ -426,6 +431,32 @@ needrestart() {{
         self.assertEqual(self.state()["disk"]["restarts"], "")
         self.assert_success(self.run_fixture("s4m_update"))
 
+    def test_bare_default_deny_allow_survives_failed_restart_and_offline_retry(self):
+        with (self.library / "needrestart.conf").open("a") as config:
+            config.write("$nrconf{defno}=1; $nrconf{override_rc}={qr(^legacy$)=>1};\n")
+        self.assert_success(self.run_fixture())
+        self.targets(["legacy"])
+        self.faults(restart_targets=["legacy.service"])
+        self.assertNotEqual(self.run_fixture("s4m_update").returncode, 0)
+        self.assertEqual(self.pending(), ["legacy"])
+        self.assertEqual(self.state()["disk"]["restarts"], "legacy\n")
+        self.assertEqual(self.state()["services"]["legacy.service"]["ActiveState"], "inactive")
+        self.reboot()
+        (self.root / "scan-output").write_text("")
+        self.faults(restart_targets=["legacy.service"])
+        before = len(self.events())
+        self.assertNotEqual(self.run_fixture("s4m_update", "FAULT=offline\n").returncode, 0)
+        retries = [e for e in self.events()[before:] if e["args"][0] == "restart"]
+        self.assertEqual([e["args"][-1] for e in retries], ["legacy.service"])
+        self.assertEqual(self.pending(), ["legacy"])
+        self.assertEqual(self.state()["disk"]["restarts"], "legacy\n")
+        self.faults()
+        self.assertNotEqual(self.run_fixture("s4m_update", "FAULT=offline\n").returncode, 0)
+        self.assertEqual(self.state()["services"]["legacy.service"]["ActiveState"], "active")
+        self.assertEqual(self.pending(), [])
+        self.assertEqual(self.state()["disk"]["restarts"], "")
+        self.assert_success(self.run_fixture("s4m_update"))
+
     def test_zero_exit_restart_requires_observed_state_and_result(self):
         self.assert_success(self.run_fixture())
         self.targets(["nginx.service"])
@@ -455,7 +486,9 @@ needrestart() {{
         self.assert_success(self.run_fixture())
         self.targets(["dbus.service", "networking.service", "apt-daily.service",
                       "debian13s4-maintenance.service", "debian13s4-bootstrap.service",
-                      "debian13s4-repair.service", "debian13s4-resume.service", "nginx.service"])
+                      "debian13s4-repair.service", "debian13s4-resume.service",
+                      "dbus", "networking", "debian13s4-maintenance", "debian13s4-bootstrap",
+                      "debian13s4-repair", "debian13s4-resume", "nginx.service"])
         self.assert_success(self.run_fixture("s4m_update"))
         targets = [e["args"][-1] for e in self.events() if e["args"][0] == "restart"]
         self.assertEqual(targets, ["nginx.service"])
@@ -515,7 +548,8 @@ needrestart() {{
         os.mkfifo(path, 0o600)
         self.assertNotEqual(self.run_fixture("s4m_update", timeout=10).returncode, 0)
         path.unlink()
-        for record in ("--help\n", "../../victim.service\n", "nginx.service extra\n", "@reboot:invalid\n"):
+        for record in ("--help\n", "../../victim.service\n", "nginx.service extra\n", "@reboot:invalid\n",
+                       "@reboot\n", "x" * 255 + "\n"):
             path.write_text(record)
             path.chmod(0o600)
             self.assertNotEqual(self.run_fixture("s4m_update").returncode, 0)
@@ -592,6 +626,52 @@ s4m_unlock
         self.assertEqual(self.pending(), [])
         self.assertEqual(self.state()["disk"]["restarts"], "")
         self.assertEqual(marker.read_text(), "attempt\nattempt\nattempt\n")
+
+    def test_bare_custom_hook_retains_original_identity_and_checked_unit_state(self):
+        hooks = self.root / "hooks"
+        hooks.mkdir(mode=0o700)
+        hook = hooks / "legacy"
+        decoy = hooks / "legacy.service"
+        marker = self.root / "hook-ran"
+        wrong_marker = self.root / "wrong-hook-ran"
+        hook.write_text("#!/bin/sh\nprintf 'attempt\\n' >> " + shlex.quote(str(marker)) + "\nexit 1\n")
+        hook.chmod(0o755)
+        decoy.write_text("#!/bin/sh\ntouch " + shlex.quote(str(wrong_marker)) + "\nexit 0\n")
+        decoy.chmod(0o755)
+        decoy_bytes, decoy_inode = decoy.read_bytes(), decoy.stat().st_ino
+        with (self.library / "needrestart.conf").open("a") as config:
+            config.write("$nrconf{restart_d} = '" + str(hooks) + "';\n")
+            config.write("$nrconf{defno}=1; $nrconf{override_rc}={qr(^legacy$)=>1};\n")
+        self.assert_success(self.run_fixture())
+        self.targets(["legacy"], ActiveState="inactive")
+        definition = subprocess.run(["bash", "--noprofile", "--norc", "-c",
+                                     '. "$1"; declare -f s4m_restart_command', "fixture", str(ROOT / "Maintenance/common.sh")],
+                                    text=True, capture_output=True, timeout=3)
+        self.assertEqual(definition.returncode, 0, definition.stderr)
+        self.assertNotEqual(self.run_fixture("s4m_update", definition.stdout).returncode, 0)
+        self.assertEqual(marker.read_text(), "attempt\n")
+        self.assertEqual(self.pending(), ["legacy"])
+        self.assertEqual(self.state()["disk"]["restarts"], "legacy\n")
+        self.reboot()
+        (self.root / "scan-output").write_text("")
+        self.assertNotEqual(self.run_fixture("s4m_update", definition.stdout + "FAULT=offline\n").returncode, 0)
+        self.assertEqual(marker.read_text(), "attempt\nattempt\n")
+        self.assertEqual(self.pending(), ["legacy"])
+        self.assertEqual(self.state()["services"]["legacy.service"]["ActiveState"], "inactive")
+        hook.write_text("#!/bin/sh\nprintf 'attempt\\n' >> " + shlex.quote(str(marker)) + "\nexit 0\n")
+        self.assertNotEqual(self.run_fixture("s4m_update", definition.stdout + "FAULT=offline\n").returncode, 0)
+        # A zero-exit hook cannot clear intent while the normalized unit is inactive.
+        self.assertEqual(self.pending(), ["legacy"])
+        state = self.state()
+        state["services"]["legacy.service"]["ActiveState"] = "active"
+        self.database.write_text(json.dumps(state))
+        self.assertNotEqual(self.run_fixture("s4m_update", definition.stdout + "FAULT=offline\n").returncode, 0)
+        self.assertEqual(self.pending(), [])
+        self.assertEqual(self.state()["disk"]["restarts"], "")
+        self.assertEqual(marker.read_text(), "attempt\nattempt\nattempt\nattempt\n")
+        self.assertFalse(wrong_marker.exists())
+        self.assertEqual(decoy.read_bytes(), decoy_bytes)
+        self.assertEqual(decoy.stat().st_ino, decoy_inode)
 
     def test_kernel_selector_preserves_stock_cloud_and_rt_flavours(self):
         vectors = [("amd64", "6.12-amd64", "linux-image-amd64"),
@@ -791,7 +871,7 @@ print "child_status=$status\\n";
     def test_real_selector_preserves_policy_and_rejects_invalid_targets(self):
         helper = ROOT / "Maintenance/restart-policy.pl"
         result = subprocess.run(["perl", str(helper), str(ROOT / "Maintenance/needrestart.conf")],
-                                input="NEEDRESTART-SVC: nginx.service\nNEEDRESTART-SVC: dbus.service\nNEEDRESTART-SVC: networking.service\nNEEDRESTART-SVC: debian13s4-repair.service\nNEEDRESTART-SVC: systemd-manager\n",
+                                input="NEEDRESTART-SVC: nginx.service\nNEEDRESTART-SVC: dbus.service\nNEEDRESTART-SVC: networking.service\nNEEDRESTART-SVC: debian13s4-repair.service\nNEEDRESTART-SVC: debian13s4-repair\nNEEDRESTART-SVC: systemd-manager\n",
                                 text=True, capture_output=True, timeout=5)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, "nginx.service\n@reboot\n")
@@ -805,10 +885,42 @@ print "child_status=$status\\n";
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stdout, "allow.service\n")
             config.write_text("$nrconf{defno}=0; 0;\n")
-            for target in ("--help", "../../victim", "nginx.service extra", "x" * 255):
+            for target in ("--help", "../../victim", "nginx.service extra", "x" * 255,
+                           "@reboot", "@reboot:00000000-0000-0000-0000-000000000001"):
                 result = subprocess.run(["perl", str(helper), str(config)], input="NEEDRESTART-SVC: " + target + "\n",
                                         text=True, capture_output=True, timeout=5)
                 self.assertNotEqual(result.returncode, 0, target)
+
+    def test_real_selector_keeps_original_anchored_policy_and_hook_identity(self):
+        helper = ROOT / "Maintenance/restart-policy.pl"
+        with tempfile.TemporaryDirectory(prefix="debian13s4-policy-identity.") as directory:
+            config = Path(directory) / "policy.conf"
+            config.write_text("$nrconf{defno}=1; $nrconf{override_rc}={qr(^legacy$)=>1}; "
+                              "$nrconf{restart_d}='" + directory + "'; 0;\n")
+            result = subprocess.run(["perl", str(helper), str(config)],
+                                    input="NEEDRESTART-SVC: legacy\nNEEDRESTART-SVC: legacy.service\nNEEDRESTART-SVC: legacy\n",
+                                    text=True, capture_output=True, timeout=5)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout, "legacy\n")
+            replay = subprocess.run(["perl", str(helper), str(config)],
+                                    input="NEEDRESTART-SVC: " + result.stdout,
+                                    text=True, capture_output=True, timeout=5)
+            self.assertEqual(replay.returncode, 0, replay.stderr)
+            self.assertEqual(replay.stdout, result.stdout)
+            for name in ("legacy", "legacy.service"):
+                hook = Path(directory) / name
+                hook.write_text("#!/bin/sh\nexit 0\n")
+                hook.chmod(0o755)
+                selected = subprocess.run(["perl", str(helper), str(config), name],
+                                          text=True, capture_output=True, timeout=5)
+                self.assertEqual(selected.returncode, 0, selected.stderr)
+                self.assertEqual(selected.stdout, str(hook) + "\n")
+            config.write_text("$nrconf{defno}=0; 0;\n")
+            distinct = subprocess.run(["perl", str(helper), str(config)],
+                                      input="NEEDRESTART-SVC: legacy\nNEEDRESTART-SVC: legacy.service\n",
+                                      text=True, capture_output=True, timeout=5)
+            self.assertEqual(distinct.returncode, 0, distinct.stderr)
+            self.assertEqual(distinct.stdout, "legacy\nlegacy.service\n")
 
     def test_actual_apt_parser_isolates_and_enforces_the_policy(self):
         environment = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "APT_CONFIG": str(ROOT / "Maintenance/policy.conf")}

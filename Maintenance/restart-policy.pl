@@ -7,23 +7,28 @@ use warnings;
 # to this selector; it is never permission to restart every reported service.
 our %nrconf = (defno => 0, verbosity => 0, blacklist_rc => [], override_rc => {},
               restart_d => '/etc/needrestart/restart.d');
-@ARGV == 1 || @ARGV == 2 or die "Expected the trusted needrestart configuration and optional unit.\n";
+@ARGV == 1 || @ARGV == 2 or die "Expected the trusted needrestart configuration and optional original name.\n";
 my $loaded = do $ARGV[0];
 die "Cannot load restart policy: $@ $!\n" if $@ || (!defined($loaded) && $!);
+sub validate_name {
+    my ($name) = @_;
+    $name =~ /\A[A-Za-z0-9_.@][A-Za-z0-9_.@:\\-]*\z/ && length($name) <= 255 &&
+        $name ne '@reboot' && $name !~ /\A\@reboot:/
+        or die "Invalid restart target.\n";
+    my $unit = $name =~ /\.service\z/ ? $name : "$name.service";
+    length($unit) <= 255 or die "Restart unit name is too long.\n";
+    return $name;
+}
 if (@ARGV == 2) {
-    my $unit = $ARGV[1];
-    $unit =~ /\A[A-Za-z0-9_.@][A-Za-z0-9_.@:\\-]*\.service\z/ && length($unit) <= 255
-        or die "Invalid restart unit.\n";
-    my $hook = "$nrconf{restart_d}/$unit";
+    my $name = validate_name($ARGV[1]);
+    my $hook = "$nrconf{restart_d}/$name";
     print "$hook\n" or die "Cannot write hook path: $!\n" if -x $hook;
     exit 0;
 }
 my %seen;
 while (my $line = <STDIN>) {
     next unless $line =~ /^NEEDRESTART-SVC: (.*)\n$/;
-    my $name = $1;
-    $name =~ /\A[A-Za-z0-9_.@][A-Za-z0-9_.@:\\-]*\z/ && length($name) <= 255
-        or die "Invalid restart target.\n";
+    my $name = validate_name($1);
     next if grep { $name =~ /$_/ } @{$nrconf{blacklist_rc}};
     my $allowed = !$nrconf{defno};
     for my $pattern (sort keys %{$nrconf{override_rc}}) {
@@ -39,7 +44,7 @@ while (my $line = <STDIN>) {
     if ($name =~ /\A(?:systemd-manager|systemd-user|sysv-init)\z/) {
         $target = '@reboot';
     }
-    $target .= '.service' unless $target eq '@reboot' || $target =~ /\.service\z/;
-    length($target) <= 255 or die "Restart unit name is too long.\n";
+    # Journal the original policy/hook identity. The controller derives the
+    # systemd observation name without changing what future policy checks see.
     print "$target\n" or die "Cannot write restart plan: $!\n" unless $seen{$target}++;
 }

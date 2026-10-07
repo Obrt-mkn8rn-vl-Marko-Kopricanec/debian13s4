@@ -9,6 +9,7 @@ S4M_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4M_REPAIR_FD=
 S4M_REBOOT_MARKER=/run/reboot-required
 S4M_BOOT_FILE=/proc/sys/kernel/random/boot_id
+# Ordinary intents retain their original needrestart policy and hook names.
 S4M_RESTARTS=()
 
 s4m_load_packages() {
@@ -252,9 +253,18 @@ s4m_select_restarts() {
     s4m_package perl "$S4M_LIBRARY/restart-policy.pl" "$S4M_LIBRARY/needrestart.conf"
 }
 
+s4m_unit_name() {
+    local name=$1
+    [[ $name =~ ^[A-Za-z0-9_.@][A-Za-z0-9_.@:\\-]*$ && ${#name} -le 255 &&
+        $name != @reboot && $name != @reboot:* ]] || return 1
+    [[ $name == *.service ]] || name+=.service
+    (( ${#name} <= 255 )) || return 1
+    printf '%s\n' "$name"
+}
+
 s4m_load_restarts() {
     local path=$S4M_STATE/maintenance.restarts target boot plan selected
-    local -a units=() retained=()
+    local -a names=() retained=()
     S4M_RESTARTS=()
     [[ -e $path || -L $path ]] || return 0
     [[ -f $path ]] && s4m_trusted "$path" || return 1
@@ -265,11 +275,11 @@ s4m_load_restarts() {
             [[ ${target#@reboot:} =~ ^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$ ]] || return 1
             [[ $target != "@reboot:$boot" ]] || retained+=("$target")
         else
-            [[ $target =~ ^[A-Za-z0-9_.@][A-Za-z0-9_.@:\\-]*\.service$ && ${#target} -le 255 ]] || return 1
-            units+=("$target")
+            s4m_unit_name "$target" > /dev/null || return 1
+            names+=("$target")
         fi
     done
-    plan=$(for target in "${units[@]}"; do printf 'NEEDRESTART-SVC: %s\n' "$target"; done) || return 1
+    plan=$(for target in "${names[@]}"; do printf 'NEEDRESTART-SVC: %s\n' "$target"; done) || return 1
     selected=$(s4m_select_restarts <<< "$plan") || return 1
     while IFS= read -r target; do
         [[ -n $target ]] || continue
@@ -302,15 +312,16 @@ s4m_discover_restarts() {
 }
 
 s4m_restart_command() (
-    local descriptor=$S4M_REPAIR_FD hook
+    local descriptor=$S4M_REPAIR_FD hook target
     local -a command
     trap - EXIT
+    target=$(s4m_unit_name "$1") || return 1
     hook=$(s4m_package perl "$S4M_LIBRARY/restart-policy.pl" "$S4M_LIBRARY/needrestart.conf" "$1") || return 1
     if [[ -n $hook ]]; then
         [[ -f $hook && -x $hook ]] && s4m_trusted "$hook" || return 1
         command=("$hook")
     else
-        command=(systemctl restart -- "$1")
+        command=(systemctl restart -- "$target")
     fi
     [[ -z $descriptor ]] || exec {descriptor}>&-
     timeout --signal=TERM --kill-after=10s 300s \
@@ -318,7 +329,8 @@ s4m_restart_command() (
 )
 
 s4m_restart_unit() {
-    local target=$1 property value active type
+    local name=$1 target property value active type
+    target=$(s4m_unit_name "$name") || return 1
     s4m_property "$target" LoadState loaded || return 1
     for property in RefuseManualStop RefuseManualStart; do
         value=$(s4m_systemctl show --property="$property" --value "$target") || return 1
@@ -328,7 +340,7 @@ s4m_restart_unit() {
         fi
         [[ $value == no ]] || return 1
     done
-    s4m_restart_command "$target" || return 1
+    s4m_restart_command "$name" || return 1
     s4m_property "$target" Result success || return 1
     active=$(s4m_systemctl show --property=ActiveState --value "$target") || return 1
     [[ $active != active ]] || return 0
