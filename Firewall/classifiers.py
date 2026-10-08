@@ -218,11 +218,16 @@ def main():
     if len(sys.argv) != 1:
         return 64
     try:
-        payload = json.dumps(observe(), sort_keys=True, ensure_ascii=False, separators=(',', ':')) + '\n'
-        if len(payload.encode('utf-8')) > MAX_BYTES + 1:
+        sink = getattr(sys.stdout, 'buffer', None)
+        if sink is None or not callable(getattr(sink, 'write', None)) or not callable(getattr(sink, 'flush', None)):
+            raise Pending('binary stdout is unavailable')
+        payload = (json.dumps(observe(), sort_keys=True, ensure_ascii=False, separators=(',', ':')) + '\n').encode('utf-8')
+        if len(payload) > MAX_BYTES + 1:
             raise Pending('serialized classifier observation exceeds its byte limit')
-        sys.stdout.write(payload)
-        sys.stdout.flush()
+        written = sink.write(payload)
+        if type(written) is not int or written != len(payload):
+            raise Pending('classifier stdout write was incomplete')
+        sink.flush()
         return 0
     except (OSError, ValueError, subprocess.TimeoutExpired) as error:
         print(f'debian13s4 classifier observation pending: {error}', file=sys.stderr)

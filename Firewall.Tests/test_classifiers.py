@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import subprocess
 import tempfile
 import time
 import unittest
@@ -257,9 +258,34 @@ class PrivateNative(unittest.TestCase):
         self.executable(body)
 
     def cli(self):
-        out, err = io.StringIO(), io.StringIO()
+        raw = io.BytesIO();out = io.TextIOWrapper(raw, encoding='utf-8', errors='strict');err = io.StringIO()
         with patch.object(CLASSIFIERS.sys, 'argv', ['classifiers.py']), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):status = CLASSIFIERS.main()
-        return status, out.getvalue(), err.getvalue()
+        return status, raw.getvalue().decode('utf-8'), err.getvalue()
+
+    def byte_cli(self, encoding, errors):
+        raw = io.BytesIO();out = io.TextIOWrapper(raw, encoding=encoding, errors=errors);err = io.StringIO()
+        with patch.object(CLASSIFIERS.sys, 'argv', ['classifiers.py']), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):status = CLASSIFIERS.main()
+        out.flush()
+        return status, raw.getvalue(), err.getvalue()
+
+    def standalone_cli(self, encoding):
+        runner = self.root / 'classifiers-cli.py'
+        runner.write_text('import importlib.util,os,sys\nfrom pathlib import Path\nspec=importlib.util.spec_from_file_location("byte_cli",'+repr(str(ROOT/'Firewall/classifiers.py'))+')\nmodule=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)\nmodule.BINARY=Path('+repr(str(self.binary))+')\nmodule.KERNEL.IP_BINARY=Path('+repr(str(self.ip))+')\nmodule.KERNEL.TRUST_ROOT=Path('+repr(str(self.root))+')\nmodule.KERNEL.TRUSTED_UID=os.geteuid()\nsys.argv=["classifiers.py"]\nraise SystemExit(module.main())\n')
+        runner.chmod(0o600)
+        environment = os.environ.copy();environment['PYTHONIOENCODING'] = encoding
+        process = subprocess.Popen(['/usr/bin/python3','-B',str(runner)], stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environment, close_fds=True, start_new_session=True)
+        try:
+            out,err = process.communicate(timeout=30)
+            return process.returncode,out,err
+        finally:
+            try:
+                if process.returncode is None:
+                    try:os.killpg(process.pid,signal.SIGKILL)
+                    except ProcessLookupError:pass
+                    process.wait(timeout=KERNEL.CLEANUP_SECONDS)
+            finally:
+                process.stdout.close();process.stderr.close()
 
 
 class NativeTests(PrivateNative):
@@ -345,6 +371,64 @@ class NativeTests(PrivateNative):
 
 
 class CompleteNativeTests(PrivateNative):
+    def test_text_only_stdout_refuses_before_any_native_observation(self):
+        self.complete();out,err = io.StringIO(),io.StringIO()
+        with patch.object(CLASSIFIERS.sys, 'argv', ['classifiers.py']), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):status = CLASSIFIERS.main()
+        self.assertEqual(status,75);self.assertEqual(out.getvalue(),'');self.assertIn('binary stdout is unavailable',err.getvalue())
+        self.assertFalse(self.ledger.exists())
+
+    def test_short_failed_and_unflushed_binary_publication_cannot_report_success(self):
+        class Sink:
+            def __init__(self, mode):self.mode=mode;self.payload=None;self.flushes=0
+            def write(self, payload):
+                self.payload=payload
+                if self.mode=='write-error':raise OSError('private byte write failure')
+                return len(payload)-1 if self.mode=='short' else None if self.mode=='unknown-count' else len(payload)
+            def flush(self):
+                self.flushes+=1
+                if self.mode=='flush-error':raise OSError('private byte flush failure')
+        class Stdout:
+            def __init__(self, sink):self.buffer=sink
+        for mode in ('short','unknown-count','write-error','flush-error'):
+            self.complete();sink=Sink(mode);err=io.StringIO()
+            with self.subTest(mode=mode), patch.object(CLASSIFIERS.sys, 'argv', ['classifiers.py']), contextlib.redirect_stdout(Stdout(sink)), contextlib.redirect_stderr(err):status = CLASSIFIERS.main()
+            self.assertEqual(status,75);self.assertIn('pending',err.getvalue())
+            self.assertIs(type(sink.payload),bytes);self.assertLessEqual(len(sink.payload),CLASSIFIERS.MAX_BYTES+1)
+            self.assertEqual(json.loads(sink.payload.decode('utf-8'))['links'],links())
+            self.assertEqual(sink.flushes,1 if mode=='flush-error' else 0)
+
+    def test_actual_byte_sink_utf32_cannot_expand_the_checked_record(self):
+        rows = links();rows[1]['parentdev'] = 'A' * 70000
+        self.complete(rows=rows)
+        status,out,err = self.byte_cli('utf-32','strict')
+        self.assertEqual(status,0,err);self.assertEqual(err,'')
+        self.assertLessEqual(len(out),CLASSIFIERS.MAX_BYTES + 1)
+        self.assertTrue(out.startswith(b'{'));self.assertTrue(out.endswith(b'\n'))
+        self.assertEqual(json.loads(out.decode('utf-8'))['links'],rows)
+
+    def test_actual_byte_sink_ascii_handlers_cannot_replace_or_drop_unicode(self):
+        rows = links();rows[1]['parentdev'] = '\u00e9\u00e9\u00e9'
+        for errors in ('replace','ignore','backslashreplace'):
+            self.complete(rows=rows)
+            with self.subTest(errors=errors):
+                status,out,err = self.byte_cli('ascii',errors)
+                self.assertEqual(status,0,err);self.assertEqual(err,'')
+                self.assertLessEqual(len(out),CLASSIFIERS.MAX_BYTES + 1)
+                self.assertIn('\u00e9\u00e9\u00e9'.encode('utf-8'),out)
+                self.assertEqual(json.loads(out.decode('utf-8'))['links'],rows)
+
+    def test_actual_byte_standalone_cli_environment_encodings_preserve_utf8_record(self):
+        rows = links();rows[1]['parentdev'] = '\u00e9\u00e9\u00e9'
+        self.complete(rows=rows)
+        for encoding in ('utf-32:strict','ascii:replace','ascii:ignore','utf-8:strict'):
+            with self.subTest(encoding=encoding):
+                status,out,err = self.standalone_cli(encoding)
+                self.assertEqual(status,0,err);self.assertEqual(err,b'')
+                self.assertLessEqual(len(out),CLASSIFIERS.MAX_BYTES + 1)
+                self.assertTrue(out.startswith(b'{'));self.assertTrue(out.endswith(b'\n'))
+                self.assertIn('\u00e9\u00e9\u00e9'.encode('utf-8'),out)
+                self.assertEqual(json.loads(out.decode('utf-8'))['links'],rows)
+
     def test_complete_cli_utf8_serialization_preserves_the_checked_output_bound(self):
         rows = links();rows[1]['parentdev'] = '\u00e9' * 60000
         self.complete(rows=rows)
