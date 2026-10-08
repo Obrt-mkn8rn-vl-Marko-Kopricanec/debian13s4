@@ -187,6 +187,7 @@ class BootstrapTests(unittest.TestCase):
             "boot_enabled": False, "timer_enabled": False, "active": {},
             "disk": {"state": {}, "boot": {}, "library": {}, "units": {},
                      "boot_enabled": False, "timer_enabled": False}, "faults": {}}))
+        (self.root / "model.lock").touch(mode=0o600)
 
     def harness(self, source=ENTRY, lock=True):
         quote = shlex.quote
@@ -194,6 +195,9 @@ class BootstrapTests(unittest.TestCase):
 set -Eeuo pipefail
 umask 077
 source {quote(str(source))}
+source {quote(str(ROOT / 'Bootstrap.Tests/fixture_delivery.sh'))}
+s4_fixture_start {quote(str(ROOT / 'Bootstrap.Tests/fixture_delivery.py'))} {quote(str(self.model))} {quote(str(self.database))} {quote(str(self.log))} {quote(str(self.root))}
+trap 's4_fixture_stop' EXIT
 S4B_STATE_DIR={quote(str(self.state_dir))}
 S4B_BOOT_DIR={quote(str(self.boot))}
 S4B_LIBRARY_DIR={quote(str(self.library))}
@@ -219,10 +223,10 @@ s4b_trusted() {{
     done
 }}
 s4b_install() {{ /usr/bin/install "$@"; }}
-s4b_systemctl() {{ python3 {quote(str(self.model))} {quote(str(self.database))} {quote(str(self.log))} systemctl "${{FUNCNAME[1]}}" "$@"; }}
-s4b_sync() {{ python3 {quote(str(self.model))} {quote(str(self.database))} {quote(str(self.log))} sync "${{FUNCNAME[1]}}" "$@"; }}
+s4b_systemctl() {{ s4_fixture_call systemctl "${{FUNCNAME[1]}}" "$@"; }}
+s4b_sync() {{ s4_fixture_call sync "${{FUNCNAME[1]}}" "$@"; }}
 s4b_prepare
-trap 's4b_unlock; s4b_cleanup' EXIT
+trap 's4_fixture_stop; s4b_unlock; s4b_cleanup' EXIT
 ''' + ('s4b_open_lock "$S4B_BOOT_DIR/lock" S4B_LOCK_FD\n' if lock else '')
 
     def run_script(self, script, timeout=30):
