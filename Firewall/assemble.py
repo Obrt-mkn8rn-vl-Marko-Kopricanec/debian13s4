@@ -2,10 +2,11 @@
 """Prepare compiler input from agreeing supported automatic observations.
 
 Empty nftables space and all-present empty legacy IP/IPv6/ARP proc views,
-positive noqueue/fq_codel roots with empty fq_codel filters, classic external
-DNS, selected timesyncd and managed networkd without an instantiated DHCPv6
-client form this limited profile. No policy is installed; other tc/bridge/eBPF
-coexistence, native verification and ownership remain separate.
+positive noqueue/fq_codel roots with empty fq_codel filters, an empty registered
+BPF program-ID source view, classic external DNS, selected timesyncd and managed
+networkd without an instantiated DHCPv6 client form this limited profile. No
+policy is installed; other tc/bridge/eBPF coexistence, native verification and
+ownership remain separate.
 """
 
 import importlib.util
@@ -31,6 +32,9 @@ SPEC.loader.exec_module(LEGACY)
 SPEC = importlib.util.spec_from_file_location('debian13s4_classifiers', Path(__file__).with_name('classifiers.py'))
 CLASSIFIERS = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CLASSIFIERS)
+SPEC = importlib.util.spec_from_file_location('debian13s4_bpf', Path(__file__).with_name('bpf.py'))
+BPF = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(BPF)
 Pending = KERNEL.Pending
 ATTEMPT_SECONDS = 60
 MAX_NODES = 65536
@@ -199,7 +203,7 @@ def bind_classifiers(receipt, kernel):
         raise Pending('classifier and infrastructure interface identities disagree')
 
 
-def observe(dhcp=SERVERS.observe, dns=RESOLVER.observe, ntp=TIMESYNC.observe, compiler=POLICY.compile_policy, deadline=None, nft=NFT.observe, legacy=LEGACY.observe, classifiers=CLASSIFIERS.observe):
+def observe(dhcp=SERVERS.observe, dns=RESOLVER.observe, ntp=TIMESYNC.observe, compiler=POLICY.compile_policy, deadline=None, nft=NFT.observe, legacy=LEGACY.observe, classifiers=CLASSIFIERS.observe, bpf=BPF.observe):
     start = KERNEL.now()
     if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):
         raise Pending('invalid assembly deadline')
@@ -219,6 +223,11 @@ def observe(dhcp=SERVERS.observe, dns=RESOLVER.observe, ntp=TIMESYNC.observe, co
         records['classifiers'] = snapshot(CLASSIFIERS.validate_receipt(classifiers(deadline=deadline)))
         if records['classifiers']['namespace'] != records['nft']['namespace']:
             raise Pending('classifier and infrastructure namespaces disagree')
+        if KERNEL.now() >= deadline:
+            raise Pending('assembly deadline expired before BPF admission')
+        records['bpf'] = snapshot(BPF.validate_receipt(bpf(deadline=deadline)))
+        if records['bpf']['namespace'] != records['nft']['namespace']:
+            raise Pending('BPF caller and infrastructure namespaces disagree')
         for service, reader in (('dhcp4', dhcp), ('dns', dns), ('ntp', ntp)):
             if KERNEL.now() >= deadline:
                 raise Pending('assembly deadline expired before observer admission')
@@ -230,6 +239,8 @@ def observe(dhcp=SERVERS.observe, dns=RESOLVER.observe, ntp=TIMESYNC.observe, co
                 raise Pending('independent observer kernel inventories disagree')
             if records['nft']['namespace'] != common['namespace']:
                 raise Pending('nft and infrastructure namespaces disagree')
+            if records['bpf']['namespace'] != common['namespace']:
+                raise Pending('BPF caller and infrastructure namespaces disagree')
             bind_classifiers(records['classifiers'], common)
             records[service] = record
         if rounds and records != rounds[0]:
@@ -254,12 +265,19 @@ def observe(dhcp=SERVERS.observe, dns=RESOLVER.observe, ntp=TIMESYNC.observe, co
     if final_classifiers != rounds[-1]['classifiers']:
         raise Pending('classifier facts changed before preparation publication')
     bind_classifiers(final_classifiers, common)
+    if KERNEL.now() >= deadline:
+        raise Pending('assembly deadline expired before final BPF admission')
+    final_bpf = snapshot(BPF.validate_receipt(bpf(deadline=deadline)))
+    if final_bpf != rounds[-1]['bpf']:
+        raise Pending('BPF facts changed before preparation publication')
     SERVERS.fresh(rounds[-1]['dhcp4']['attributions'])
     if KERNEL.namespace() != common['namespace'] or KERNEL.now() >= deadline:
         raise Pending('assembly changed or expired before publication')
     return {'schema': 'debian13s4-assembled-policy-1', 'namespace': common['namespace'], 'topology': value, 'policy': text,
-            'profile': 'nft-legacy-proc-tc-fq-empty-networkd-classic-timesyncd-no-dhcp6-1',
-            'classifiers': final_classifiers, 'sources': {service: row['source'] for service, row in rounds[-1].items()}}
+            'profile': 'nft-legacy-proc-tc-fq-bpf-id-empty-networkd-classic-timesyncd-no-dhcp6-1',
+            'classifiers': final_classifiers, 'bpf': final_bpf,
+            'sources': {service: row['source'] for service, row in rounds[-1].items() if service != 'bpf'} |
+                       {'bpf': final_bpf['lookup']['source']}}
 
 
 def main():
@@ -270,7 +288,7 @@ def main():
         sys.stdout.write(result['policy'])
         sys.stdout.flush()
         return 0
-    except (OSError, ValueError, KERNEL.subprocess.TimeoutExpired) as error:
+    except (OSError, ValueError, AttributeError, KERNEL.subprocess.TimeoutExpired) as error:
         print(f'debian13s4 firewall preparation pending: {error}', file=sys.stderr)
         return 75
 
