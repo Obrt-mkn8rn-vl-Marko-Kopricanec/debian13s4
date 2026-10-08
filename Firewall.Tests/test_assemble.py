@@ -29,11 +29,17 @@ NFT = ASSEMBLY.NFT
 LEGACY = ASSEMBLY.LEGACY
 CLASSIFIERS = ASSEMBLY.CLASSIFIERS
 BPF = ASSEMBLY.BPF
+BPF_LINKS = ASSEMBLY.BPF_LINKS
 
 
 def bpf_receipt(namespace):
     return {'schema': 'debian13s4-bpf-program-id-empty-1', 'profile': 'global-program-id-zero-start-enoent-1',
             'namespace': namespace, 'lookup': {'source': BPF.abi(), 'result': -1, 'errno': errno.ENOENT, 'next_id': 0}}
+
+
+def bpf_link_receipt(namespace):
+    return {'schema': 'debian13s4-bpf-link-id-empty-1', 'profile': 'global-link-id-zero-start-enoent-1',
+            'namespace': namespace, 'lookup': {'source': BPF_LINKS.abi(), 'result': -1, 'errno': errno.ENOENT, 'next_id': 0}}
 
 
 def nft_receipt(namespace):
@@ -92,6 +98,7 @@ class AssemblyTests(unittest.TestCase):
         settings['legacy'] = lambda deadline: legacy_receipt(self.namespace)
         settings['classifiers'] = lambda deadline: classifier_receipt(self.records['dhcp4'].get('kernel') or records()['dhcp4']['kernel'])
         settings['bpf'] = lambda deadline: bpf_receipt(self.namespace)
+        settings['bpf_links'] = lambda deadline: bpf_link_receipt(self.namespace)
         settings.update(overrides)
         return ASSEMBLY.observe(**settings)
 
@@ -333,7 +340,7 @@ class AssemblyTests(unittest.TestCase):
         result = self.observe(legacy=read, deadline=deadline)
         self.assertEqual(calls, [deadline] * 3)
         self.assertEqual(result['sources']['legacy'], legacy_receipt(self.namespace)['source'])
-        self.assertEqual(result['profile'], 'nft-legacy-proc-tc-fq-bpf-id-empty-networkd-classic-timesyncd-no-dhcp6-1')
+        self.assertEqual(result['profile'], 'nft-legacy-proc-tc-fq-bpf-program-link-id-empty-networkd-classic-timesyncd-no-dhcp6-1')
 
     def test_legacy_snapshot_cannot_be_mutated_by_a_later_infrastructure_callback(self):
         value = legacy_receipt(self.namespace)
@@ -378,7 +385,7 @@ class ClassifierAdmissionTests(unittest.TestCase):
         def read(deadline):calls.append(deadline);return classifier_receipt(self.records['dhcp4']['kernel'],'fq_codel')
         result=self.observe(classifiers=read,deadline=deadline)
         self.assertEqual(calls,[deadline]*3);self.assertEqual(result['classifiers'],classifier_receipt(self.records['dhcp4']['kernel'],'fq_codel'))
-        self.assertEqual(result['profile'],'nft-legacy-proc-tc-fq-bpf-id-empty-networkd-classic-timesyncd-no-dhcp6-1')
+        self.assertEqual(result['profile'],'nft-legacy-proc-tc-fq-bpf-program-link-id-empty-networkd-classic-timesyncd-no-dhcp6-1')
 
     def test_missing_failed_nonempty_and_foreign_receipts_prevent_infrastructure(self):
         def fail(deadline):raise OSError('private tc read failed')
@@ -442,7 +449,8 @@ class ClassifierAdmissionTests(unittest.TestCase):
         settings={'dhcp':lambda deadline:self.records['dhcp4'],'dns':lambda deadline:self.records['dns'],
                   'ntp':lambda deadline:self.records['ntp'],'nft':lambda deadline:nft_receipt(self.namespace),
                   'legacy':lambda deadline:legacy_receipt(self.namespace),'classifiers':lambda deadline:value,
-                  'bpf':lambda deadline:bpf_receipt(self.namespace),'compiler':compile}
+                  'bpf':lambda deadline:bpf_receipt(self.namespace),
+                  'bpf_links':lambda deadline:bpf_link_receipt(self.namespace),'compiler':compile}
         with patch.object(ASSEMBLY,'observe',side_effect=lambda:real(**settings)),patch.object(ASSEMBLY.sys,'argv',['assemble.py']),contextlib.redirect_stdout(out),contextlib.redirect_stderr(err):status=ASSEMBLY.main()
         self.assertEqual(status,75);self.assertEqual(out.getvalue(),'');self.assertIn('pending',err.getvalue())
 
@@ -458,7 +466,7 @@ class BPFAdmissionTests(unittest.TestCase):
         self.assertEqual(result['bpf'], value)
         self.assertIsNot(result['bpf']['lookup'], value['lookup'])
         self.assertEqual(result['sources']['bpf'], value['lookup']['source'])
-        self.assertEqual(result['profile'], 'nft-legacy-proc-tc-fq-bpf-id-empty-networkd-classic-timesyncd-no-dhcp6-1')
+        self.assertEqual(result['profile'], 'nft-legacy-proc-tc-fq-bpf-program-link-id-empty-networkd-classic-timesyncd-no-dhcp6-1')
         self.assertEqual(result['policy'], POLICY.compile_policy(json.dumps(result['topology']).encode()))
 
     def test_unverifiable_or_failed_bpf_receipts_refuse_before_infrastructure(self):
@@ -549,7 +557,7 @@ class BPFAdmissionTests(unittest.TestCase):
                     'ntp':lambda deadline:self.records['ntp'],'nft':lambda deadline:nft_receipt(self.namespace),
                     'legacy':lambda deadline:legacy_receipt(self.namespace),
                     'classifiers':lambda deadline:classifier_receipt(self.records['dhcp4']['kernel']),
-                    'bpf':lambda deadline:value,'compiler':compiler}
+                    'bpf':lambda deadline:value,'bpf_links':lambda deadline:bpf_link_receipt(self.namespace),'compiler':compiler}
         out,err=io.StringIO(),io.StringIO()
         with patch.object(ASSEMBLY, 'observe', side_effect=lambda:original(**settings)), patch.object(ASSEMBLY.sys, 'argv', ['assemble.py']), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):status=ASSEMBLY.main()
         self.assertEqual(status,75);self.assertEqual(out.getvalue(),'');self.assertIn('pending',err.getvalue())
@@ -589,16 +597,22 @@ class PrivateNative(unittest.TestCase):
         self.bpf_calls = []
         self.bpf_present = False
         self.bpf_error = errno.ENOENT
+        self.link_calls = []
+        self.link_present = False
+        self.link_error = errno.ENOENT
         real_cdll = ctypes.CDLL
         def lookup(number, command, pointer, length):
             attr = ctypes.cast(pointer, ctypes.POINTER(BPF.IdAttr)).contents
-            self.bpf_calls.append({'number': number.value, 'command': command.value, 'bytes': length.value,
-                                   'attribute': bytes(attr)})
-            if command.value != 11 or length.value != 12 or bytes(attr) != bytes(16):
+            if command.value not in (11, 31) or length.value != 12 or bytes(attr) != bytes(16):
                 raise AssertionError('private fixture refuses any non-ID or nonzero BPF call')
-            ctypes.set_errno(0 if self.bpf_present else self.bpf_error)
-            if self.bpf_present:attr.ids.next_id = 1
-            return 0 if self.bpf_present else -1
+            calls = self.bpf_calls if command.value == 11 else self.link_calls
+            calls.append({'number': number.value, 'command': command.value, 'bytes': length.value,
+                          'attribute': bytes(attr)})
+            present = self.bpf_present if command.value == 11 else self.link_present
+            error = self.bpf_error if command.value == 11 else self.link_error
+            ctypes.set_errno(0 if present else error)
+            if present:attr.ids.next_id = 1
+            return 0 if present else -1
         def private_cdll(name, *args, **kwargs):
             library = real_cdll(name, *args, **kwargs)
             library.syscall = lookup
