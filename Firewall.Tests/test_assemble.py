@@ -19,6 +19,7 @@ from test_timesync import packet
 from test_policy import PacketModel
 from test_classifiers import options as fq_options
 from fixture_dispatch import script as dispatch_script
+from fixture_bus import script as bus_script
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location('firewall_assemble', ROOT / 'Firewall/assemble.py')
@@ -647,7 +648,8 @@ class PrivateNative(unittest.TestCase):
             if path.exists():path.unlink()
         self.ledger.write_text('')
         self.executable(self.nft, f"import json,os,sys\nargs=sys.argv[1:]\nwith open({str(self.ledger)!r},'a') as log:log.write(json.dumps(['nft',args,dict(os.environ)])+'\\n')\nif args!={list(NFT.COMMAND)!r}:raise SystemExit(1)\nprint({json.dumps({'nftables': [{'metainfo': {'version': '1.1.3', 'release_name': 'fixture', 'json_schema_version': 1}}]})!r})")
-        self.executable(self.bus, f"""import json,os,sys
+        bus_state = self.root / 'bus-state'
+        self.executable(bus_state, f"""import json,os,sys
 from pathlib import Path
 args=sys.argv[1:]
 with open({str(self.ledger)!r},'a') as log: log.write(json.dumps(['bus',args,dict(os.environ)])+'\\n')
@@ -678,6 +680,29 @@ elif a=={[':1.77',TIME.OBJECT,'org.freedesktop.DBus.Properties','GetAll','s',TIM
  if {warning!r}: print('fixture warning',file=sys.stderr)
 else: raise SystemExit(1)
 print(json.dumps(result))""")
+        bus_prefix = ('--system', '--no-pager', '--json=short', '--auto-start=no',
+                      '--allow-interactive-authorization=no', '--expect-reply=yes', '--timeout=3s', 'call')
+        bus_replies = {
+            (*bus_prefix, *DHCP.BUS, 'GetNameOwner', 's', DHCP.SERVICE): {'type': 's', 'data': [':1.88']},
+            (*bus_prefix, *TIME.BUS, 'GetNameOwner', 's', TIME.SERVICE): {'type': 's', 'data': [':1.77']},
+            (*bus_prefix, ':1.88', DHCP.OBJECT, DHCP.MANAGER, 'ListLinks'):
+                {'type': 'a(iso)', 'data': [[[1, 'lo', DHCP.link_path(1)], [2, 'eth0', DHCP.link_path(2)]]]},
+            (*bus_prefix, ':1.88', DHCP.link_path(2), DHCP.INTROSPECT, 'Introspect'):
+                {'type': 's', 'data': [xml(families)]},
+            (*bus_prefix, ':1.88', DHCP.link_path(2), DHCP.PROPERTIES, 'Get', 'ss', DHCP.LINK, 'AdministrativeState'):
+                {'type': 'v', 'data': [{'type': 's', 'data': 'configured'}]},
+        }
+        for family in families:
+            bus_replies[(*bus_prefix, ':1.88', DHCP.link_path(2), DHCP.PROPERTIES, 'Get', 'ss', DHCP.CLIENTS[family], 'State')] = {
+                'type': 'v', 'data': [{'type': 's', 'data': state if family == 4 else 'bound'}]}
+        self.bus.write_text(bus_script(
+            self.ledger, {arguments: json.dumps(reply) + '\n' for arguments, reply in bus_replies.items()},
+            tuple((*bus_prefix, *DHCP.BUS, 'GetConnectionUnixProcessID', 's', owner) for owner in (':1.88', ':1.77')),
+            ((*bus_prefix, ':1.88', DHCP.OBJECT, DHCP.PROPERTIES, 'Get', 'ss', DHCP.MANAGER, 'NamespaceId'),),
+            ((*bus_prefix, ':1.88', DHCP.OBJECT, DHCP.MANAGER, 'DescribeLink', 'i', '2'),
+             (*bus_prefix, ':1.77', TIME.OBJECT, 'org.freedesktop.DBus.Properties', 'GetAll', 's', TIME.INTERFACE)),
+            bus_state), encoding='utf-8')
+        self.bus.chmod(0o700)
         data = kernel_data()
         for row in data['links']:row['qdisc'] = tc_kind if row['ifname']!='lo' else 'noqueue'
         qdiscs = [{'kind': row['qdisc'], 'handle': '0:', 'dev': row['ifname'], 'root': True,
