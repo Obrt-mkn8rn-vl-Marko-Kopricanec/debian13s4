@@ -242,5 +242,81 @@ class ProposalTests(unittest.TestCase):
         self.assertEqual((self.store / STORE.LEAF).stat().st_nlink, 1)
         self.assertEqual(STORE.create(self.store, self.payload), self.payload)
 
+    def test_exclusive_nonce_collision_preserves_unowned_staging_inode_and_bytes(self):
+        nonce = 'b' * 32;stage = self.store / ('.proposal-' + nonce)
+        stage.write_bytes(b'pre-existing orphan must survive');stage.chmod(0o600)
+        before = stage.stat()
+        with patch.object(STORE.secrets, 'token_hex', return_value=nonce), self.assertRaises(FileExistsError):
+            STORE.create(self.store, self.payload)
+        self.assertTrue(stage.exists())
+        self.assertEqual((stage.stat().st_dev, stage.stat().st_ino), (before.st_dev, before.st_ino))
+        self.assertEqual(stage.read_bytes(), b'pre-existing orphan must survive')
+        self.assertEqual({p.name for p in self.store.iterdir()}, {stage.name})
+        self.assertFalse((self.store / STORE.LEAF).exists())
+
+    def test_create_close_error_retires_owned_fd_once_and_preserves_actual_reused_descriptor(self):
+        unrelated = self.root / 'independent-resource';unrelated.write_bytes(b'keep open')
+        real_open, real_close = STORE.os.open, STORE.os.close
+        delivery = {'staging':None, 'replacement':None, 'closes':0}
+        def opened(name, flags, *args, **kwargs):
+            fd = real_open(name, flags, *args, **kwargs)
+            if flags & os.O_EXCL:delivery['staging'] = fd
+            return fd
+        def closed(fd):
+            if fd == delivery['staging']:
+                delivery['closes'] += 1
+                if delivery['closes'] == 1:
+                    real_close(fd)
+                    delivery['replacement'] = real_open(unrelated, os.O_RDONLY | os.O_CLOEXEC)
+                    self.assertEqual(delivery['replacement'], fd)
+                    raise OSError('fixture close error after descriptor retirement')
+            return real_close(fd)
+        try:
+            with (patch.object(STORE.os, 'open', side_effect=opened), patch.object(STORE.os, 'close', side_effect=closed),
+                  self.assertRaisesRegex(OSError, 'fixture close error after descriptor retirement')):
+                STORE.create(self.store, self.payload)
+            self.assertEqual(delivery['closes'], 1)
+            self.assertEqual(os.read(delivery['replacement'], 9), b'keep open')
+            self.assertEqual((os.fstat(delivery['replacement']).st_dev, os.fstat(delivery['replacement']).st_ino),
+                             (unrelated.stat().st_dev, unrelated.stat().st_ino))
+            self.assertTrue((self.store / STORE.LEAF).exists())
+            self.assertEqual({p.name for p in self.store.iterdir()}, {STORE.LEAF})
+        finally:
+            if delivery['replacement'] is not None:
+                try:info = os.fstat(delivery['replacement'])
+                except OSError:pass
+                else:
+                    if (info.st_dev, info.st_ino) == (unrelated.stat().st_dev, unrelated.stat().st_ino):
+                        real_close(delivery['replacement'])
+
+    def test_failed_write_cleanup_preserves_a_replacement_at_the_owned_staging_name(self):
+        nonce = 'c' * 32;stage = self.store / ('.proposal-' + nonce)
+        moved = self.store / 'owned-but-renamed';replacement = {}
+        def failed_write(fd, data):
+            stage.rename(moved);stage.write_bytes(b'unrelated replacement');stage.chmod(0o600)
+            replacement['identity'] = (stage.stat().st_dev, stage.stat().st_ino)
+            raise OSError('fixture write interrupted after path replacement')
+        with (patch.object(STORE.secrets, 'token_hex', return_value=nonce),
+              patch.object(STORE.os, 'write', side_effect=failed_write), self.assertRaises(STORE.Pending)):
+            STORE.create(self.store, self.payload)
+        self.assertEqual((stage.stat().st_dev, stage.stat().st_ino), replacement['identity'])
+        self.assertEqual(stage.read_bytes(), b'unrelated replacement')
+        self.assertTrue(moved.exists())
+        self.assertFalse((self.store / STORE.LEAF).exists())
+
+    def test_unverifiable_acquired_staging_identity_withholds_cleanup_and_publication(self):
+        nonce = 'd' * 32;stage = self.store / ('.proposal-' + nonce);real = STORE.os.fstat
+        def unverifiable(fd):
+            info = real(fd)
+            if stat.S_ISREG(info.st_mode):raise OSError('fixture acquired identity unavailable')
+            return info
+        with (patch.object(STORE.secrets, 'token_hex', return_value=nonce),
+              patch.object(STORE.os, 'fstat', side_effect=unverifiable),
+              self.assertRaisesRegex(OSError, 'fixture acquired identity unavailable')):
+            STORE.create(self.store, self.payload)
+        self.assertTrue(stage.exists());self.assertEqual(stage.read_bytes(), b'')
+        self.assertEqual({p.name for p in self.store.iterdir()}, {stage.name})
+        self.assertFalse((self.store / STORE.LEAF).exists())
+
 
 if __name__ == '__main__':unittest.main()

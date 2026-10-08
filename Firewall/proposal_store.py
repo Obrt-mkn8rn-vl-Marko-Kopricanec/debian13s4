@@ -199,11 +199,17 @@ def reconcile_link(path, directory, before, payload, end):
     directory_matches(path, directory, before);admission(end)
 
 
+def staging_identity(info):
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != TRUSTED_UID:
+        raise Pending('untrusted acquired staging descriptor or path')
+    return info.st_dev, info.st_ino, info.st_uid, info.st_gid
+
+
 def create(path, payload, deadline=None):
     end = window(deadline)
     raw = envelope(payload);admission(end)
     directory, before = locked(path, end)
-    temporary, fd = None, None
+    temporary, owned, fd = None, None, None
     try:
         reconcile_link(path, directory, before, payload, end)
         try:
@@ -214,9 +220,12 @@ def create(path, payload, deadline=None):
             if checked(current) != payload:raise Pending('a different historical proposal already exists')
             os.fsync(directory);directory_matches(path, directory, before);admission(end)
             return payload
-        temporary = '.proposal-' + secrets.token_hex(16)
-        fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC,
+        candidate = '.proposal-' + secrets.token_hex(16)
+        fd = os.open(candidate, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC,
                      0o600, dir_fd=directory)
+        owned = staging_identity(os.fstat(fd))
+        if owned[0] != before[0]:raise Pending('acquired staging device disagrees')
+        temporary = candidate
         os.fchmod(fd, 0o600)
         offset = 0
         while offset < len(raw):
@@ -232,7 +241,8 @@ def create(path, payload, deadline=None):
         directory_matches(path, directory, before);admission(end)
         os.link(temporary, LEAF, src_dir_fd=directory, dst_dir_fd=directory, follow_symlinks=False)
         os.unlink(temporary, dir_fd=directory);temporary = None
-        os.close(fd);fd = None
+        closing, fd = fd, None
+        os.close(closing)
         os.fsync(directory)
         result = checked(read_at(directory, end))
         if result != payload:raise Pending('published proposal differs from the intended bytes')
@@ -240,9 +250,16 @@ def create(path, payload, deadline=None):
         return result
     finally:
         try:
-            if fd is not None:os.close(fd)
+            if temporary is not None:
+                directory_matches(path, directory, before)
+                if staging_identity(os.fstat(fd)) != owned or \
+                        staging_identity(os.stat(temporary, dir_fd=directory, follow_symlinks=False)) != owned:
+                    raise Pending('owned staging identity changed before cleanup')
+                os.unlink(temporary, dir_fd=directory)
         finally:
             try:
-                if temporary is not None:os.unlink(temporary, dir_fd=directory)
+                if fd is not None:
+                    closing, fd = fd, None
+                    os.close(closing)
             finally:
                 os.close(directory)
