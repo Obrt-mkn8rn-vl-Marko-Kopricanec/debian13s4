@@ -18,6 +18,7 @@ from test_dhcp_servers import document, inventory, kernel_data, encoded
 from test_timesync import packet
 from test_policy import PacketModel
 from test_classifiers import options as fq_options
+from fixture_dispatch import script as dispatch_script
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location('firewall_assemble', ROOT / 'Firewall/assemble.py')
@@ -668,22 +669,14 @@ print(json.dumps(result))""")
         qdiscs = [{'kind': row['qdisc'], 'handle': '0:', 'dev': row['ifname'], 'root': True,
                    'options': fq_options() if row['qdisc']=='fq_codel' else {}} for row in data['links']]
         self.executable(self.tc, f"import json,os,sys\nargs=sys.argv[1:]\nwith open({str(self.ledger)!r},'a') as log:log.write(json.dumps(['tc',args,dict(os.environ)])+'\\n')\nif args=={list(CLASSIFIERS.QDISCS)!r}:print({json.dumps(qdiscs)!r})\nelif args==['-json','filter','show','dev','eth0']:print({json.dumps([] if tc_filters is None else tc_filters)!r})\nelse:raise SystemExit(1)")
-        self.executable(self.ip, f"""import json,sys
-args=sys.argv[1:]
-with open({str(self.ledger)!r},'a') as log: log.write(json.dumps(['ip',args,{{}}])+'\\n')
-if args[:2]!=['-j','-N']: raise SystemExit(1)
-a=args[2:]
-commands={KERNEL.COMMANDS!r}
-data={data!r}
-if len(a)==4 and a[0]=='-4' and a[1:3]==['route','get'] and a[3] in ('8.8.8.8','9.9.9.9','192.168.50.1','192.168.50.2','192.168.50.3'):
- row={{'dst':a[3],'dev':'eth0'}}
- if a[3] in ('8.8.8.8','9.9.9.9'): row['gateway']='192.168.50.1'
- result=[row]
-else:
- keys=[key for key,value in commands.items() if list(value)==a]
- if len(keys)!=1: raise SystemExit(1)
- result=data[keys[0]]
-print(json.dumps(result))""")
+        replies = {('-j', '-N', *arguments): json.dumps(data[name]) + '\n'
+                   for name, arguments in KERNEL.COMMANDS.items()}
+        for destination in ('8.8.8.8', '9.9.9.9', '192.168.50.1', '192.168.50.2', '192.168.50.3'):
+            row = {'dst': destination, 'dev': 'eth0'}
+            if destination in ('8.8.8.8', '9.9.9.9'):row['gateway'] = '192.168.50.1'
+            replies[('-j', '-N', '-4', 'route', 'get', destination)] = json.dumps([row]) + '\n'
+        self.ip.write_text(dispatch_script(self.ledger, 'ip', replies))
+        self.ip.chmod(0o700)
 
 
 class BPFNativeIntegrationTests(PrivateNative):
