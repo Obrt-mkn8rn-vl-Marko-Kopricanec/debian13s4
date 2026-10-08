@@ -175,6 +175,70 @@ def root_inventory(value, links):
     return rows
 
 
+def validate_receipt(value):
+    value = TC.snapshot(value)
+    fields = {'schema', 'namespace', 'profile', 'source', 'links', 'qdiscs', 'fq_codel_filters'}
+    KERNEL.known(value, fields, fields)
+    if value['schema'] != 'debian13s4-tc-fq-codel-classifiers-1' or \
+            value['profile'] != 'all-links-noqueue-or-fq-codel-roots-empty-filters-1' or \
+            not KERNEL.uint(value['namespace'], (1 << 64) - 1):
+        raise Pending('invalid classifier receipt')
+    KERNEL.known(value['source'], {'tc', 'ip'}, {'tc', 'ip'})
+    if value['source'] != {'tc': str(BINARY), 'ip': str(KERNEL.IP_BINARY)}:
+        raise Pending('unrecognized classifier receipt source')
+    links = link_inventory(value['links'])
+    roots = root_inventory(value['qdiscs'], links)
+    names = {row['dev'] for row in roots if row['kind'] == 'fq_codel'}
+    filters = value['fq_codel_filters']
+    if type(filters) is not dict or set(filters) != names or \
+            any(type(rows) is not list or rows for rows in filters.values()):
+        raise Pending('incomplete or nonempty classifier receipt filters')
+    return value
+
+
+def interface_identities(value):
+    """Project receipt link identity onto the kernel observer's Ethernet view."""
+    result, indexes, parents = {}, {}, {}
+    for row in value['links']:
+        name, index = row['ifname'], row['ifindex']
+        indexes[index] = name
+        if name == 'lo':
+            continue
+        flags = KERNEL.flags(row['flags'])
+        if flags & {'LOOPBACK', 'POINTOPOINT', 'NOARP', 'MASTER', 'SLAVE'}:
+            raise Pending('classifier link cannot bind supported kernel arrangement')
+        mac = KERNEL.ethernet(row.get('address'))
+        info = row.get('linkinfo', {})
+        KERNEL.known(info, {'info_kind', 'info_data'})
+        kind = info.get('info_kind')
+        if kind not in (None, 'vlan') or ('info_data' in info and kind != 'vlan'):
+            raise Pending('classifier link cannot bind unsupported virtual identity')
+        vlan, parent = None, None
+        if kind == 'vlan':
+            data = info.get('info_data')
+            KERNEL.known(data, {'protocol', 'id', 'flags'}, {'id', 'protocol'})
+            tags = KERNEL.flags(data.get('flags', []))
+            if not KERNEL.uint(data['id'], 4094) or not tags.issubset({'REORDER_HDR'}):
+                raise Pending('invalid classifier VLAN identity')
+            vlan = {'id': data['id'], 'protocol': KERNEL.vlan_protocol(data['protocol']), 'flags': sorted(tags)}
+            parent = KERNEL.uint(row.get('link_index'), 0x7fffffff)
+            if not parent:
+                raise Pending('missing classifier VLAN parent')
+            parents[name] = parent
+        elif 'link_index' in row:
+            raise Pending('unidentified classifier parent link')
+        result[name] = {'name': name, 'index': index, 'mac': mac, 'kind': 'ether', 'up': {'UP', 'LOWER_UP'}.issubset(flags),
+                        'flags': sorted(flags), 'parent': parent, 'vlan': vlan}
+    for name in parents:
+        current, seen = name, {name}
+        while current in parents:
+            current = indexes.get(parents[current])
+            if current is None or current == 'lo' or current in seen or len(seen) > 4:
+                raise Pending('unresolved or cyclic classifier VLAN parent')
+            seen.add(current)
+    return result
+
+
 def observe(query=native_query, links=KERNEL.native_query, scope=KERNEL.namespace, deadline=None):
     start = KERNEL.now()
     if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):

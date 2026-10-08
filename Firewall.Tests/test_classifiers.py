@@ -231,6 +231,49 @@ class ObservationTests(unittest.TestCase):
         self.assertEqual(len(seen), 2 * KERNEL.MAX_LINKS);self.assertEqual(len(result['fq_codel_filters']), KERNEL.MAX_LINKS - 1)
 
 
+class ReceiptTests(unittest.TestCase):
+    def receipt(self):
+        return CLASSIFIERS.observe(query=lambda operation, deadline, interface=None: roots() if operation=='qdiscs' else [],
+                                   links=lambda operation, deadline: links(), scope=lambda: 123)
+
+    def test_complete_receipt_is_privately_copied_with_original_records(self):
+        value=self.receipt();result=CLASSIFIERS.validate_receipt(value);value['links'][1]['ifindex']=9
+        self.assertEqual(result,self.receipt())
+
+    def test_receipt_schema_source_namespace_and_exact_fields_are_required(self):
+        for key,bad in (('schema','unknown'),('profile','empty'),('namespace',True),('namespace',0),('namespace',1<<64),('extra',True)):
+            value=self.receipt();value[key]=bad
+            with self.subTest(key=key,bad=bad),self.assertRaises(CLASSIFIERS.Pending):CLASSIFIERS.validate_receipt(value)
+        for key in ('tc','ip'):
+            value=self.receipt();value['source'][key]='/untrusted'
+            with self.subTest(source=key),self.assertRaises(CLASSIFIERS.Pending):CLASSIFIERS.validate_receipt(value)
+        value=self.receipt();del value['qdiscs']
+        with self.assertRaises(CLASSIFIERS.Pending):CLASSIFIERS.validate_receipt(value)
+
+    def test_all_root_and_filter_coverage_is_revalidated_without_cached_health(self):
+        for bad in ({},{'eth0':None},{'eth0':[{'kind':'bpf'}]},{'eth0':[],'foreign':[]}):
+            value=self.receipt();value['fq_codel_filters']=bad
+            with self.subTest(bad=bad),self.assertRaises(CLASSIFIERS.Pending):CLASSIFIERS.validate_receipt(value)
+        for key,bad in (('root',False),('kind','mq'),('offloaded',True),('options',{})):
+            value=self.receipt();value['qdiscs'][1][key]=bad
+            with self.subTest(key=key),self.assertRaises(CLASSIFIERS.Pending):CLASSIFIERS.validate_receipt(value)
+
+    def test_ethernet_and_vlan_identity_projection_checks_full_kernel_shape(self):
+        value=self.receipt();value['links'][1]['address']='02:00:00:00:00:10'
+        value['links'][1]['flags']=['BROADCAST'];base=copy.deepcopy(value['links'][1])
+        base.update(ifname='lan.7',ifindex=3,link_index=2,linkinfo={'info_kind':'vlan','info_data':{'protocol':'[33024]','id':7,'flags':['REORDER_HDR']}})
+        value['links'].append(base);identity=CLASSIFIERS.interface_identities(value)
+        self.assertEqual(identity['eth0']['up'],False);self.assertEqual(identity['lan.7']['parent'],2)
+        self.assertEqual(identity['lan.7']['vlan'],{'protocol':'802.1Q','id':7,'flags':['REORDER_HDR']})
+
+    def test_unknown_mac_virtual_flags_and_unresolved_vlan_identity_refuse(self):
+        for change in ({'address':'00:00:00:00:00:00'},{'flags':['NOARP']},{'linkinfo':{'info_kind':'bridge'}},{'link_index':1},
+                       {'link_index':1,'linkinfo':{'info_kind':'vlan','info_data':{'id':7,'protocol':'802.1Q'}}},
+                       {'link_index':2,'linkinfo':{'info_kind':'vlan','info_data':{'id':7,'protocol':'802.1Q'}}}):
+            value=self.receipt();value['links'][1]['address']='02:00:00:00:00:10';value['links'][1].update(change)
+            with self.subTest(change=change),self.assertRaises(CLASSIFIERS.Pending):CLASSIFIERS.interface_identities(value)
+
+
 class PrivateNative(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory(prefix='debian13s4-classifiers-', dir='/dev/shm')

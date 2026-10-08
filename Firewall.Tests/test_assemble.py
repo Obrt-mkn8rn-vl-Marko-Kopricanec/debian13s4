@@ -14,6 +14,7 @@ from test_dhcp import xml
 from test_dhcp_servers import document, inventory, kernel_data, encoded
 from test_timesync import packet
 from test_policy import PacketModel
+from test_classifiers import options as fq_options
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location('firewall_assemble', ROOT / 'Firewall/assemble.py')
@@ -22,6 +23,7 @@ SPEC.loader.exec_module(ASSEMBLY)
 SERVERS, DHCP, TIME, DNS, KERNEL, POLICY = ASSEMBLY.SERVERS, ASSEMBLY.DHCP, ASSEMBLY.TIMESYNC, ASSEMBLY.RESOLVER, ASSEMBLY.KERNEL, ASSEMBLY.POLICY
 NFT = ASSEMBLY.NFT
 LEGACY = ASSEMBLY.LEGACY
+CLASSIFIERS = ASSEMBLY.CLASSIFIERS
 
 
 def nft_receipt(namespace):
@@ -36,6 +38,21 @@ def legacy_receipt(namespace):
                        'files': {name: {'identity': [1, index + 2, 0o100440, LEGACY.TRUSTED_UID, 0, 0, 0, 0],
                                         'bytes': 0, 'sha256': LEGACY.EMPTY_HASH}
                                  for index, name in enumerate(LEGACY.FILES)}}}
+
+
+def classifier_receipt(kernel, kind='noqueue'):
+    rows = [dict(kernel_data()['links'][0], qdisc='noqueue')]
+    for link in kernel['interfaces']:
+        row = {'ifname': link['name'], 'ifindex': link['index'], 'address': link['mac'],
+               'flags': list(link['flags']), 'link_type': '[1]', 'qdisc': kind}
+        if link['vlan'] is not None:
+            row.update(link_index=link['parent'], linkinfo={'info_kind': 'vlan', 'info_data': copy.deepcopy(link['vlan'])})
+        rows.append(row)
+    qdiscs = [{'kind': row['qdisc'], 'handle': '0:', 'dev': row['ifname'], 'root': True,
+               'options': fq_options() if row['qdisc']=='fq_codel' else {}} for row in rows]
+    return {'schema': 'debian13s4-tc-fq-codel-classifiers-1', 'profile': 'all-links-noqueue-or-fq-codel-roots-empty-filters-1',
+            'namespace': kernel['namespace'], 'source': {'tc': str(CLASSIFIERS.BINARY), 'ip': str(CLASSIFIERS.KERNEL.IP_BINARY)},
+            'links': rows, 'qdiscs': qdiscs, 'fq_codel_filters': {row['dev']: [] for row in qdiscs if row['kind']=='fq_codel'}}
 
 
 def records():
@@ -63,6 +80,7 @@ class AssemblyTests(unittest.TestCase):
         settings = {name: (lambda deadline, key=key: copy.deepcopy(self.records[key])) for name, key in (('dhcp', 'dhcp4'), ('dns', 'dns'), ('ntp', 'ntp'))}
         settings['nft'] = lambda deadline: nft_receipt(self.namespace)
         settings['legacy'] = lambda deadline: legacy_receipt(self.namespace)
+        settings['classifiers'] = lambda deadline: classifier_receipt(self.records['dhcp4'].get('kernel') or records()['dhcp4']['kernel'])
         settings.update(overrides)
         return ASSEMBLY.observe(**settings)
 
@@ -304,7 +322,7 @@ class AssemblyTests(unittest.TestCase):
         result = self.observe(legacy=read, deadline=deadline)
         self.assertEqual(calls, [deadline] * 3)
         self.assertEqual(result['sources']['legacy'], legacy_receipt(self.namespace)['source'])
-        self.assertEqual(result['profile'], 'nft-legacy-proc-empty-networkd-classic-timesyncd-no-dhcp6-1')
+        self.assertEqual(result['profile'], 'nft-legacy-proc-tc-fq-empty-networkd-classic-timesyncd-no-dhcp6-1')
 
     def test_legacy_snapshot_cannot_be_mutated_by_a_later_infrastructure_callback(self):
         value = legacy_receipt(self.namespace)
@@ -340,6 +358,83 @@ class AssemblyTests(unittest.TestCase):
         self.assertEqual(len(nft_calls), 3);self.assertEqual(len(legacy_calls), 2)
 
 
+class ClassifierAdmissionTests(unittest.TestCase):
+    def setUp(self):AssemblyTests.setUp(self)
+    def observe(self, **kwargs):return AssemblyTests.observe(self, **kwargs)
+
+    def test_positive_fq_receipts_share_three_deadlines_and_retain_complete_facts(self):
+        calls=[];deadline=KERNEL.now()+20
+        def read(deadline):calls.append(deadline);return classifier_receipt(self.records['dhcp4']['kernel'],'fq_codel')
+        result=self.observe(classifiers=read,deadline=deadline)
+        self.assertEqual(calls,[deadline]*3);self.assertEqual(result['classifiers'],classifier_receipt(self.records['dhcp4']['kernel'],'fq_codel'))
+        self.assertEqual(result['profile'],'nft-legacy-proc-tc-fq-empty-networkd-classic-timesyncd-no-dhcp6-1')
+
+    def test_missing_failed_nonempty_and_foreign_receipts_prevent_infrastructure(self):
+        def fail(deadline):raise OSError('private tc read failed')
+        with self.assertRaises(OSError):self.observe(classifiers=fail,dhcp=lambda **kw:self.fail('unadmitted infrastructure'))
+        for mutation in ('missing','filters','source','namespace'):
+            value=classifier_receipt(self.records['dhcp4']['kernel'],'fq_codel')
+            if mutation=='missing':value['qdiscs'].pop()
+            elif mutation=='filters':value['fq_codel_filters']['eth0']=[{'kind':'bpf'}]
+            elif mutation=='source':value['source']['tc']='/foreign'
+            else:value['namespace']+=1
+            with self.subTest(mutation=mutation),self.assertRaises(ValueError):self.observe(classifiers=lambda deadline:value,dhcp=lambda **kw:self.fail('unverified tc admitted'))
+
+    def test_complete_nonloopback_identity_disagreement_cannot_bind(self):
+        for key,bad in (('ifindex',9),('address','02:00:00:00:00:11'),('flags',['BROADCAST']),('ifname','other')):
+            value=classifier_receipt(self.records['dhcp4']['kernel']);value['links'][1][key]=bad
+            if key=='ifname':value['qdiscs'][1]['dev']=bad
+            with self.subTest(key=key),self.assertRaisesRegex(ASSEMBLY.Pending,'interface identities'):
+                self.observe(classifiers=lambda deadline:value,compiler=lambda raw:self.fail('foreign link compiled'))
+
+    def test_second_round_or_final_receipt_changes_prevent_publication(self):
+        for turn in (2,3):
+            calls=[]
+            def read(deadline):
+                calls.append(deadline);value=classifier_receipt(self.records['dhcp4']['kernel'])
+                if len(calls)==turn:value['links'][1]['mtu']=1400
+                return value
+            with self.subTest(turn=turn),self.assertRaises(ASSEMBLY.Pending):self.observe(classifiers=read)
+            self.assertEqual(len(calls),turn)
+
+    def test_later_callback_cannot_mutate_a_copied_classifier_receipt(self):
+        value=classifier_receipt(self.records['dhcp4']['kernel'])
+        def dhcp(deadline):value['links'][1]['mtu']=1400;return self.records['dhcp4']
+        with self.assertRaisesRegex(ASSEMBLY.Pending,'observations changed'):self.observe(classifiers=lambda deadline:value,dhcp=dhcp)
+
+    def test_expired_classifier_delivery_does_not_admit_infrastructure(self):
+        start=KERNEL.now();clock=[start]
+        def read(deadline):clock[0]=deadline;return classifier_receipt(self.records['dhcp4']['kernel'])
+        with patch.object(KERNEL,'now',side_effect=lambda:clock[0]),self.assertRaises(ASSEMBLY.Pending):
+            self.observe(classifiers=read,dhcp=lambda **kw:self.fail('expired tc admitted'))
+
+    def test_final_legacy_expiry_prevents_another_classifier_read(self):
+        start=KERNEL.now();clock=[start];tc_calls=[];legacy_calls=[]
+        def tc(deadline):tc_calls.append(deadline);return classifier_receipt(self.records['dhcp4']['kernel'])
+        def legacy(deadline):
+            legacy_calls.append(deadline)
+            if len(legacy_calls)==3:clock[0]=deadline
+            return legacy_receipt(self.namespace)
+        with patch.object(KERNEL,'now',side_effect=lambda:clock[0]),self.assertRaises(ASSEMBLY.Pending):self.observe(classifiers=tc,legacy=legacy)
+        self.assertEqual(len(tc_calls),2);self.assertEqual(len(legacy_calls),3)
+
+    def test_final_classifier_expiry_or_postcompile_damage_withholds_cli_text(self):
+        real=ASSEMBLY.observe;start=KERNEL.now();clock=[start];calls=[]
+        def tc(deadline):
+            calls.append(deadline);value=classifier_receipt(self.records['dhcp4']['kernel'])
+            if len(calls)==3:clock[0]=deadline
+            return value
+        with patch.object(KERNEL,'now',side_effect=lambda:clock[0]),self.assertRaises(ASSEMBLY.Pending):self.observe(classifiers=tc)
+        out,err=io.StringIO(),io.StringIO();value=classifier_receipt(self.records['dhcp4']['kernel'],'fq_codel')
+        def compile(raw):
+            text=POLICY.compile_policy(raw);value['fq_codel_filters']['eth0']=[{'kind':'bpf'}];return text
+        settings={'dhcp':lambda deadline:self.records['dhcp4'],'dns':lambda deadline:self.records['dns'],
+                  'ntp':lambda deadline:self.records['ntp'],'nft':lambda deadline:nft_receipt(self.namespace),
+                  'legacy':lambda deadline:legacy_receipt(self.namespace),'classifiers':lambda deadline:value,'compiler':compile}
+        with patch.object(ASSEMBLY,'observe',side_effect=lambda:real(**settings)),patch.object(ASSEMBLY.sys,'argv',['assemble.py']),contextlib.redirect_stdout(out),contextlib.redirect_stderr(err):status=ASSEMBLY.main()
+        self.assertEqual(status,75);self.assertEqual(out.getvalue(),'');self.assertIn('pending',err.getvalue())
+
+
 class CLITests(unittest.TestCase):
     def test_arguments_and_refusal_do_not_emit_a_partial_policy(self):
         out, err = io.StringIO(), io.StringIO()
@@ -363,6 +458,7 @@ class PrivateNative(unittest.TestCase):
         self.root = Path(self.directory.name)
         self.bus, self.ip, self.ledger = self.root / 'busctl', self.root / 'ip', self.root / 'ledger'
         self.nft = self.root / 'nft'
+        self.tc = self.root / 'tc'
         self.proc = self.root / 'proc'
         self.legacy_net = self.proc / str(os.getpid()) / 'net'
         self.legacy_net.mkdir(parents=True)
@@ -376,6 +472,8 @@ class PrivateNative(unittest.TestCase):
         self.settings += [patch.object(NFT, 'BINARY', self.nft), patch.object(NFT.KERNEL, 'TRUST_ROOT', self.root), patch.object(NFT.KERNEL, 'TRUSTED_UID', os.geteuid())]
         self.settings += [patch.object(LEGACY, 'PROC', self.proc), patch.object(LEGACY, 'TRUST_ROOT', self.root),
                           patch.object(LEGACY, 'TRUSTED_UID', os.geteuid()), patch.object(LEGACY, 'filesystem')]
+        self.settings += [patch.object(CLASSIFIERS, 'BINARY', self.tc), patch.object(CLASSIFIERS.KERNEL, 'IP_BINARY', self.ip),
+                          patch.object(CLASSIFIERS.KERNEL, 'TRUST_ROOT', self.root), patch.object(CLASSIFIERS.KERNEL, 'TRUSTED_UID', os.geteuid())]
         for setting in self.settings:setting.start()
 
     def tearDown(self):
@@ -385,7 +483,7 @@ class PrivateNative(unittest.TestCase):
     def executable(self, path, body):
         path.write_text('#!/usr/bin/python3 -B\n' + body + '\n');path.chmod(0o700)
 
-    def fixtures(self, state='bound', families=(4,), change_provider=False, change_time=False, change_dns=False, warning=False, corrupt=False, dns='8.8.8.8'):
+    def fixtures(self, state='bound', families=(4,), change_provider=False, change_time=False, change_dns=False, warning=False, corrupt=False, dns='8.8.8.8', tc_kind='noqueue', tc_filters=None):
         self.source.write_text('nameserver ' + dns + '\n')
         self.source.chmod(0o600)
         node_path, peer_path = self.root / 'description.json', self.root / 'peer.json'
@@ -429,6 +527,10 @@ elif a=={[':1.77',TIME.OBJECT,'org.freedesktop.DBus.Properties','GetAll','s',TIM
 else: raise SystemExit(1)
 print(json.dumps(result))""")
         data = kernel_data()
+        for row in data['links']:row['qdisc'] = tc_kind if row['ifname']!='lo' else 'noqueue'
+        qdiscs = [{'kind': row['qdisc'], 'handle': '0:', 'dev': row['ifname'], 'root': True,
+                   'options': fq_options() if row['qdisc']=='fq_codel' else {}} for row in data['links']]
+        self.executable(self.tc, f"import json,os,sys\nargs=sys.argv[1:]\nwith open({str(self.ledger)!r},'a') as log:log.write(json.dumps(['tc',args,dict(os.environ)])+'\\n')\nif args=={list(CLASSIFIERS.QDISCS)!r}:print({json.dumps(qdiscs)!r})\nelif args==['-json','filter','show','dev','eth0']:print({json.dumps([] if tc_filters is None else tc_filters)!r})\nelse:raise SystemExit(1)")
         self.executable(self.ip, f"""import json,sys
 args=sys.argv[1:]
 with open({str(self.ledger)!r},'a') as log: log.write(json.dumps(['ip',args,{{}}])+'\\n')
@@ -447,6 +549,26 @@ else:
 print(json.dumps(result))""")
 
 
+class ClassifierNativeIntegrationTests(PrivateNative):
+    def test_full_private_fq_capture_join_compiler_path_repeats_every_root_query(self):
+        self.fixtures(tc_kind='fq_codel');result=ASSEMBLY.observe()
+        self.assertEqual(result['classifiers']['fq_codel_filters'],{'eth0':[]})
+        rows=[json.loads(line) for line in self.ledger.read_text().splitlines()]
+        self.assertEqual(sum(kind=='tc' for kind,_,_ in rows),12)
+        self.assertEqual(sum(kind=='ip' for kind,_,_ in rows),258)
+        self.assertEqual(sum(kind=='bus' for kind,_,_ in rows),100)
+        self.assertEqual(sum(kind=='tc' and 'filter' in args for kind,args,_ in rows),6)
+        self.assertEqual(result['policy'],POLICY.compile_policy(json.dumps(result['topology']).encode()))
+
+    def test_real_private_nonempty_classifier_prevents_infrastructure_and_cli_output(self):
+        self.fixtures(tc_kind='fq_codel',tc_filters=[{'kind':'bpf','chain':77}]);out,err=io.StringIO(),io.StringIO()
+        with patch.object(ASSEMBLY.sys,'argv',['assemble.py']),contextlib.redirect_stdout(out),contextlib.redirect_stderr(err):status=ASSEMBLY.main()
+        self.assertEqual(status,75);self.assertEqual(out.getvalue(),'');self.assertIn('positively empty',err.getvalue())
+        rows=[json.loads(line) for line in self.ledger.read_text().splitlines()]
+        self.assertFalse(any(kind=='bus' for kind,_,_ in rows))
+        self.assertEqual(sum(kind=='tc' for kind,_,_ in rows),2)
+
+
 class NativeAssemblyTests(PrivateNative):
     def test_full_private_capture_observation_join_and_compiler_path_is_positive(self):
         self.fixtures()
@@ -458,7 +580,7 @@ class NativeAssemblyTests(PrivateNative):
         self.assertEqual(result['sources']['ntp']['pid'], os.getpid())
         rows = [json.loads(line) for line in self.ledger.read_text().splitlines()]
         self.assertEqual(sum(kind=='bus' for kind, _, _ in rows), 100)
-        self.assertEqual(sum(kind=='ip' for kind, _, _ in rows), 252)
+        self.assertEqual(sum(kind=='ip' for kind, _, _ in rows), 258)
         self.assertEqual(sum('DescribeLink' in args for _, args, _ in rows), 4)
         self.assertEqual(sum('get' in args for kind, args, _ in rows if kind=='ip'), 12)
         for _, _, environment in rows:self.assertFalse(set(environment) & {'DBUS_SYSTEM_BUS_ADDRESS', 'ASSEMBLY_SECRET'})
