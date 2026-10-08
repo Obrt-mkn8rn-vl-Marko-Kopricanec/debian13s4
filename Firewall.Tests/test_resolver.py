@@ -10,6 +10,8 @@ import time
 import unittest
 from unittest.mock import patch
 
+from fixture_resolver import script as inventory_script
+
 from test_kernel import snapshot
 from test_policy import POLICY
 
@@ -655,7 +657,16 @@ class NativeObservationTests(unittest.TestCase):
                   " if len(matches)!=1: sys.exit(22)\n"
                   " result=data[matches[0]]\n"
                   "print(json.dumps(result))\n")
-        self.binary.write_text(script)
+        route_binary = self.root / 'route-read'
+        route_binary.write_text(script)
+        route_binary.chmod(0o700)
+        replies = {('-j', '-N', *arguments): json.dumps(data[name]) + '\n'
+                   for name, arguments in KERNEL.COMMANDS.items()}
+        routes = [('-j', '-N', '-4', 'route', 'get', destination)
+                  for destination in ('8.8.8.8', '9.9.9.9')]
+        routes += [('-j', '-N', '-6', 'route', 'get', 'fe80::1', 'oif', row['ifname'])
+                   for row in data['links'] if row['ifname'] != 'lo']
+        self.binary.write_text(inventory_script(self.ledger, replies, tuple(routes), route_binary), encoding='utf-8')
         self.binary.chmod(0o700)
 
     def test_complete_private_native_primary_decimal_scope_uses_name_not_index(self):
