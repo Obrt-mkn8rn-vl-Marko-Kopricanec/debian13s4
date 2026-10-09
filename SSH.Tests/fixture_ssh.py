@@ -165,6 +165,8 @@ S4M_SYSTEMD={q(str(self.root / 'systemd'))}
 S4M_LIBRARY={q(str(self.root / 'library/maintenance'))}
 S4S_LIBRARY={q(str(self.root / 'library/ssh'))}
 S4S_CONFIG={q(str(self.module.CONFIG))}
+S4S_HOST_KEY={q(str(self.module.HOST_KEY))}
+S4S_SSHD={q(str(self.sshd))}
 s4m_trusted() {{
     local path=$1 owner mode
     [[ $path == {q(str(self.root))} || $path == {q(str(self.root))}/* ]] || return 1
@@ -202,7 +204,8 @@ state = json.loads(database.read_text()); faults = state['faults']; systemd = ro
 code, output = 0, ''
 if action == 'sync':
     assert args and all(pathlib.Path(arg).exists() for arg in args), args
-    if faults.get('sync') or faults.get('sync_ready') and any('ssh.ready' in arg for arg in args): code = 1
+    if (faults.get('sync') or faults.get('sync_ready') and any('ssh.ready' in arg for arg in args) or
+        faults.get('sync_loaded') and any('ssh.loaded' in arg for arg in args)): code = 1
 elif action == 'packages':
     assert all((systemd / name).is_symlink() and (systemd / name).readlink() == pathlib.Path('/dev/null')
                for name in ('ssh.service', 'ssh.socket', 'sshd.service'))
@@ -214,16 +217,26 @@ elif action == 'systemctl':
     operation, unit = args[0], args[-1]
     if faults.get(operation) or faults.get(operation + '_' + unit): code = 1
     elif operation == 'show':
-        assert len(args) == 4 and args[2] == '--value', args
-        prop = args[1].split('=', 1)[1]; path = systemd / unit
-        if prop == 'LoadState': output = 'masked' if path.is_symlink() else 'loaded' if path.is_file() else 'not-found'
-        elif prop == 'ActiveState': output = 'active' if state['active'].get(unit) else 'inactive'
-        elif prop == 'FragmentPath': output = str(path)
-        elif prop == 'DropInPaths': output = 'foreign.conf' if faults.get('dropin') else ''
-        elif prop == 'MainPID': output = '42342' if state['active'].get(unit) else '0'
-        else: raise AssertionError(prop)
+        if args[:-1] == ['show', '--property=ActiveState', '--property=MainPID', '--property=InvocationID']:
+            active = state['active'].get(unit, False)
+            output = ('MainPID=' + ('42342' if active else '0') + '\nActiveState=' +
+                      ('active' if active else 'inactive') + '\nInvocationID=' +
+                      (state.get('invocations', {}).get(unit, '') if active else ''))
+            if faults.get('instance_reply'): output = faults['instance_reply']
+        else:
+            assert len(args) == 4 and args[2] == '--value', args
+            prop = args[1].split('=', 1)[1]; path = systemd / unit
+            if prop == 'LoadState': output = 'masked' if path.is_symlink() else 'loaded' if path.is_file() else 'not-found'
+            elif prop == 'ActiveState': output = 'active' if state['active'].get(unit) else 'inactive'
+            elif prop == 'FragmentPath': output = str(path)
+            elif prop == 'DropInPaths': output = 'foreign.conf' if faults.get('dropin') else ''
+            elif prop == 'MainPID': output = '42342' if state['active'].get(unit) else '0'
+            elif prop == 'InvocationID': output = state.get('invocations', {}).get(unit, '') if state['active'].get(unit) else ''
+            else: raise AssertionError(prop)
     elif operation == 'stop':
         if not faults.get('stop_incomplete'): state['active'][unit] = False
+        if unit == 'debian13s4-admin-ssh.service' and faults.get('damage_after_stop'):
+            (root / 'etc/ssh/ssh_host_ed25519_key').chmod(0o644)
     elif operation == 'mask':
         assert unit in ('ssh.service', 'ssh.socket', 'sshd.service')
         path = systemd / unit
@@ -240,7 +253,17 @@ elif action == 'systemctl':
         enabled = state['enabled'].get(unit, False)
         output, code = ('enabled', 0) if enabled else ('disabled', 1)
     elif operation == 'start':
-        if not faults.get('start_incomplete'): state['active'][unit] = True
+        if not faults.get('start_incomplete') and not state['active'].get(unit):
+            state['active'][unit] = True
+            if unit == 'debian13s4-admin-ssh.service':
+                state['server_starts'] = state.get('server_starts', 0) + 1
+                state.setdefault('invocations', {})[unit] = format(state['server_starts'], '032x')
+                # These are private daemon-start DELIVERY snapshots. Fresh
+                # -t/-T replies remain disk models and cannot update them.
+                state['loaded_configuration'] = (root / 'etc/ssh/debian13s4-admin.conf').read_bytes().hex()
+                key = root / 'etc/ssh/ssh_host_ed25519_key'
+                state['loaded_host_key'] = key.read_bytes().hex()
+                if faults.get('damage_after_start'): key.write_bytes(key.read_bytes() + b'changed after start\n')
     else: raise AssertionError(args)
 else: raise AssertionError(action)
 database.write_text(json.dumps(state))

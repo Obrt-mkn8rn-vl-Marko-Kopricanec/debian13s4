@@ -403,7 +403,7 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=28b49f9af4ed6c79dcfe22969a4057881c6f56211380d04b74bd123fb116ee61
+S4B_BUNDLE_ID=54c9ff23e8eddc8dcc5a69e11702ae6a91992a129e2a00e81ffd0d0184a88fb8
 S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh)
 S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644)
 
@@ -4306,7 +4306,7 @@ def main():
 if __name__ == "__main__":
     raise SystemExit(main())
 S4_PAYLOAD_c96d0066b1cb453daf45d4a7fb41d4bada3c96c499e60dfc7da7ee60dfdc562e
-    cat > "$S4B_STAGE/lib/ssh/common.sh" <<'S4_PAYLOAD_77f7c4930772d3beedc70d67f0b27e5e0d4c00410e97e0c965ebeb3e80a059f6' || return 1
+    cat > "$S4B_STAGE/lib/ssh/common.sh" <<'S4_PAYLOAD_a4a45b676286e7d553103f426645c99cc0b8413db73cc0515802671097dd743b' || return 1
 #!/bin/bash
 
 # shellcheck source=Maintenance/common.sh
@@ -4314,6 +4314,9 @@ S4_PAYLOAD_c96d0066b1cb453daf45d4a7fb41d4bada3c96c499e60dfc7da7ee60dfdc562e
 
 S4S_LIBRARY=/usr/local/lib/debian13s4/ssh
 S4S_CONFIG=/etc/ssh/debian13s4-admin.conf
+S4S_HOST_KEY=/etc/ssh/ssh_host_ed25519_key
+S4S_SSHD=/usr/sbin/sshd
+S4S_LOADED_GENERATION=''
 S4S_VENDOR=(ssh.service ssh.socket sshd.service)
 S4S_SERVER=debian13s4-admin-ssh.service
 S4S_SERVICE=debian13s4-ssh.service
@@ -4405,7 +4408,8 @@ s4s_packages() {
 }
 
 s4s_prepare_config() {
-    local temporary directory=${S4S_CONFIG%/*}
+    local temporary directory=${S4S_CONFIG%/*} mode=${1:-install}
+    [[ $# -le 1 && ( $mode == install || $mode == repair ) ]] || return 1
     s4m_trusted "${directory%/*}" || return 1
     if [[ -e $directory || -L $directory ]]; then
         [[ -d $directory ]] && s4m_trusted "$directory" || return 1
@@ -4413,8 +4417,17 @@ s4s_prepare_config() {
         mkdir -m 0755 -- "$directory" || return 1
     fi
     temporary=$(mktemp -- "$S4M_STATE/ssh-policy.XXXXXX") || return 1
-    if ! s4s_policy --plan > "$temporary" || ! chmod 0600 -- "$temporary" ||
-        ! s4m_atomic "$S4S_CONFIG" "$temporary" 0600; then
+    if ! s4s_policy --plan > "$temporary" || ! chmod 0600 -- "$temporary"; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    # Compare the prospective bytes, not just the current disk file. Stop an
+    # unknown/stale instance BEFORE changing its startup configuration.
+    if [[ $mode == repair ]] && ! s4s_loaded "$temporary" && ! s4s_stop; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    if ! s4m_atomic "$S4S_CONFIG" "$temporary" 0600; then
         rm -f -- "$temporary"
         return 1
     fi
@@ -4433,12 +4446,103 @@ s4s_units() {
         s4m_property "$S4S_TIMER" ActiveState active
 }
 
-s4s_live() {
+s4s_observe_live() {
     local pid
     s4s_vendor_masked && s4m_property "$S4S_SERVER" ActiveState active || return 1
     pid=$(s4m_systemctl show --property=MainPID --value "$S4S_SERVER") || return 1
     [[ $pid =~ ^[1-9][0-9]{0,9}$ ]] || return 1
     s4s_policy --live "$pid"
+}
+
+s4s_startup_inputs() {
+    local config=${1:-$S4S_CONFIG} name path digest
+    s4s_identity || return 1
+    for name in configuration host_key executable; do
+        case $name in
+            configuration) path=$config ;;
+            host_key) path=$S4S_HOST_KEY ;;
+            executable) path=$S4S_SSHD ;;
+        esac
+        [[ -f $path ]] && s4m_trusted "$path" || return 1
+        digest=$(sha256sum -- "$path") || return 1
+        digest=${digest%% *}
+        [[ $digest =~ ^[0-9a-f]{64}$ ]] || return 1
+        printf '%s %s\n' "$digest" "$name" || return 1
+    done
+    # OpenSSH may read the optional public companion at startup as well.
+    path=$S4S_HOST_KEY.pub
+    if [[ -e $path || -L $path ]]; then
+        [[ -f $path ]] && s4m_trusted "$path" || return 1
+        digest=$(sha256sum -- "$path") || return 1
+        digest=${digest%% *}
+        [[ $digest =~ ^[0-9a-f]{64}$ ]] || return 1
+        printf '%s host_public_key\n' "$digest"
+    else
+        printf 'absent host_public_key\n'
+    fi
+}
+
+s4s_running_generation() {
+    local rows key value active='' pid='' invocation=''
+    rows=$(s4m_systemctl show --property=ActiveState --property=MainPID \
+        --property=InvocationID "$S4S_SERVER") || return 1
+    [[ ${#rows} -le 512 ]] || return 1
+    while IFS='=' read -r key value; do
+        case $key in
+            ActiveState) [[ -z $active && $value == active ]] || return 1; active=$value ;;
+            MainPID)
+                [[ -z $pid && $value =~ ^[1-9][0-9]{0,9}$ ]] &&
+                    (( 10#$value <= 2147483647 )) || return 1
+                pid=$value ;;
+            InvocationID)
+                [[ -z $invocation && $value =~ ^[0-9a-f]{32}$ &&
+                    $value != 00000000000000000000000000000000 ]] || return 1
+                invocation=$value ;;
+            *) return 1 ;;
+        esac
+    done <<< "$rows"
+    [[ $active == active && -n $pid && -n $invocation ]] || return 1
+    printf 'instance %s %s\n' "$pid" "$invocation" || return 1
+    s4s_startup_inputs "${1:-$S4S_CONFIG}"
+}
+
+s4s_loaded() {
+    local marker=$S4M_STATE/ssh.loaded expected actual mode size links
+    [[ -f $marker ]] && s4m_trusted "$marker" || return 1
+    read -r mode size links < <(stat --format='%a %s %h' -- "$marker") || return 1
+    [[ $mode == 600 && $links == 1 && $size =~ ^[1-9][0-9]{0,3}$ ]] &&
+        (( 10#$size <= 4096 )) || return 1
+    expected=$(s4s_running_generation "${1:-$S4S_CONFIG}") &&
+        actual=$(cat -- "$marker") || return 1
+    [[ $expected == "$actual" ]] || return 1
+    # Retain only the complete generation computed by this successful check.
+    S4S_LOADED_GENERATION=$expected
+}
+
+s4s_live() {
+    local before
+    s4s_loaded || return 1
+    before=$S4S_LOADED_GENERATION
+    s4s_observe_live && s4s_loaded && [[ $before == "$S4S_LOADED_GENERATION" ]]
+}
+
+s4s_start() {
+    local before after generation temporary
+    # A disk check is not a loaded-state acknowledgment. Start only from a
+    # confirmed inactive/no-main-PID state, with unchanged startup inputs.
+    s4m_property "$S4S_SERVER" ActiveState inactive &&
+        s4m_property "$S4S_SERVER" MainPID 0 || return 1
+    before=$(s4s_startup_inputs) && s4m_systemctl start "$S4S_SERVER" &&
+        s4s_observe_live && after=$(s4s_startup_inputs) && [[ $before == "$after" ]] || return 1
+    generation=$(s4s_running_generation) || return 1
+    [[ ${generation#*$'\n'} == "$before" ]] || return 1
+    temporary=$(mktemp -- "$S4M_STATE/ssh-loaded.XXXXXX") || return 1
+    if ! printf '%s\n' "$generation" > "$temporary" || ! chmod 0600 -- "$temporary" ||
+        ! s4m_atomic "$S4M_STATE/ssh.loaded" "$temporary" 0600; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    rm -f -- "$temporary" && s4s_loaded
 }
 
 s4s_ready() {
@@ -4455,7 +4559,13 @@ s4s_verify() {
 }
 
 s4s_stop() {
-    s4m_systemctl stop "$S4S_SERVER" && s4m_property "$S4S_SERVER" ActiveState inactive
+    local marker=$S4M_STATE/ssh.loaded
+    s4m_systemctl stop "$S4S_SERVER" && s4m_property "$S4S_SERVER" ActiveState inactive &&
+        s4m_property "$S4S_SERVER" MainPID 0 || return 1
+    if [[ -e $marker || -L $marker ]]; then
+        [[ -f $marker ]] && s4m_trusted "$marker" && rm -f -- "$marker" || return 1
+        s4m_sync "$S4M_STATE" || return 1
+    fi
 }
 
 s4s_publish() {
@@ -4473,7 +4583,7 @@ s4s_publish() {
         [[ $resolved == "$S4M_SYSTEMD/$unit" ]] || return 1
         s4m_sync "$wants" "$S4M_SYSTEMD" "$S4M_SYSTEMD/$unit" || return 1
     done
-    s4m_systemctl start "$S4S_SERVER" && s4m_systemctl start "$S4S_TIMER" &&
+    s4s_start && s4m_systemctl start "$S4S_TIMER" &&
         s4s_units && s4s_live || return 1
     temporary=$(mktemp -- "$S4M_STATE/ssh-intent.XXXXXX") || return 1
     if ! s4s_identity > "$temporary" || ! chmod 0600 -- "$temporary" ||
@@ -4523,20 +4633,20 @@ s4s_repair() {
     s4m_lock || return 75
     trap s4m_unlock EXIT
     if s4s_ready && s4s_packages && s4p_verify && s4s_vendor_masked &&
-        s4s_prepare_config && s4s_policy --check; then
+        s4s_prepare_config repair; then
         if s4s_live; then
             return 0
         fi
-        # A changed admitted address may require rebinding. Stop once and start
-        # only after checking the complete fresh fixed configuration.
-        if s4s_stop && s4m_systemctl start "$S4S_SERVER" && s4s_live; then
+        # Stop/revalidate/start after a stale/unknown acknowledgment or failed
+        # live observation. No successful no-op follows disk checks alone.
+        if s4s_stop && s4s_policy --check && s4s_start; then
             return 0
         fi
     fi
     s4s_stop || return 75
     return 75
 }
-S4_PAYLOAD_77f7c4930772d3beedc70d67f0b27e5e0d4c00410e97e0c965ebeb3e80a059f6
+S4_PAYLOAD_a4a45b676286e7d553103f426645c99cc0b8413db73cc0515802671097dd743b
     cat > "$S4B_STAGE/lib/ssh/policy.py" <<'S4_PAYLOAD_a826ec818551234b1c98a344e189bb23da4bc4fb173bb00a1ab189d8031692b7' || return 1
 #!/usr/bin/python3
 """Derive and check LAN-bound SSH for one existing local administrator.
@@ -5117,7 +5227,7 @@ KillMode=control-group
 [Install]
 WantedBy=multi-user.target
 S4_PAYLOAD_1bb3285e71f2461e8159bd93ba240fae1b89d03cfcf832f811d0d8b411bac735
-    cat > "$S4B_STAGE/lib/ssh/debian13s4-ssh.service" <<'S4_PAYLOAD_7399dc6ed99546a8e4ce4fb283fd72284b571bc11f48577bd5845d9bf3670b3f' || return 1
+    cat > "$S4B_STAGE/lib/ssh/debian13s4-ssh.service" <<'S4_PAYLOAD_37346a701711ae61f025720ce4360cc5b8de008fce611ce077c43c1181302b59' || return 1
 [Unit]
 Description=Recheck and rebind the explicit admin SSH configuration
 After=network-online.target
@@ -5133,8 +5243,8 @@ UMask=0077
 StandardInput=null
 StandardOutput=journal
 StandardError=journal
-# Four 66s policy admissions, at most 40 bounded 11s controls, and 60s
-# finite local allowance fit 764s. The outer 900s limit does not widen them.
+# Four 66s policy admissions, at most 51 bounded 11s controls, and 60s
+# finite local allowance fit 885s. The outer 900s limit does not widen them.
 TimeoutStartSec=900s
 TimeoutStopSec=15s
 Restart=on-failure
@@ -5158,7 +5268,7 @@ RestrictNamespaces=yes
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
 SystemCallArchitectures=native
 SystemCallFilter=~@mount
-S4_PAYLOAD_7399dc6ed99546a8e4ce4fb283fd72284b571bc11f48577bd5845d9bf3670b3f
+S4_PAYLOAD_37346a701711ae61f025720ce4360cc5b8de008fce611ce077c43c1181302b59
     cat > "$S4B_STAGE/lib/ssh/debian13s4-ssh.timer" <<'S4_PAYLOAD_7554b9365ae78d6a59c1bc1dc1eedfa14a07f5f64aabc79a45f540862a12233d' || return 1
 [Unit]
 Description=Reconcile admin SSH after boot and periodically
@@ -5242,11 +5352,11 @@ e2de7086c2159bf4cd8a2775d8a3aba484b1c5c5237f9c4a36f7e0db4c8e371a  lib/hardening/
 896f7ea78d7f63a5858bbbe278c13fbfc1b49e34875b22c7fcf32567c32d836b  lib/tasks/hardening/apply.sh
 93f98e5dac2f0a3a4e7479eadfa4b52941ac936d4cce43adf7360ad4d08ec8f7  lib/tasks/hardening/verify.sh
 c96d0066b1cb453daf45d4a7fb41d4bada3c96c499e60dfc7da7ee60dfdc562e  lib/firewall/kernel.py
-77f7c4930772d3beedc70d67f0b27e5e0d4c00410e97e0c965ebeb3e80a059f6  lib/ssh/common.sh
+a4a45b676286e7d553103f426645c99cc0b8413db73cc0515802671097dd743b  lib/ssh/common.sh
 a826ec818551234b1c98a344e189bb23da4bc4fb173bb00a1ab189d8031692b7  lib/ssh/policy.py
 c695a6f939cef5eb0dec883b04722c71095877f7e0c06f9a76161b6672f35bdf  lib/ssh/repair.sh
 1bb3285e71f2461e8159bd93ba240fae1b89d03cfcf832f811d0d8b411bac735  lib/ssh/debian13s4-admin-ssh.service
-7399dc6ed99546a8e4ce4fb283fd72284b571bc11f48577bd5845d9bf3670b3f  lib/ssh/debian13s4-ssh.service
+37346a701711ae61f025720ce4360cc5b8de008fce611ce077c43c1181302b59  lib/ssh/debian13s4-ssh.service
 7554b9365ae78d6a59c1bc1dc1eedfa14a07f5f64aabc79a45f540862a12233d  lib/ssh/debian13s4-ssh.timer
 22ebcfa9fc38e455077130d400e76433948740c8e80c1475bf8224891813a1b9  lib/tasks/ssh/apply.sh
 3e0d51509cf31af2188db77617d6e06ace86350c51b57425b5c066e76059f19e  lib/tasks/ssh/verify.sh

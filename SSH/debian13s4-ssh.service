@@ -13,8 +13,8 @@ UMask=0077
 StandardInput=null
 StandardOutput=journal
 StandardError=journal
-# Four 66s policy admissions, at most 40 bounded 11s controls, and 60s
-# finite local allowance fit 764s. The outer 900s limit does not widen them.
+# Four 66s policy admissions, at most 51 bounded 11s controls, and 60s
+# finite local allowance fit 885s. The outer 900s limit does not widen them.
 TimeoutStartSec=900s
 TimeoutStopSec=15s
 Restart=on-failure

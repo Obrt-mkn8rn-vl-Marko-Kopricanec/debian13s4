@@ -5,6 +5,9 @@
 
 S4S_LIBRARY=/usr/local/lib/debian13s4/ssh
 S4S_CONFIG=/etc/ssh/debian13s4-admin.conf
+S4S_HOST_KEY=/etc/ssh/ssh_host_ed25519_key
+S4S_SSHD=/usr/sbin/sshd
+S4S_LOADED_GENERATION=''
 S4S_VENDOR=(ssh.service ssh.socket sshd.service)
 S4S_SERVER=debian13s4-admin-ssh.service
 S4S_SERVICE=debian13s4-ssh.service
@@ -96,7 +99,8 @@ s4s_packages() {
 }
 
 s4s_prepare_config() {
-    local temporary directory=${S4S_CONFIG%/*}
+    local temporary directory=${S4S_CONFIG%/*} mode=${1:-install}
+    [[ $# -le 1 && ( $mode == install || $mode == repair ) ]] || return 1
     s4m_trusted "${directory%/*}" || return 1
     if [[ -e $directory || -L $directory ]]; then
         [[ -d $directory ]] && s4m_trusted "$directory" || return 1
@@ -104,8 +108,17 @@ s4s_prepare_config() {
         mkdir -m 0755 -- "$directory" || return 1
     fi
     temporary=$(mktemp -- "$S4M_STATE/ssh-policy.XXXXXX") || return 1
-    if ! s4s_policy --plan > "$temporary" || ! chmod 0600 -- "$temporary" ||
-        ! s4m_atomic "$S4S_CONFIG" "$temporary" 0600; then
+    if ! s4s_policy --plan > "$temporary" || ! chmod 0600 -- "$temporary"; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    # Compare the prospective bytes, not just the current disk file. Stop an
+    # unknown/stale instance BEFORE changing its startup configuration.
+    if [[ $mode == repair ]] && ! s4s_loaded "$temporary" && ! s4s_stop; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    if ! s4m_atomic "$S4S_CONFIG" "$temporary" 0600; then
         rm -f -- "$temporary"
         return 1
     fi
@@ -124,12 +137,103 @@ s4s_units() {
         s4m_property "$S4S_TIMER" ActiveState active
 }
 
-s4s_live() {
+s4s_observe_live() {
     local pid
     s4s_vendor_masked && s4m_property "$S4S_SERVER" ActiveState active || return 1
     pid=$(s4m_systemctl show --property=MainPID --value "$S4S_SERVER") || return 1
     [[ $pid =~ ^[1-9][0-9]{0,9}$ ]] || return 1
     s4s_policy --live "$pid"
+}
+
+s4s_startup_inputs() {
+    local config=${1:-$S4S_CONFIG} name path digest
+    s4s_identity || return 1
+    for name in configuration host_key executable; do
+        case $name in
+            configuration) path=$config ;;
+            host_key) path=$S4S_HOST_KEY ;;
+            executable) path=$S4S_SSHD ;;
+        esac
+        [[ -f $path ]] && s4m_trusted "$path" || return 1
+        digest=$(sha256sum -- "$path") || return 1
+        digest=${digest%% *}
+        [[ $digest =~ ^[0-9a-f]{64}$ ]] || return 1
+        printf '%s %s\n' "$digest" "$name" || return 1
+    done
+    # OpenSSH may read the optional public companion at startup as well.
+    path=$S4S_HOST_KEY.pub
+    if [[ -e $path || -L $path ]]; then
+        [[ -f $path ]] && s4m_trusted "$path" || return 1
+        digest=$(sha256sum -- "$path") || return 1
+        digest=${digest%% *}
+        [[ $digest =~ ^[0-9a-f]{64}$ ]] || return 1
+        printf '%s host_public_key\n' "$digest"
+    else
+        printf 'absent host_public_key\n'
+    fi
+}
+
+s4s_running_generation() {
+    local rows key value active='' pid='' invocation=''
+    rows=$(s4m_systemctl show --property=ActiveState --property=MainPID \
+        --property=InvocationID "$S4S_SERVER") || return 1
+    [[ ${#rows} -le 512 ]] || return 1
+    while IFS='=' read -r key value; do
+        case $key in
+            ActiveState) [[ -z $active && $value == active ]] || return 1; active=$value ;;
+            MainPID)
+                [[ -z $pid && $value =~ ^[1-9][0-9]{0,9}$ ]] &&
+                    (( 10#$value <= 2147483647 )) || return 1
+                pid=$value ;;
+            InvocationID)
+                [[ -z $invocation && $value =~ ^[0-9a-f]{32}$ &&
+                    $value != 00000000000000000000000000000000 ]] || return 1
+                invocation=$value ;;
+            *) return 1 ;;
+        esac
+    done <<< "$rows"
+    [[ $active == active && -n $pid && -n $invocation ]] || return 1
+    printf 'instance %s %s\n' "$pid" "$invocation" || return 1
+    s4s_startup_inputs "${1:-$S4S_CONFIG}"
+}
+
+s4s_loaded() {
+    local marker=$S4M_STATE/ssh.loaded expected actual mode size links
+    [[ -f $marker ]] && s4m_trusted "$marker" || return 1
+    read -r mode size links < <(stat --format='%a %s %h' -- "$marker") || return 1
+    [[ $mode == 600 && $links == 1 && $size =~ ^[1-9][0-9]{0,3}$ ]] &&
+        (( 10#$size <= 4096 )) || return 1
+    expected=$(s4s_running_generation "${1:-$S4S_CONFIG}") &&
+        actual=$(cat -- "$marker") || return 1
+    [[ $expected == "$actual" ]] || return 1
+    # Retain only the complete generation computed by this successful check.
+    S4S_LOADED_GENERATION=$expected
+}
+
+s4s_live() {
+    local before
+    s4s_loaded || return 1
+    before=$S4S_LOADED_GENERATION
+    s4s_observe_live && s4s_loaded && [[ $before == "$S4S_LOADED_GENERATION" ]]
+}
+
+s4s_start() {
+    local before after generation temporary
+    # A disk check is not a loaded-state acknowledgment. Start only from a
+    # confirmed inactive/no-main-PID state, with unchanged startup inputs.
+    s4m_property "$S4S_SERVER" ActiveState inactive &&
+        s4m_property "$S4S_SERVER" MainPID 0 || return 1
+    before=$(s4s_startup_inputs) && s4m_systemctl start "$S4S_SERVER" &&
+        s4s_observe_live && after=$(s4s_startup_inputs) && [[ $before == "$after" ]] || return 1
+    generation=$(s4s_running_generation) || return 1
+    [[ ${generation#*$'\n'} == "$before" ]] || return 1
+    temporary=$(mktemp -- "$S4M_STATE/ssh-loaded.XXXXXX") || return 1
+    if ! printf '%s\n' "$generation" > "$temporary" || ! chmod 0600 -- "$temporary" ||
+        ! s4m_atomic "$S4M_STATE/ssh.loaded" "$temporary" 0600; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    rm -f -- "$temporary" && s4s_loaded
 }
 
 s4s_ready() {
@@ -146,7 +250,13 @@ s4s_verify() {
 }
 
 s4s_stop() {
-    s4m_systemctl stop "$S4S_SERVER" && s4m_property "$S4S_SERVER" ActiveState inactive
+    local marker=$S4M_STATE/ssh.loaded
+    s4m_systemctl stop "$S4S_SERVER" && s4m_property "$S4S_SERVER" ActiveState inactive &&
+        s4m_property "$S4S_SERVER" MainPID 0 || return 1
+    if [[ -e $marker || -L $marker ]]; then
+        [[ -f $marker ]] && s4m_trusted "$marker" && rm -f -- "$marker" || return 1
+        s4m_sync "$S4M_STATE" || return 1
+    fi
 }
 
 s4s_publish() {
@@ -164,7 +274,7 @@ s4s_publish() {
         [[ $resolved == "$S4M_SYSTEMD/$unit" ]] || return 1
         s4m_sync "$wants" "$S4M_SYSTEMD" "$S4M_SYSTEMD/$unit" || return 1
     done
-    s4m_systemctl start "$S4S_SERVER" && s4m_systemctl start "$S4S_TIMER" &&
+    s4s_start && s4m_systemctl start "$S4S_TIMER" &&
         s4s_units && s4s_live || return 1
     temporary=$(mktemp -- "$S4M_STATE/ssh-intent.XXXXXX") || return 1
     if ! s4s_identity > "$temporary" || ! chmod 0600 -- "$temporary" ||
@@ -214,13 +324,13 @@ s4s_repair() {
     s4m_lock || return 75
     trap s4m_unlock EXIT
     if s4s_ready && s4s_packages && s4p_verify && s4s_vendor_masked &&
-        s4s_prepare_config && s4s_policy --check; then
+        s4s_prepare_config repair; then
         if s4s_live; then
             return 0
         fi
-        # A changed admitted address may require rebinding. Stop once and start
-        # only after checking the complete fresh fixed configuration.
-        if s4s_stop && s4m_systemctl start "$S4S_SERVER" && s4s_live; then
+        # Stop/revalidate/start after a stale/unknown acknowledgment or failed
+        # live observation. No successful no-op follows disk checks alone.
+        if s4s_stop && s4s_policy --check && s4s_start; then
             return 0
         fi
     fi
