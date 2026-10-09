@@ -1,6 +1,6 @@
 #!/bin/bash
 
-S4P_PACKAGES=(ca-certificates debian-archive-keyring curl gpgv nftables
+S4P_PACKAGES=(ca-certificates debian-archive-keyring curl gpgv nftables iproute2
     apparmor apparmor-utils unattended-upgrades needrestart)
 S4P_TASK_DIR=/usr/local/lib/debian13s4/tasks/prerequisites
 S4P_APT_DIR=/var/lib/apt/debian13s4

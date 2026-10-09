@@ -14,7 +14,8 @@ S4B_QUIESCE=("$S4B_TIMER" "$S4B_SERVICE" "$S4B_RESUME"
     debian13s4-dotnet.timer debian13s4-dotnet.service
     debian13s4-network.timer debian13s4-network.service
     debian13s4-retention.timer debian13s4-retention.service
-    debian13s4-hardening.timer debian13s4-hardening.service)
+    debian13s4-hardening.timer debian13s4-hardening.service
+    debian13s4-ssh.timer debian13s4-ssh.service debian13s4-admin-ssh.service)
 S4B_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4B_LOCK_FD=
 S4B_REPAIR_FD=
@@ -402,9 +403,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=cc54a5b0b9702d7bf4973280173c93097b0fa70fe6118ff9fdaf4c8b9a3bc29b
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=28b49f9af4ed6c79dcfe22969a4057881c6f56211380d04b74bd123fb116ee61
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     local relative
@@ -893,14 +894,15 @@ if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
     s4_main "$@"
 fi
 S4_PAYLOAD_5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936
-    cat > "$S4B_STAGE/lib/tasks.list" <<'S4_PAYLOAD_9a30924a1a877c8da9feb63c068689e3edbba69cf354d27b46f4bbbbbbfae275' || return 1
+    cat > "$S4B_STAGE/lib/tasks.list" <<'S4_PAYLOAD_c51fc882b1d507dab10b5d912d5f82b4d0902ef31da87bc7a228fd95d4cd2ec1' || return 1
 prerequisites:
 network:prerequisites
 hardening:prerequisites
 retention:prerequisites
 maintenance:prerequisites
 dotnet:prerequisites
-S4_PAYLOAD_9a30924a1a877c8da9feb63c068689e3edbba69cf354d27b46f4bbbbbbfae275
+ssh:prerequisites network hardening
+S4_PAYLOAD_c51fc882b1d507dab10b5d912d5f82b4d0902ef31da87bc7a228fd95d4cd2ec1
     cat > "$S4B_STAGE/lib/tasks/prerequisites/apply.sh" <<'S4_PAYLOAD_f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934' || return 1
 #!/bin/bash
 set -Eeuo pipefail
@@ -924,10 +926,10 @@ set -Eeuo pipefail
 . /usr/local/lib/debian13s4/tasks/prerequisites/common.sh
 s4p_verify
 S4_PAYLOAD_5c2bb90b18725176df85061f2fd7556fc5f00c286991f7ff34445d7b880693fc
-    cat > "$S4B_STAGE/lib/tasks/prerequisites/common.sh" <<'S4_PAYLOAD_f99079435a5917ee3a1a69aa9f18e32e4a98ddcd787007336997b5a4fbc2eab9' || return 1
+    cat > "$S4B_STAGE/lib/tasks/prerequisites/common.sh" <<'S4_PAYLOAD_84d897f0a349e9f7dc4dbf5aa75fc86c4cb7d67a67ca1f61439a982cdf0c86b4' || return 1
 #!/bin/bash
 
-S4P_PACKAGES=(ca-certificates debian-archive-keyring curl gpgv nftables
+S4P_PACKAGES=(ca-certificates debian-archive-keyring curl gpgv nftables iproute2
     apparmor apparmor-utils unattended-upgrades needrestart)
 S4P_TASK_DIR=/usr/local/lib/debian13s4/tasks/prerequisites
 S4P_APT_DIR=/var/lib/apt/debian13s4
@@ -1004,7 +1006,7 @@ s4p_apply() {
     fi
     s4p_apt install "${S4P_PACKAGES[@]}"
 }
-S4_PAYLOAD_f99079435a5917ee3a1a69aa9f18e32e4a98ddcd787007336997b5a4fbc2eab9
+S4_PAYLOAD_84d897f0a349e9f7dc4dbf5aa75fc86c4cb7d67a67ca1f61439a982cdf0c86b4
     cat > "$S4B_STAGE/lib/tasks/prerequisites/debian.sources" <<'S4_PAYLOAD_7d995cf7bc3d3db5461c7c21a4989495a042e0a5fc34a186cc68bc859c62b0c4' || return 1
 Types: deb
 URIs: http://deb.debian.org/debian
@@ -3800,12 +3802,1394 @@ S4_PAYLOAD_896f7ea78d7f63a5858bbbe278c13fbfc1b49e34875b22c7fcf32567c32d836b
 . /usr/local/lib/debian13s4/hardening/common.sh
 s4h_verify
 S4_PAYLOAD_93f98e5dac2f0a3a4e7479eadfa4b52941ac936d4cce43adf7360ad4d08ec8f7
+    cat > "$S4B_STAGE/lib/firewall/kernel.py" <<'S4_PAYLOAD_c96d0066b1cb453daf45d4a7fb41d4bada3c96c499e60dfc7da7ee60dfdc562e' || return 1
+#!/usr/bin/python3
+"""Observe a supported kernel topology without applying network changes.
+
+The kernel-v1 record deliberately lacks DNS, NTP and DHCP-manager admission. It
+cannot be passed straight to the firewall compiler or certify firewall readiness.
+"""
+
+import ipaddress
+import json
+import math
+import os
+from pathlib import Path
+import re
+import selectors
+import signal
+import stat
+import subprocess
+import sys
+import time
+
+IP_BINARY = Path("/usr/bin/ip")
+TRUST_ROOT = Path("/")
+TRUSTED_UID = 0
+QUERY_SECONDS = 3.0
+ATTEMPT_SECONDS = 60.0
+CLEANUP_SECONDS = 1.0
+MAX_BYTES = 1048576
+MAX_ITEMS = 4096
+MAX_LINKS = 33
+NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,14}\Z")
+MAC = re.compile(r"(?:[0-9a-f]{2}:){5}[0-9a-f]{2}\Z")
+STATES = {"INCOMPLETE", "REACHABLE", "STALE", "DELAY", "PROBE", "FAILED", "NOARP", "PERMANENT", "NONE"}
+RESOLVED = {"REACHABLE", "STALE", "DELAY", "PROBE", "PERMANENT"}
+LINK_FLAGS = set("UP BROADCAST DEBUG LOOPBACK POINTOPOINT NOTRAILERS NOARP PROMISC ALLMULTI MASTER SLAVE MULTICAST PORTSEL AUTOMEDIA DYNAMIC LOWER_UP DORMANT ECHO NO-CARRIER".split())
+COMMANDS = {
+    "links": ("-details", "link", "show"),
+    "addresses": ("address", "show"),
+    "routes4": ("-4", "route", "show", "table", "all"),
+    "routes6": ("-6", "route", "show", "table", "all"),
+    "rules4": ("-4", "rule", "show"),
+    "rules6": ("-6", "rule", "show"),
+    "neighbors4": ("-4", "neigh", "show", "nud", "all"),
+    "neighbors6": ("-6", "neigh", "show", "nud", "all"),
+    "proxy4": ("-4", "neigh", "show", "proxy"),
+    "proxy6": ("-6", "neigh", "show", "proxy"),
+}
+LINK_KEYS = set("ifindex ifname flags mtu qdisc operstate group txqlen link_type address broadcast altnames linkmode inet6_addr_gen_mode promiscuity allmulti min_mtu max_mtu num_tx_queues num_rx_queues gso_max_size gso_max_segs tso_max_size tso_max_segs gro_max_size gso_ipv4_max_size gro_ipv4_max_size parentbus parentdev link_index linkinfo".split())
+ADDRESS_KEYS = LINK_KEYS | {"addr_info"}
+IP_KEYS = set("family local prefixlen broadcast scope label valid_life_time preferred_life_time dynamic mngtmpaddr noprefixroute tentative dadfailed deprecated temporary secondary optimistic permanent".split())
+ROUTE_KEYS = set("dst dev gateway table type protocol scope metric prefsrc flags pref expires mtu advmss hoplimit features initcwnd initrwnd quickack congctl rtt rttvar rto_min window cwnd ssthresh reordering fastopen_no_cookie".split())
+NEIGHBOR_KEYS = {"dst", "dev", "lladdr", "state", "router", "protocol"}
+
+
+class Pending(ValueError):
+    """A complete supported observation could not be established; retry later."""
+
+
+def now():
+    return time.clock_gettime(time.CLOCK_BOOTTIME)
+
+
+def signature(info):
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid,
+            info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def trusted_binary(path):
+    if not path.is_absolute() or os.path.normpath(str(path)) != str(path):
+        raise Pending("noncanonical native path")
+    path.relative_to(TRUST_ROOT)
+    current = path
+    while True:
+        info = current.lstat()
+        kind = stat.S_ISREG if current == path else stat.S_ISDIR
+        if not kind(info.st_mode) or info.st_uid != TRUSTED_UID or info.st_mode & 0o022:
+            raise Pending("untrusted native binary or ancestry")
+        if current == TRUST_ROOT:
+            break
+        current = current.parent
+    before = path.lstat()
+    if not before.st_mode & 0o100:
+        raise Pending("native binary is not executable")
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    try:
+        if signature(os.fstat(fd)) != signature(before) or signature(path.lstat()) != signature(before):
+            raise Pending("native descriptor changed")
+    finally:
+        os.close(fd)
+    return signature(before)
+
+
+def unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise Pending("duplicate native JSON field")
+        result[key] = value
+    return result
+
+
+def rows(value, limit=MAX_ITEMS):
+    if type(value) is not list or len(value) > limit or any(type(item) is not dict for item in value):
+        raise Pending("invalid native inventory")
+    return value
+
+
+def known(item, allowed, required=()):
+    if type(item) is not dict or not set(required).issubset(item) or not set(item).issubset(allowed):
+        raise Pending("missing or unsupported native fields")
+
+
+def uint(value, maximum=0xffffffff):
+    if type(value) is not int or not 0 <= value <= maximum:
+        raise Pending("invalid native integer")
+    return value
+
+
+def address(value, version, unicast=True):
+    if type(value) is not str or len(value) > 45 or "%" in value:
+        raise Pending("invalid native address")
+    try:
+        ip = ipaddress.ip_address(value)
+    except ValueError as error:
+        raise Pending("invalid native address") from error
+    if ip.version != version or str(ip) != value or (version == 6 and ip.ipv4_mapped is not None):
+        raise Pending("noncanonical or wrong-family address")
+    if unicast and (ip.is_unspecified or ip.is_multicast or ip.is_loopback or (version == 4 and int(ip) == 0xffffffff)):
+        raise Pending("non-unicast external address")
+    return ip
+
+
+def ethernet(value):
+    if type(value) is not str or MAC.fullmatch(value) is None or value == "00:00:00:00:00:00" or int(value[:2], 16) & 1:
+        raise Pending("invalid native Ethernet identity")
+    return value
+
+
+def link_type(value):
+    # ip -N bypasses ll_type_n2a names and prints bracketed ARPHRD values.
+    if type(value) is not str or value not in ("ether", "[1]", "loopback", "[772]"):
+        raise Pending("unsupported native link type")
+    return "ether" if value in ("ether", "[1]") else "loopback"
+
+
+def vlan_protocol(value):
+    names = {"802.1Q": "802.1Q", "802.1q": "802.1Q", "[33024]": "802.1Q",
+             "802.1ad": "802.1ad", "[34984]": "802.1ad"}
+    if type(value) is not str or value not in names:
+        raise Pending("unsupported VLAN protocol")
+    return names[value]
+
+
+def prefix(value, version):
+    if value == "default":
+        return ipaddress.ip_network("0.0.0.0/0" if version == 4 else "::/0")
+    if type(value) is not str or len(value) > 49:
+        raise Pending("invalid native prefix")
+    try:
+        result = ipaddress.ip_network(value, strict=True)
+    except ValueError as error:
+        raise Pending("invalid native prefix") from error
+    canonical = str(result) if "/" in value else str(result.network_address)
+    if result.version != version or canonical != value:
+        raise Pending("noncanonical native prefix")
+    return result
+
+
+def table(value):
+    aliases = {"local": 255, "main": 254, "default": 253, "255": 255, "254": 254, "253": 253}
+    if type(value) is str:
+        value = aliases.get(value)
+    if type(value) is not int or value not in (253, 254, 255):
+        raise Pending("unsupported routing table")
+    return value
+
+
+def route_type(value):
+    types = {"1": "unicast", "2": "local", "3": "broadcast", "5": "multicast",
+             "6": "blackhole", "7": "unreachable", "8": "prohibit"}
+    if type(value) is not str:
+        raise Pending("invalid native route type")
+    result = types.get(value, value)
+    if result not in types.values():
+        raise Pending("unsupported native route type")
+    return result
+
+
+def flags(value):
+    if type(value) is not list or any(type(flag) is not str for flag in value) or len(value) != len(set(value)):
+        raise Pending("invalid native flags")
+    return set(value)
+
+
+def finite_deadline(value):
+    if type(value) not in (int, float):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
+
+
+def native_query(name, deadline):
+    if type(name) is not str or name not in COMMANDS:
+        raise Pending("native command is not an admitted read-only query")
+    return _query_json(COMMANDS[name], deadline,
+                       MAX_LINKS if name in ("links", "addresses") else MAX_ITEMS)
+
+
+def native_route(destination, interface, deadline):
+    if type(destination) is not str or len(destination) > 45 or "%" in destination:
+        raise Pending("invalid route lookup destination")
+    try:
+        ip = ipaddress.ip_address(destination)
+    except ValueError as error:
+        raise Pending("invalid route lookup destination") from error
+    address(destination, ip.version)
+    arguments = (f"-{ip.version}", "route", "get", destination)
+    if ip.version == 6 and ip.is_link_local and interface is None:
+        raise Pending("link-local route lookup lacks an interface")
+    if interface is not None:
+        if ip.version != 6 or not ip.is_link_local or type(interface) is not str or NAME.fullmatch(interface) is None or interface == "lo":
+            raise Pending("invalid scoped route lookup")
+        arguments += ("oif", interface)
+    return _query_json(arguments, deadline, 1)
+
+
+def _query_json(arguments, deadline, limit):
+    if not finite_deadline(deadline):
+        raise Pending("invalid native deadline")
+    identity = trusted_binary(IP_BINARY)
+    end = min(deadline, now() + QUERY_SECONDS)
+    if now() >= end:
+        raise Pending("observation deadline expired")
+    process = subprocess.Popen([str(IP_BINARY), "-j", "-N", *arguments],
+                               stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               env={"PATH": "/usr/bin:/usr/sbin", "LC_ALL": "C"},
+                               close_fds=True, start_new_session=True)
+    buffers = {"stdout": bytearray(), "stderr": bytearray()}
+    try:
+        with selectors.DefaultSelector() as selector:
+            for label, stream in (("stdout", process.stdout), ("stderr", process.stderr)):
+                os.set_blocking(stream.fileno(), False)
+                selector.register(stream, selectors.EVENT_READ, label)
+            while selector.get_map():
+                remaining = end - now()
+                if remaining <= 0:
+                    raise Pending("native query timed out")
+                for key, _ in selector.select(remaining):
+                    data = os.read(key.fileobj.fileno(), 65536)
+                    if not data:
+                        selector.unregister(key.fileobj)
+                        continue
+                    buffer = buffers[key.data]
+                    if len(buffer) + len(data) > MAX_BYTES:
+                        raise Pending("native output limit exceeded")
+                    buffer.extend(data)
+            remaining = end - now()
+            if remaining <= 0 or process.wait(timeout=remaining) != 0 or buffers["stderr"]:
+                raise Pending("native query failed or warned")
+        if trusted_binary(IP_BINARY) != identity:
+            raise Pending("native binary changed during observation")
+        try:
+            value = json.loads(buffers["stdout"].decode("utf-8"), object_pairs_hook=unique_object)
+        except (ValueError, UnicodeError, RecursionError) as error:
+            raise Pending("invalid native JSON") from error
+        return rows(value, limit)
+    except subprocess.TimeoutExpired as error:
+        raise Pending("native query timed out after pipe closure") from error
+    finally:
+        try:
+            # Keep the direct PID unreaped until group termination on a capture
+            # error. A leader that exited while a child holds a pipe still owns
+            # its PID, so this cannot target a newly reused process group.
+            if process.returncode is None:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait(timeout=CLEANUP_SECONDS)
+        finally:
+            process.stdout.close()
+            process.stderr.close()
+
+
+def normalize(snapshot):
+    if type(snapshot) is not dict or set(snapshot) != set(COMMANDS):
+        raise Pending("incomplete kernel snapshot")
+    count = sum(len(rows(value, MAX_LINKS if name in ("links", "addresses") else MAX_ITEMS)) for name, value in snapshot.items())
+    if count > MAX_ITEMS or snapshot["proxy4"] or snapshot["proxy6"]:
+        raise Pending("oversized or proxy topology")
+    links, indexes, parents = {}, {}, {}
+    for item in snapshot["links"]:
+        known(item, LINK_KEYS, ("ifindex", "ifname", "flags", "link_type", "address"))
+        index, name = uint(item["ifindex"]), item["ifname"]
+        if index == 0 or index in indexes or type(name) is not str or NAME.fullmatch(name) is None or name in links:
+            raise Pending("invalid or duplicate link identity")
+        link_flags = flags(item["flags"])
+        if not link_flags.issubset(LINK_FLAGS):
+            raise Pending("unsupported link flags")
+        if name == "lo":
+            if link_type(item["link_type"]) != "loopback" or "LOOPBACK" not in link_flags:
+                raise Pending("invalid loopback identity")
+            mac = None
+        else:
+            if link_type(item["link_type"]) != "ether" or link_flags & {"LOOPBACK", "POINTOPOINT", "NOARP", "MASTER", "SLAVE"}:
+                raise Pending("unsupported link arrangement")
+            mac = ethernet(item["address"])
+        info = item.get("linkinfo", {})
+        known(info, {"info_kind", "info_data"})
+        kind = info.get("info_kind")
+        if kind not in (None, "vlan") or ("info_data" in info and kind != "vlan"):
+            raise Pending("unsupported virtual link")
+        vlan_identity = None
+        if kind == "vlan":
+            if name == "lo" or "link_index" not in item:
+                raise Pending("missing VLAN parent")
+            vlan = info.get("info_data")
+            known(vlan, {"protocol", "id", "flags"}, ("id", "protocol"))
+            vlan_flags = flags(vlan.get("flags", []))
+            if not 1 <= uint(vlan["id"], 4094) or not vlan_flags.issubset({"REORDER_HDR"}):
+                raise Pending("unsupported VLAN identity")
+            vlan_identity = {"id": vlan["id"], "protocol": vlan_protocol(vlan["protocol"]),
+                             "flags": sorted(vlan_flags)}
+            parents[name] = uint(item["link_index"])
+        elif "link_index" in item:
+            raise Pending("unidentified parent link")
+        links[name] = {"name": name, "index": index, "mac": mac,
+                       "up": {"UP", "LOWER_UP"}.issubset(link_flags), "kind": "ether",
+                       "flags": sorted(link_flags), "parent": parents.get(name), "vlan": vlan_identity,
+                       "prefixes": set(), "gateways": {}, "neighbors": {}}
+        indexes[index] = name
+    if "lo" not in links:
+        raise Pending("missing loopback inventory")
+    for name in parents:
+        visited = {name}
+        current = name
+        while current in parents:
+            current = indexes.get(parents[current])
+            if current is None or current == "lo" or current in visited or len(visited) > 4:
+                raise Pending("unresolved or cyclic VLAN parent")
+            visited.add(current)
+    seen = set()
+    ipv6_present = False
+    for item in snapshot["addresses"]:
+        known(item, ADDRESS_KEYS, ("ifindex", "ifname", "addr_info", "address", "link_type", "flags"))
+        name = item["ifname"]
+        if type(name) is not str or name not in links or name in seen or uint(item["ifindex"]) != links[name]["index"]:
+            raise Pending("address/link inventory disagreement")
+        if item["address"] != ("00:00:00:00:00:00" if name == "lo" else links[name]["mac"]):
+            raise Pending("address/link MAC disagreement")
+        if link_type(item["link_type"]) != ("loopback" if name == "lo" else "ether"):
+            raise Pending("address/link kind disagreement")
+        if sorted(flags(item["flags"])) != links[name]["flags"]:
+            raise Pending("address/link flags disagreement")
+        seen.add(name)
+        for entry in rows(item["addr_info"]):
+            count += 1
+            known(entry, IP_KEYS, ("family", "local", "prefixlen"))
+            family = entry["family"]
+            if family not in ("inet", "inet6"):
+                raise Pending("unsupported address family")
+            version = 4 if family == "inet" else 6
+            ip = address(entry["local"], version, name != "lo")
+            if name == "lo" and not ip.is_loopback:
+                raise Pending("external address on loopback")
+            length = uint(entry["prefixlen"], ip.max_prefixlen)
+            if length == 0:
+                raise Pending("default assigned prefix")
+            ipv6_present |= version == 6
+            # An assigned mask (especially noprefixroute) is not proof of a
+            # connected FIB route. Keep only this host identity here; direct
+            # native routes below supply admitted on-link networks.
+            links[name]["prefixes"].add(ipaddress.ip_network(str(ip)))
+    if seen != set(links):
+        raise Pending("partial address inventory")
+    for version in (4, 6):
+        rule_set = set()
+        for item in snapshot[f"rules{version}"]:
+            known(item, {"priority", "src", "dst", "table"}, ("priority", "src", "table"))
+            priority, table_id = uint(item["priority"]), table(item["table"])
+            expected = {0: 255, 32766: 254, 32767: 253}
+            if item["src"] != "all" or item.get("dst", "all") != "all" or expected.get(priority) != table_id or priority in rule_set:
+                raise Pending("unsupported routing policy")
+            rule_set.add(priority)
+        absent6 = version == 6 and not ipv6_present and not any(snapshot[name] for name in ("routes6", "rules6", "neighbors6"))
+        if not absent6 and not {0, 32766}.issubset(rule_set):
+            raise Pending("incomplete routing policy")
+        for item in snapshot[f"routes{version}"]:
+            known(item, ROUTE_KEYS, ("dst",))
+            destination = prefix(item["dst"], version)
+            table_id = table(item.get("table", 254))
+            route_flags = flags(item.get("flags", []))
+            if not route_flags.issubset({"onlink", "linkdown"}):
+                raise Pending("unsupported route flags")
+            kind = route_type(item.get("type", "unicast"))
+            if kind in ("unreachable", "blackhole", "prohibit"):
+                if "gateway" in item:
+                    raise Pending("gateway on negative route")
+                continue
+            name = item.get("dev")
+            if type(name) is not str or name not in links:
+                raise Pending("route without observed link")
+            if kind in ("local", "broadcast", "multicast"):
+                if table_id != 255 or "gateway" in item:
+                    raise Pending("unexpected local route")
+                continue
+            if kind != "unicast" or table_id == 255 or name == "lo":
+                raise Pending("unsupported route type")
+            if "gateway" in item:
+                gateway = address(item["gateway"], version)
+                links[name]["gateways"][gateway] = None
+                if "onlink" in route_flags:
+                    links[name]["prefixes"].add(ipaddress.ip_network(str(gateway)))
+            else:
+                if destination.prefixlen == 0:
+                    raise Pending("ambiguous direct default route")
+                links[name]["prefixes"].add(destination)
+        for item in snapshot[f"neighbors{version}"]:
+            known(item, NEIGHBOR_KEYS, ("dst", "dev"))
+            name = item["dev"]
+            if type(name) is not str or name not in links:
+                raise Pending("neighbor without observed Ethernet link")
+            states = item.get("state", ["NONE"])
+            if type(states) is not list or len(states) != 1 or type(states[0]) is not str or states[0] not in STATES:
+                raise Pending("unsupported neighbor state")
+            state = states[0]
+            router = "router" in item
+            if router and item["router"] is not None and item["router"] is not True:
+                raise Pending("invalid native router flag")
+            if state == "NOARP" and not router:
+                # Synthetic NOARP cache entries (also present on loopback)
+                # cannot admit SSH or resolve a gateway.
+                address(item["dst"], version, False)
+                continue
+            if name == "lo":
+                raise Pending("unexpected resolved or router neighbor on loopback")
+            ip = address(item["dst"], version)
+            if state in RESOLVED and "lladdr" not in item:
+                raise Pending("resolved neighbor lacks Ethernet identity")
+            mac = ethernet(item["lladdr"]) if state in RESOLVED else None
+            if ip in links[name]["neighbors"] and links[name]["neighbors"][ip] != (mac, state):
+                raise Pending("conflicting neighbor identity")
+            links[name]["neighbors"][ip] = (mac, state)
+            if router:
+                links[name]["gateways"].setdefault(ip, None)
+    if count > MAX_ITEMS:
+        raise Pending("aggregate kernel inventory too large")
+    result = []
+    for name, item in sorted(links.items()):
+        if name == "lo":
+            continue
+        for ip in set(item["gateways"]) | set(item["neighbors"]):
+            if not any(ip.version == net.version and ip in net for net in item["prefixes"]):
+                raise Pending("off-link gateway or neighbor; no inferred prefix")
+        for ip in item["gateways"]:
+            item["gateways"][ip] = item["neighbors"].get(ip, (None, "NONE"))[0]
+        item["prefixes"] = sorted(map(str, item["prefixes"]))
+        item["gateways"] = [{"address": str(ip), "mac": mac} for ip, mac in sorted(item["gateways"].items(), key=lambda pair: str(pair[0]))]
+        item["neighbors"] = [{"address": str(ip), "mac": mac, "state": state} for ip, (mac, state) in sorted(item["neighbors"].items(), key=lambda pair: str(pair[0]))]
+        result.append(item)
+    return result
+
+
+def namespace():
+    value = os.readlink("/proc/self/ns/net")
+    match = re.fullmatch(r"net:\[([0-9]+)\]", value)
+    if match is None:
+        raise Pending("unverifiable process network namespace")
+    return int(match[1])
+
+
+def observe(query=native_query, scope=namespace, deadline=None):
+    started = now()
+    if deadline is not None and (not finite_deadline(deadline) or deadline <= started):
+        raise Pending("invalid or expired inherited observation deadline")
+    deadline = min(deadline, started + ATTEMPT_SECONDS) if deadline is not None else started + ATTEMPT_SECONDS
+    identity = scope()
+    first = normalize({name: query(name, deadline) for name in COMMANDS})
+    second = normalize({name: query(name, deadline) for name in COMMANDS})
+    if first != second or scope() != identity or now() >= deadline:
+        raise Pending("kernel topology changed or observation expired")
+    return {"schema": "debian13s4-kernel-1", "namespace": identity, "interfaces": second}
+
+
+def main():
+    if len(sys.argv) != 1:
+        return 64
+    try:
+        result = json.dumps(observe(), sort_keys=True, separators=(",", ":")) + "\n"
+        if len(result.encode()) > MAX_BYTES:
+            raise Pending("normalized observation too large")
+        sys.stdout.write(result)
+        sys.stdout.flush()
+        return 0
+    except (OSError, ValueError, subprocess.TimeoutExpired) as error:
+        print(f"debian13s4 kernel observation pending: {error}", file=sys.stderr)
+        return 75
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+S4_PAYLOAD_c96d0066b1cb453daf45d4a7fb41d4bada3c96c499e60dfc7da7ee60dfdc562e
+    cat > "$S4B_STAGE/lib/ssh/common.sh" <<'S4_PAYLOAD_77f7c4930772d3beedc70d67f0b27e5e0d4c00410e97e0c965ebeb3e80a059f6' || return 1
+#!/bin/bash
+
+# shellcheck source=Maintenance/common.sh
+. /usr/local/lib/debian13s4/maintenance/common.sh
+
+S4S_LIBRARY=/usr/local/lib/debian13s4/ssh
+S4S_CONFIG=/etc/ssh/debian13s4-admin.conf
+S4S_VENDOR=(ssh.service ssh.socket sshd.service)
+S4S_SERVER=debian13s4-admin-ssh.service
+S4S_SERVICE=debian13s4-ssh.service
+S4S_TIMER=debian13s4-ssh.timer
+S4S_FILES=(common.sh policy.py repair.sh debian13s4-admin-ssh.service
+    debian13s4-ssh.service debian13s4-ssh.timer)
+# The in-process preparation caps at 60s. Allow its separate owned-child
+# cleanup and finite local work, then retain a separate external kill grace.
+S4S_POLICY_SECONDS=65
+
+s4s_policy() (
+    local descriptor=$S4M_REPAIR_FD
+    trap - EXIT
+    [[ -z $descriptor ]] || exec {descriptor}>&-
+    timeout --signal=TERM --kill-after=1s "${S4S_POLICY_SECONDS}s" \
+        env -i PATH="$S4M_PATH" LANG=C LC_ALL=C \
+        /usr/bin/python3 -I -B "$S4S_LIBRARY/policy.py" "$@"
+)
+
+s4s_assets() {
+    local name
+    [[ -d $S4M_STATE && -d $S4M_SYSTEMD ]] &&
+        s4m_trusted "$S4M_STATE" && s4m_trusted "$S4M_SYSTEMD" || return 1
+    for name in "${S4S_FILES[@]}"; do
+        [[ -f $S4S_LIBRARY/$name ]] && s4m_trusted "$S4S_LIBRARY/$name" || return 1
+    done
+    [[ -x $S4S_LIBRARY/repair.sh && -f $S4M_LIBRARY/common.sh &&
+        -f $S4S_LIBRARY/../firewall/kernel.py ]] &&
+        s4m_trusted "$S4M_LIBRARY/common.sh" &&
+        s4m_trusted "${S4S_LIBRARY%/*}/firewall/kernel.py"
+}
+
+s4s_identity() {
+    local name digest
+    for name in "${S4S_FILES[@]}"; do
+        digest=$(sha256sum -- "$S4S_LIBRARY/$name") || return 1
+        printf '%s ssh/%s\n' "${digest%% *}" "$name" || return 1
+    done
+    for name in maintenance/common.sh firewall/kernel.py; do
+        digest=$(sha256sum -- "${S4S_LIBRARY%/*}/$name") || return 1
+        printf '%s %s\n' "${digest%% *}" "$name" || return 1
+    done
+}
+
+s4s_vendor_paths() {
+    local unit target owner
+    s4m_trusted "$S4M_SYSTEMD" || return 1
+    for unit in "${S4S_VENDOR[@]}"; do
+        target=$S4M_SYSTEMD/$unit
+        if [[ -e $target || -L $target ]]; then
+            # Only an existing root-owned mask is accepted at the local path.
+            # A custom unit/alias is not silently replaced or guessed away.
+            [[ -L $target ]] || return 1
+            owner=$(stat --format='%u' -- "$target") || return 1
+            [[ $owner == 0 && $(readlink -- "$target") == /dev/null ]] || return 1
+        fi
+    done
+}
+
+s4s_mask_vendor() {
+    local unit loaded
+    s4s_vendor_paths || return 1
+    for unit in "${S4S_VENDOR[@]}"; do
+        loaded=$(s4m_systemctl show --property=LoadState --value "$unit") || return 1
+        case $loaded in
+            loaded) s4m_systemctl stop "$unit" && s4m_property "$unit" ActiveState inactive || return 1 ;;
+            masked|not-found) ;;
+            *) return 1 ;;
+        esac
+        s4m_systemctl mask "$unit" || return 1
+    done
+    s4m_systemctl daemon-reload && s4m_sync "$S4M_SYSTEMD" || return 1
+    s4s_vendor_masked
+}
+
+s4s_vendor_masked() {
+    local unit
+    s4s_vendor_paths || return 1
+    for unit in "${S4S_VENDOR[@]}"; do
+        [[ -L $S4M_SYSTEMD/$unit ]] &&
+            s4m_property "$unit" LoadState masked &&
+            s4m_property "$unit" ActiveState inactive || return 1
+    done
+}
+
+s4s_packages() {
+    s4m_load_packages || return 1
+    S4P_PACKAGES=(openssh-server iproute2)
+}
+
+s4s_prepare_config() {
+    local temporary directory=${S4S_CONFIG%/*}
+    s4m_trusted "${directory%/*}" || return 1
+    if [[ -e $directory || -L $directory ]]; then
+        [[ -d $directory ]] && s4m_trusted "$directory" || return 1
+    else
+        mkdir -m 0755 -- "$directory" || return 1
+    fi
+    temporary=$(mktemp -- "$S4M_STATE/ssh-policy.XXXXXX") || return 1
+    if ! s4s_policy --plan > "$temporary" || ! chmod 0600 -- "$temporary" ||
+        ! s4m_atomic "$S4S_CONFIG" "$temporary" 0600; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    rm -f -- "$temporary" || return 1
+}
+
+s4s_units() {
+    local unit
+    for unit in "$S4S_SERVER" "$S4S_SERVICE" "$S4S_TIMER"; do
+        [[ -f $S4M_SYSTEMD/$unit ]] && s4m_trusted "$S4M_SYSTEMD/$unit" &&
+            cmp --silent -- "$S4S_LIBRARY/$unit" "$S4M_SYSTEMD/$unit" || return 1
+        s4m_property "$unit" FragmentPath "$S4M_SYSTEMD/$unit" &&
+            s4m_property "$unit" DropInPaths '' || return 1
+    done
+    s4m_enabled "$S4S_SERVER" && s4m_enabled "$S4S_TIMER" &&
+        s4m_property "$S4S_TIMER" ActiveState active
+}
+
+s4s_live() {
+    local pid
+    s4s_vendor_masked && s4m_property "$S4S_SERVER" ActiveState active || return 1
+    pid=$(s4m_systemctl show --property=MainPID --value "$S4S_SERVER") || return 1
+    [[ $pid =~ ^[1-9][0-9]{0,9}$ ]] || return 1
+    s4s_policy --live "$pid"
+}
+
+s4s_ready() {
+    local expected actual
+    [[ ! -e $S4M_STATE/bootstrap/pending && ! -L $S4M_STATE/bootstrap/pending &&
+        -f $S4M_STATE/ssh.ready ]] && s4m_trusted "$S4M_STATE/ssh.ready" || return 1
+    s4s_assets && s4s_units || return 1
+    expected=$(s4s_identity) && actual=$(cat -- "$S4M_STATE/ssh.ready") || return 1
+    [[ $expected == "$actual" ]]
+}
+
+s4s_verify() {
+    s4s_ready && s4s_packages && s4p_verify && s4s_live
+}
+
+s4s_stop() {
+    s4m_systemctl stop "$S4S_SERVER" && s4m_property "$S4S_SERVER" ActiveState inactive
+}
+
+s4s_publish() {
+    local unit wants resolved temporary
+    for unit in "$S4S_SERVER" "$S4S_SERVICE" "$S4S_TIMER"; do
+        s4m_atomic "$S4M_SYSTEMD/$unit" "$S4S_LIBRARY/$unit" || return 1
+    done
+    s4m_systemctl daemon-reload || return 1
+    for unit in "$S4S_SERVER" "$S4S_TIMER"; do
+        s4m_systemctl enable "$unit" && s4m_enabled "$unit" || return 1
+        wants=$S4M_SYSTEMD/multi-user.target.wants
+        [[ $unit != "$S4S_TIMER" ]] || wants=$S4M_SYSTEMD/timers.target.wants
+        [[ -d $wants && -L $wants/$unit ]] && s4m_trusted "$wants" || return 1
+        resolved=$(readlink --canonicalize-existing -- "$wants/$unit") || return 1
+        [[ $resolved == "$S4M_SYSTEMD/$unit" ]] || return 1
+        s4m_sync "$wants" "$S4M_SYSTEMD" "$S4M_SYSTEMD/$unit" || return 1
+    done
+    s4m_systemctl start "$S4S_SERVER" && s4m_systemctl start "$S4S_TIMER" &&
+        s4s_units && s4s_live || return 1
+    temporary=$(mktemp -- "$S4M_STATE/ssh-intent.XXXXXX") || return 1
+    if ! s4s_identity > "$temporary" || ! chmod 0600 -- "$temporary" ||
+        ! s4m_atomic "$S4M_STATE/ssh.ready" "$temporary" 0600; then
+        rm -f -- "$temporary"
+        return 1
+    fi
+    rm -f -- "$temporary" || return 1
+    s4s_verify
+}
+
+s4s_apply() {
+    local unit loaded
+    s4s_assets && s4s_vendor_paths || return 1
+    for unit in "$S4S_SERVER" "$S4S_SERVICE" "$S4S_TIMER"; do
+        if [[ -e $S4M_SYSTEMD/$unit || -L $S4M_SYSTEMD/$unit ]]; then
+            [[ -f $S4M_SYSTEMD/$unit ]] && s4m_trusted "$S4M_SYSTEMD/$unit" || return 1
+        fi
+    done
+    if [[ -e $S4M_STATE/ssh.ready || -L $S4M_STATE/ssh.ready ]]; then
+        [[ -f $S4M_STATE/ssh.ready ]] && s4m_trusted "$S4M_STATE/ssh.ready" || return 1
+        rm -f -- "$S4M_STATE/ssh.ready" || return 1
+    fi
+    s4m_sync "$S4M_STATE" || return 1
+    # Admit credentials and current admin assignment before retiring vendor SSH.
+    # The config is data only until its real syntax/effective checks succeed.
+    s4s_prepare_config || return 1
+    for unit in "$S4S_TIMER" "$S4S_SERVICE" "$S4S_SERVER"; do
+        loaded=$(s4m_systemctl show --property=LoadState --value "$unit") || return 1
+        if [[ $loaded == loaded ]]; then
+            s4m_systemctl stop "$unit" && s4m_property "$unit" ActiveState inactive || return 1
+        elif [[ $loaded != not-found ]]; then
+            return 1
+        fi
+    done
+    # Persistent masks precede package maintainer scripts, including a retry.
+    if s4s_mask_vendor && s4s_packages && s4p_prepare &&
+        s4m_package s4p_apply && s4p_verify && s4s_vendor_masked && s4s_policy --check && s4s_publish; then
+        return 0
+    fi
+    s4s_stop || return 1
+    return 1
+}
+
+s4s_repair() {
+    [[ ! -e $S4M_STATE/bootstrap/pending && ! -L $S4M_STATE/bootstrap/pending ]] || return 75
+    s4m_lock || return 75
+    trap s4m_unlock EXIT
+    if s4s_ready && s4s_packages && s4p_verify && s4s_vendor_masked &&
+        s4s_prepare_config && s4s_policy --check; then
+        if s4s_live; then
+            return 0
+        fi
+        # A changed admitted address may require rebinding. Stop once and start
+        # only after checking the complete fresh fixed configuration.
+        if s4s_stop && s4m_systemctl start "$S4S_SERVER" && s4s_live; then
+            return 0
+        fi
+    fi
+    s4s_stop || return 75
+    return 75
+}
+S4_PAYLOAD_77f7c4930772d3beedc70d67f0b27e5e0d4c00410e97e0c965ebeb3e80a059f6
+    cat > "$S4B_STAGE/lib/ssh/policy.py" <<'S4_PAYLOAD_a826ec818551234b1c98a344e189bb23da4bc4fb173bb00a1ab189d8031692b7' || return 1
+#!/usr/bin/python3
+"""Derive and check LAN-bound SSH for one existing local administrator.
+
+This does not create credentials, configure an address or attest client locality.
+The IPv6 allocation is used only when a usable assignment is actually reported.
+Native delivery and the local account database belong to the trusted-base profile.
+"""
+
+import base64
+import hashlib
+import importlib.util
+import ipaddress
+import json
+import os
+from pathlib import Path
+import re
+import selectors
+import signal
+import stat
+import struct
+import subprocess
+import sys
+import time
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_ssh_kernel',
+    Path(__file__).resolve().parents[1] / 'firewall/kernel.py')
+if not SPEC.origin or not Path(SPEC.origin).is_file():
+    SPEC = importlib.util.spec_from_file_location('debian13s4_ssh_kernel',
+        Path(__file__).resolve().parents[1] / 'Firewall/kernel.py')
+KERNEL = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(KERNEL)
+Pending = KERNEL.Pending
+ETC = Path('/etc')
+HOME = Path('/home')
+CONFIG = ETC / 'ssh/debian13s4-admin.conf'
+HOST_KEY = ETC / 'ssh/ssh_host_ed25519_key'
+SSHD = Path('/usr/sbin/sshd')
+SS = Path('/usr/bin/ss')
+TRUST_ROOT = Path('/')
+TRUSTED_UID = 0
+ADMIN4 = ipaddress.ip_network('192.168.90.0/24')
+ADMIN6 = ipaddress.ip_network('fd51:b089:f5e0:90::/64')
+MAX_BYTES = 262144
+ATTEMPT_SECONDS = 60
+NAME = re.compile(r'[a-z_][a-z0-9_-]{0,31}\Z')
+ACCOUNT_NAME = re.compile(r'[A-Za-z_][A-Za-z0-9_.-]{0,31}\Z')
+
+
+def fence(end):
+    if not KERNEL.finite_deadline(end) or KERNEL.now() >= end:
+        raise Pending('SSH observation window expired')
+
+
+def trusted_read(path, owners=(0,), private=False):
+    """Read a bounded unique leaf through a checked no-follow descriptor."""
+    if not path.is_absolute() or os.path.normpath(str(path)) != str(path):
+        raise Pending('noncanonical SSH input path')
+    path.relative_to(TRUST_ROOT)
+    current = path
+    while True:
+        info = current.lstat()
+        if not (stat.S_ISREG(info.st_mode) if current == path else stat.S_ISDIR(info.st_mode)):
+            raise Pending('symbolic or unsupported SSH input')
+        allowed = owners if current == path or HOME in current.parents else (TRUSTED_UID,)
+        if info.st_uid not in allowed or info.st_mode & 0o022:
+            raise Pending('unprotected SSH input or ancestry')
+        if current == TRUST_ROOT:
+            break
+        current = current.parent
+    before = path.lstat()
+    if before.st_nlink != 1 or before.st_size > MAX_BYTES or private and before.st_mode & 0o077:
+        raise Pending('nonunique, oversized or nonprivate SSH input')
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    try:
+        if KERNEL.signature(os.fstat(descriptor)) != KERNEL.signature(before):
+            raise Pending('SSH input descriptor differs')
+        data = bytearray()
+        while True:
+            part = os.read(descriptor, min(65536, MAX_BYTES + 1 - len(data)))
+            if not part:
+                break
+            data.extend(part)
+            if len(data) > MAX_BYTES:
+                raise Pending('SSH input byte bound exceeded')
+        if (KERNEL.signature(os.fstat(descriptor)) != KERNEL.signature(before) or
+            KERNEL.signature(path.lstat()) != KERNEL.signature(before) or len(data) != before.st_size):
+            raise Pending('SSH input changed during read')
+    finally:
+        # Linux retires the number even when close reports an error: never retry.
+        os.close(descriptor)
+    return bytes(data), {'path': str(path), 'identity': list(KERNEL.signature(before)),
+                         'sha256': hashlib.sha256(data).hexdigest()}
+
+
+def database(raw, width):
+    try:
+        text = raw.decode('ascii')
+    except UnicodeError as error:
+        raise Pending('unsupported local account encoding') from error
+    if not text.endswith('\n') or '\x00' in text or len(text.splitlines()) > 4096:
+        raise Pending('invalid local account database')
+    result, names = [], set()
+    for line in text.splitlines():
+        fields = line.split(':')
+        if len(fields) != width or ACCOUNT_NAME.fullmatch(fields[0]) is None or fields[0] in names:
+            raise Pending('malformed or duplicate local account row')
+        names.add(fields[0]); result.append(fields)
+    return result
+
+
+def number(value, maximum=0x7fffffff):
+    if type(value) is not str or re.fullmatch(r'0|[1-9][0-9]{0,9}', value) is None:
+        raise Pending('invalid local account number')
+    return KERNEL.uint(int(value), maximum)
+
+
+def public_keys(raw):
+    try:
+        text = raw.decode('utf-8')
+    except UnicodeError as error:
+        raise Pending('invalid administrator key encoding') from error
+    if not text.endswith('\n') or '\x00' in text or len(text.splitlines()) > 64:
+        raise Pending('invalid administrator key inventory')
+    seen = set()
+    for line in text.splitlines():
+        if not line or line.startswith('#'):
+            continue
+        words = line.split()
+        if len(line.encode('utf-8')) > 16384 or len(words) < 2 or words[0] not in ('ssh-ed25519', 'ssh-rsa'):
+            # Do not strip options, certificates or constraints to widen a key.
+            raise Pending('unsupported administrator key or key options')
+        try:
+            wire = base64.b64decode(words[1], validate=True)
+        except (ValueError, UnicodeError) as error:
+            raise Pending('invalid administrator key wire encoding') from error
+        if base64.b64encode(wire).decode('ascii') != words[1] or wire in seen:
+            raise Pending('noncanonical or duplicate administrator key')
+        parts, offset = [], 0
+        while offset < len(wire):
+            if len(wire) - offset < 4:
+                raise Pending('truncated administrator key')
+            size = struct.unpack_from('!I', wire, offset)[0]; offset += 4
+            if size > 16384 or size > len(wire) - offset:
+                raise Pending('invalid administrator key field')
+            parts.append(wire[offset:offset + size]); offset += size
+        if not parts or parts[0] != words[0].encode('ascii'):
+            raise Pending('administrator key type disagreement')
+        if words[0] == 'ssh-ed25519':
+            if len(parts) != 2 or len(parts[1]) != 32:
+                raise Pending('invalid Ed25519 key shape')
+        else:
+            if len(parts) != 3 or any(not part or part[0] & 128 or
+                len(part) > 1 and part[0] == 0 and not part[1] & 128 for part in parts[1:]):
+                raise Pending('invalid RSA positive mpint')
+            exponent, modulus = (int.from_bytes(part, 'big') for part in parts[1:])
+            if exponent < 65537 or not exponent & 1 or not 3072 <= modulus.bit_length() <= 8192 or not modulus & 1:
+                raise Pending('unsupported RSA key size or exponent')
+        seen.add(wire)
+    if not seen:
+        raise Pending('no existing supported administrator key')
+    return len(seen)
+
+
+def administrator():
+    contents, sources = {}, {}
+    for name, width in (('passwd', 7), ('group', 4), ('shadow', 9)):
+        raw, sources[name] = trusted_read(ETC / name, (TRUSTED_UID,))
+        if name == 'shadow' and sources[name]['identity'][2] & 0o007:
+            raise Pending('shadow database is readable by other users')
+        contents[name] = database(raw, width)
+    groups = {row[0]: row for row in contents['group']}
+    if 'sudo' not in groups:
+        raise Pending('no existing local sudo administrator group')
+    sudo_gid = number(groups['sudo'][2])
+    members = groups['sudo'][3].split(',') if groups['sudo'][3] else []
+    if len(members) != len(set(members)) or any(NAME.fullmatch(name) is None for name in members):
+        raise Pending('invalid local administrator membership')
+    eligible, uids = [], set()
+    for row in contents['passwd']:
+        uid, gid = number(row[2]), number(row[3])
+        if uid in uids:
+            raise Pending('duplicate local UID')
+        uids.add(uid)
+        if 1000 <= uid <= 59999 and (row[0] in members or gid == sudo_gid):
+            eligible.append(row)
+    if len(eligible) != 1:
+        raise Pending('administrator discovery is missing or ambiguous')
+    user = eligible[0]; name, uid, gid = user[0], number(user[2]), number(user[3])
+    if (NAME.fullmatch(name) is None or user[1] != 'x' or user[5] != str(HOME / name) or
+        user[6] not in ('/bin/bash', '/usr/bin/bash')):
+        raise Pending('unsupported existing administrator account')
+    shadows = [row for row in contents['shadow'] if row[0] == name]
+    if len(shadows) != 1 or not shadows[0][1].startswith(('$y$', '$6$')) or len(shadows[0][1]) < 32:
+        raise Pending('administrator password is absent, locked or unsupported')
+    # Password expiry must not silently turn a key-only unattended login into
+    # a required password-change dialogue. Native PAM authentication is separate.
+    if shadows[0][2] in ('', '0') or shadows[0][6:9] != ['', '', '']:
+        raise Pending('expired or restricted existing administrator account')
+    last_change = number(shadows[0][2])
+    ages = [number(value) if value else None for value in shadows[0][3:6]]
+    wall = time.time()
+    if not KERNEL.finite_deadline(wall) or wall <= 0:
+        raise Pending('invalid trusted account-age clock')
+    day = int(wall // 86400)
+    if (last_change > day or ages[1] is not None and day - last_change >= ages[1] or
+        ages[0] is not None and ages[1] is not None and ages[0] > ages[1]):
+        raise Pending('administrator password age requires native recovery')
+    key_path = HOME / name / '.ssh/authorized_keys'
+    keys, sources['keys'] = trusted_read(key_path, (TRUSTED_UID, uid), True)
+    directory = key_path.parent.lstat()
+    if directory.st_mode & 0o077:
+        raise Pending('administrator key directory is not private')
+    return {'name': name, 'uid': uid, 'gid': gid, 'key_file': str(key_path),
+            'key_count': public_keys(keys), 'sources': sources}
+
+
+def copied(value):
+    stack, count = [(value, 0)], 0
+    while stack:
+        item, depth = stack.pop(); count += 1
+        if count > 65536 or depth > 16:
+            raise Pending('SSH delivery structure exceeds bounds')
+        if type(item) is dict:
+            if any(type(key) is not str for key in item):
+                raise Pending('nonstring SSH delivery key')
+            stack.extend((entry, depth + 1) for entry in (*item.keys(), *item.values()))
+        elif type(item) is list:
+            stack.extend((entry, depth + 1) for entry in item)
+        elif item is not None and type(item) not in (str, int, bool):
+            raise Pending('unsupported SSH delivery scalar')
+    raw = json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False).encode('utf-8')
+    if len(raw) > KERNEL.MAX_BYTES:
+        raise Pending('SSH delivery byte bound exceeded')
+    return json.loads(raw, object_pairs_hook=KERNEL.unique_object)
+
+
+def checked_admin(value):
+    fields = {'name', 'uid', 'gid', 'key_file', 'key_count', 'sources'}
+    KERNEL.known(value, fields, fields)
+    name = value['name']
+    if type(name) is not str or NAME.fullmatch(name) is None or not 1000 <= KERNEL.uint(value['uid'], 59999):
+        raise Pending('invalid SSH administrator identity')
+    KERNEL.uint(value['gid'], 0x7fffffff)
+    if value['key_file'] != str(HOME / name / '.ssh/authorized_keys') or not 1 <= KERNEL.uint(value['key_count'], 64):
+        raise Pending('invalid SSH administrator key identity')
+    KERNEL.known(value['sources'], {'passwd', 'group', 'shadow', 'keys'}, {'passwd', 'group', 'shadow', 'keys'})
+    for key, source in value['sources'].items():
+        KERNEL.known(source, {'path', 'identity', 'sha256'}, {'path', 'identity', 'sha256'})
+        expected = value['key_file'] if key == 'keys' else str(ETC / key)
+        identity = source['identity']
+        if (source['path'] != expected or type(identity) is not list or len(identity) != 8 or
+            any(type(part) is not int for part in identity) or
+            not stat.S_ISREG(identity[2]) or identity[2] & 0o022 or identity[1] <= 0 or
+            not 0 <= identity[0] <= (1 << 64) - 1 or not identity[1] <= (1 << 64) - 1 or
+            not 0 <= identity[2] <= 0o177777 or not 0 <= identity[4] <= 0xffffffff or
+            any(not -(1 << 63) <= timestamp < (1 << 63) for timestamp in identity[6:]) or
+            identity[3] not in ((TRUSTED_UID, value['uid']) if key == 'keys' else (TRUSTED_UID,)) or
+            not 0 <= identity[5] <= MAX_BYTES or key == 'keys' and identity[2] & 0o077 or
+            key == 'shadow' and identity[2] & 0o007 or type(source['sha256']) is not str or
+            re.fullmatch('[0-9a-f]{64}', source['sha256']) is None):
+            raise Pending('invalid SSH account delivery source')
+    return value
+
+
+def network(snapshot, observed=0):
+    interfaces = KERNEL.normalize(snapshot)
+    admitted, loopback, names, expiry = [], [], set(), None
+    by_name = {item['name']: item for item in interfaces}
+    for row in snapshot['addresses']:
+        if row['ifname'] == 'lo':
+            if not {'UP', 'LOWER_UP', 'LOOPBACK'}.issubset(KERNEL.flags(row['flags'])):
+                raise Pending('loopback is not active')
+            for address in row['addr_info']:
+                if address['local'] in ('127.0.0.1', '::1'):
+                    if (address.get('scope') not in ('host', '254') or
+                        any(type(address[flag]) is not bool or address[flag] for flag in
+                            ('tentative', 'dadfailed', 'deprecated', 'temporary', 'optimistic') if flag in address) or
+                        any(not KERNEL.uint(address.get(key)) for key in ('valid_life_time', 'preferred_life_time')) or
+                        address['local'] in loopback):
+                        raise Pending('loopback assignment is not positively usable')
+                    loopback.append(address['local'])
+                    until = observed + min(address[key] for key in ('valid_life_time', 'preferred_life_time'))
+                    expiry = min(expiry, until) if expiry is not None else until
+            continue
+        link = by_name[row['ifname']]
+        for address in row['addr_info']:
+            version = 4 if address['family'] == 'inet' else 6
+            ip = KERNEL.address(address['local'], version)
+            prefix = ADMIN4 if version == 4 else ADMIN6
+            if ip not in prefix:
+                continue
+            if not link['up'] or address['prefixlen'] != prefix.prefixlen or address.get('scope') not in ('global', '0'):
+                raise Pending('admin address lacks active exact-prefix global assignment')
+            for flag in ('dynamic', 'mngtmpaddr', 'noprefixroute', 'tentative', 'dadfailed', 'deprecated',
+                         'temporary', 'secondary', 'optimistic', 'permanent'):
+                if flag in address and type(address[flag]) is not bool:
+                    raise Pending('admin assignment flag is not Boolean')
+            if any(address.get(flag, False) for flag in ('tentative', 'dadfailed', 'deprecated', 'temporary', 'optimistic')):
+                raise Pending('admin assignment is not usable')
+            if any(not KERNEL.uint(address.get(key)) for key in ('valid_life_time', 'preferred_life_time')):
+                raise Pending('admin assignment has no positive typed lifetimes')
+            until = observed + min(address[key] for key in ('valid_life_time', 'preferred_life_time'))
+            expiry = min(expiry, until) if expiry is not None else until
+            routes = [entry for entry in snapshot[f'routes{version}']
+                      if entry.get('dev') == link['name'] and entry['dst'] == str(prefix)
+                      and KERNEL.table(entry.get('table', 254)) == 254
+                      and KERNEL.route_type(entry.get('type', 'unicast')) == 'unicast'
+                      and 'gateway' not in entry and 'linkdown' not in entry.get('flags', [])
+                      and entry.get('scope') in ('link', '253')]
+            if (len(routes) != 1 or ip == prefix.network_address or version == 4 and ip == prefix.broadcast_address or
+                'prefsrc' in routes[0] and routes[0]['prefsrc'] != str(ip)):
+                raise Pending('admin assignment lacks one supported direct route')
+            if str(ip) in admitted:
+                raise Pending('duplicate admin listener assignment')
+            names.add(link['name']); admitted.append(str(ip))
+    if len(names) != 1 or '127.0.0.1' not in loopback or not any(ipaddress.ip_address(value).version == 4 for value in admitted):
+        raise Pending('one active IPv4 admin interface is required')
+    return {'interface': by_name[next(iter(names))], 'listeners': sorted(admitted),
+            'loopback': sorted(loopback), 'kernel': interfaces}, expiry
+
+
+def configuration(admin, binding):
+    lines = ['# Generated from checked local administrator and assigned admin addresses.',
+        'Port 22', 'AddressFamily any', 'PermitRootLogin no', 'AuthenticationMethods publickey',
+        'PubkeyAuthentication yes', 'PasswordAuthentication no', 'KbdInteractiveAuthentication no',
+        'PermitEmptyPasswords no', 'HostbasedAuthentication no', 'GSSAPIAuthentication no', 'UsePAM yes',
+        'StrictModes yes', 'IgnoreRhosts yes', 'UseDNS no', 'PermitUserEnvironment no',
+        'DisableForwarding yes', 'PermitTunnel no', 'X11Forwarding no', 'PermitTTY yes',
+        'MaxAuthTries 3', 'MaxSessions 4', 'MaxStartups 10:30:30', 'LoginGraceTime 30',
+        'ClientAliveInterval 120', 'ClientAliveCountMax 2', 'LogLevel VERBOSE',
+        f'HostKey {HOST_KEY}', 'PidFile /run/debian13s4-admin-ssh.pid',
+        'PubkeyAcceptedAlgorithms ssh-ed25519,rsa-sha2-512,rsa-sha2-256',
+        f'AuthorizedKeysFile {admin["key_file"]}',
+        f'AllowUsers {admin["name"]}@127.0.0.1/32 {admin["name"]}@::1/128 '
+        f'{admin["name"]}@{ADMIN4} {admin["name"]}@{ADMIN6}']
+    for value in [*binding['loopback'], *binding['listeners']]:
+        lines.append(f'ListenAddress [{value}]:22' if ':' in value else f'ListenAddress {value}:22')
+    return ('\n'.join(lines) + '\n').encode('ascii')
+
+
+def prepare(query=KERNEL.native_query, account=administrator, scope=KERNEL.namespace, deadline=None):
+    start = KERNEL.now()
+    if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):
+        raise Pending('invalid SSH preparation deadline')
+    end = min(deadline, start + ATTEMPT_SECONDS) if deadline is not None else start + ATTEMPT_SECONDS
+    namespace = scope()
+    if not KERNEL.uint(namespace, (1 << 64) - 1):
+        raise Pending('invalid SSH namespace')
+    first_admin = checked_admin(copied(account()))
+    records = []
+    for _ in range(2):
+        fence(end)
+        raw, observed = {}, None
+        for name in KERNEL.COMMANDS:
+            fence(end)
+            raw[name] = copied(query(name, end))
+            if name == 'addresses':
+                observed = KERNEL.now()
+        raw = copied(raw)
+        binding, expiry = network(raw, observed)
+        end = min(end, expiry)
+        fence(end)
+        records.append({'raw': raw, 'binding': binding})
+    last_admin = checked_admin(copied(account()))
+    if first_admin != last_admin or records[0] != records[1]:
+        raise Pending('SSH administrator or network deliveries changed')
+    payload = configuration(last_admin, records[1]['binding'])
+    if len(payload) > MAX_BYTES:
+        raise Pending('SSH configuration exceeds byte bound')
+    final_namespace = scope()
+    if not KERNEL.uint(final_namespace, (1 << 64) - 1) or final_namespace != namespace:
+        raise Pending('SSH namespace changed')
+    fence(end)
+    return {'namespace': namespace, 'admin': last_admin, 'binding': records[1]['binding'],
+            'configuration': payload, 'deadline': end}
+
+
+def capture(binary, arguments, deadline):
+    fence(deadline)
+    if type(arguments) is not tuple or any(type(argument) is not str for argument in arguments) or not (
+        binary == SSHD and arguments in (('-t', '-f', str(CONFIG)), ('-T', '-f', str(CONFIG))) or
+        binary == SS and arguments == ('-H', '-n', '-l', '-t', '-p', 'sport = :22')):
+        raise Pending('unapproved SSH native read')
+    identity = KERNEL.trusted_binary(binary)
+    end = min(deadline, KERNEL.now() + KERNEL.QUERY_SECONDS)
+    fence(end)
+    process = subprocess.Popen([str(binary), *arguments], stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        env={'PATH': '/usr/bin:/usr/sbin', 'LC_ALL': 'C'}, close_fds=True, start_new_session=True)
+    buffers = {'stdout': bytearray(), 'stderr': bytearray()}
+    try:
+        with selectors.DefaultSelector() as selector:
+            for label, stream in (('stdout', process.stdout), ('stderr', process.stderr)):
+                os.set_blocking(stream.fileno(), False)
+                selector.register(stream, selectors.EVENT_READ, label)
+            while selector.get_map():
+                fence(end)
+                for key, _ in selector.select(end - KERNEL.now()):
+                    data = os.read(key.fileobj.fileno(), 65536)
+                    if not data:
+                        selector.unregister(key.fileobj); continue
+                    buffer = buffers[key.data]
+                    if len(buffer) + len(data) > MAX_BYTES:
+                        raise Pending('SSH native channel limit exceeded')
+                    buffer.extend(data)
+            fence(end)
+            code = process.wait(timeout=end - KERNEL.now())
+            if type(code) is not int or code != 0 or buffers['stderr']:
+                raise Pending('SSH native check failed or warned')
+        if KERNEL.trusted_binary(binary) != identity:
+            raise Pending('SSH native executable changed')
+        fence(end)
+        return bytes(buffers['stdout'])
+    finally:
+        try:
+            if process.returncode is None:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait(timeout=KERNEL.CLEANUP_SECONDS)
+        finally:
+            process.stdout.close(); process.stderr.close()
+
+
+def effective(raw, plan):
+    try:
+        text = raw.decode('ascii')
+    except UnicodeError as error:
+        raise Pending('invalid effective sshd encoding') from error
+    values = {}
+    for line in text.splitlines():
+        key, separator, value = line.partition(' ')
+        if not separator or not re.fullmatch('[a-z0-9]+', key) or not value or '\x00' in value:
+            raise Pending('invalid effective sshd row')
+        if key in values and key not in ('listenaddress', 'hostkey', 'allowusers'):
+            raise Pending('duplicate effective sshd setting')
+        values.setdefault(key, []).append(value)
+    required = {'port': '22', 'addressfamily': 'any', 'permitrootlogin': 'no',
+        'authenticationmethods': 'publickey', 'pubkeyauthentication': 'yes',
+        'passwordauthentication': 'no', 'kbdinteractiveauthentication': 'no',
+        'permitemptypasswords': 'no', 'hostbasedauthentication': 'no', 'gssapiauthentication': 'no',
+        'usepam': 'yes', 'strictmodes': 'yes', 'usedns': 'no', 'permituserenvironment': 'no',
+        'disableforwarding': 'yes', 'permittunnel': 'no', 'x11forwarding': 'no',
+        'authorizedkeysfile': plan['admin']['key_file'], 'authorizedkeyscommand': 'none',
+        'trustedusercakeys': 'none', 'authorizedprincipalsfile': 'none',
+        'pubkeyacceptedalgorithms': 'ssh-ed25519,rsa-sha2-512,rsa-sha2-256'}
+    for key, value in required.items():
+        if values.get(key) != [value]:
+            raise Pending(f'effective sshd setting differs: {key}')
+    users = f'{plan["admin"]["name"]}@127.0.0.1/32 {plan["admin"]["name"]}@::1/128 '
+    users += f'{plan["admin"]["name"]}@{ADMIN4} {plan["admin"]["name"]}@{ADMIN6}'
+    admitted_users = [pattern for row in values.get('allowusers', []) for pattern in row.split()]
+    if admitted_users != users.split() or values.get('hostkey') != [str(HOST_KEY)]:
+        raise Pending('effective sshd user/key authority differs')
+    listeners = {f'[{value}]:22' if ':' in value else f'{value}:22'
+                 for value in [*plan['binding']['loopback'], *plan['binding']['listeners']]}
+    if len(values.get('listenaddress', [])) != len(listeners) or set(values.get('listenaddress', [])) != listeners:
+        raise Pending('effective sshd listeners differ')
+
+
+def sockets(raw, plan, pid):
+    if not KERNEL.uint(pid, 0x7fffffff):
+        raise Pending('invalid SSH service PID')
+    try:
+        text = raw.decode('ascii')
+    except UnicodeError as error:
+        raise Pending('invalid SSH socket encoding') from error
+    expected = {f'[{value}]:22' if ':' in value else f'{value}:22'
+                for value in [*plan['binding']['loopback'], *plan['binding']['listeners']]}
+    found = set()
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) != 6 or parts[0] != 'LISTEN' or not all(re.fullmatch('[0-9]+', part) for part in parts[1:3]):
+            raise Pending('unsupported SSH listening socket row')
+        number(parts[1], 0xffffffff); number(parts[2], 0xffffffff)
+        owner = re.fullmatch(r'users:\(\("sshd",pid=([1-9][0-9]*),fd=([0-9]+)\)\)', parts[5])
+        if (owner is None or int(owner[1]) != pid or parts[3] not in expected or parts[3] in found or
+            parts[4] not in ('0.0.0.0:*', '[::]:*', '*:*')):
+            raise Pending('SSH listener is missing, foreign, duplicate or public')
+        number(owner[1]); number(owner[2])
+        found.add(parts[3])
+    if found != expected:
+        raise Pending('partial SSH listener inventory')
+
+
+def check(plan=None, read=capture, live_pid=None):
+    plan = prepare() if plan is None else plan
+    fence(plan['deadline'])
+    config, config_source = trusted_read(CONFIG, (TRUSTED_UID,), True)
+    host_key = trusted_read(HOST_KEY, (TRUSTED_UID,), True)
+    if config != plan['configuration']:
+        raise Pending('installed SSH configuration differs from fresh preparation')
+    if read(SSHD, ('-t', '-f', str(CONFIG)), plan['deadline']):
+        raise Pending('sshd syntax check produced unexpected output')
+    effective(read(SSHD, ('-T', '-f', str(CONFIG)), plan['deadline']), plan)
+    if live_pid is not None:
+        sockets(read(SS, ('-H', '-n', '-l', '-t', '-p', 'sport = :22'), plan['deadline']), plan, live_pid)
+    if trusted_read(CONFIG, (TRUSTED_UID,), True) != (config, config_source) or trusted_read(
+        HOST_KEY, (TRUSTED_UID,), True) != host_key:
+        raise Pending('SSH configuration or host key changed during native checks')
+    namespace = KERNEL.namespace()
+    if not KERNEL.uint(namespace, (1 << 64) - 1) or administrator() != plan['admin'] or namespace != plan['namespace']:
+        raise Pending('SSH account or namespace changed during native checks')
+    fence(plan['deadline'])
+
+
+def main():
+    if sys.argv[1:] not in (['--plan'], ['--check']) and not (
+        len(sys.argv) == 3 and sys.argv[1] == '--live' and re.fullmatch('[1-9][0-9]{0,9}', sys.argv[2])):
+        return 64
+    if sys.argv[1] == '--live' and int(sys.argv[2]) > 0x7fffffff:
+        return 64
+    try:
+        sink = sys.stdout.buffer
+        if not callable(sink.write) or not callable(sink.flush):
+            raise Pending('SSH CLI requires a binary sink')
+        if sys.argv[1] == '--plan':
+            payload = prepare()['configuration']
+            count = sink.write(payload)
+            if type(count) is not int or count != len(payload):
+                raise Pending('incomplete SSH configuration publication')
+            sink.flush()
+        else:
+            check(live_pid=int(sys.argv[2]) if sys.argv[1] == '--live' else None)
+        return 0
+    except (OSError, ValueError, AttributeError, subprocess.TimeoutExpired, RecursionError) as error:
+        print(f'debian13s4 SSH pending: {error}', file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
+S4_PAYLOAD_a826ec818551234b1c98a344e189bb23da4bc4fb173bb00a1ab189d8031692b7
+    cat > "$S4B_STAGE/lib/ssh/repair.sh" <<'S4_PAYLOAD_c695a6f939cef5eb0dec883b04722c71095877f7e0c06f9a76161b6672f35bdf' || return 1
+#!/bin/bash -p
+set -Eeuo pipefail
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+(( EUID == 0 )) || exit 77
+
+# shellcheck source=SSH/common.sh
+. /usr/local/lib/debian13s4/ssh/common.sh
+s4s_repair
+S4_PAYLOAD_c695a6f939cef5eb0dec883b04722c71095877f7e0c06f9a76161b6672f35bdf
+    cat > "$S4B_STAGE/lib/ssh/debian13s4-admin-ssh.service" <<'S4_PAYLOAD_1bb3285e71f2461e8159bd93ba240fae1b89d03cfcf832f811d0d8b411bac735' || return 1
+[Unit]
+Description=Key-authenticated Debian admin SSH on positively assigned admin LAN addresses
+After=network-online.target systemd-user-sessions.service
+Wants=network-online.target
+RequiresMountsFor=/usr/local/lib/debian13s4 /var/lib/debian13s4 /etc/ssh /home
+ConditionPathExists=!/var/lib/debian13s4/bootstrap/pending
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+ExecStartPre=/usr/bin/python3 -I -B /usr/local/lib/debian13s4/ssh/policy.py --check
+ExecStart=/usr/sbin/sshd -D -e -f /etc/ssh/debian13s4-admin.conf
+User=root
+Group=root
+UMask=0077
+RuntimeDirectory=sshd
+RuntimeDirectoryMode=0755
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=90s
+TimeoutStopSec=15s
+Restart=on-failure
+RestartSec=15s
+KillMode=control-group
+# Login sessions need the ordinary PAM/PTY and authenticated sudo execution
+# context. Applying NoNewPrivileges or a read-only mount namespace to those
+# sessions would also disable the administrator's existing elevation path.
+
+[Install]
+WantedBy=multi-user.target
+S4_PAYLOAD_1bb3285e71f2461e8159bd93ba240fae1b89d03cfcf832f811d0d8b411bac735
+    cat > "$S4B_STAGE/lib/ssh/debian13s4-ssh.service" <<'S4_PAYLOAD_7399dc6ed99546a8e4ce4fb283fd72284b571bc11f48577bd5845d9bf3670b3f' || return 1
+[Unit]
+Description=Recheck and rebind the explicit admin SSH configuration
+After=network-online.target
+RequiresMountsFor=/usr/local/lib/debian13s4 /var/lib/debian13s4 /etc/ssh /home
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/ssh/repair.sh
+User=root
+Group=root
+UMask=0077
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+# Four 66s policy admissions, at most 40 bounded 11s controls, and 60s
+# finite local allowance fit 764s. The outer 900s limit does not widen them.
+TimeoutStartSec=900s
+TimeoutStopSec=15s
+Restart=on-failure
+RestartSec=1min
+KillMode=control-group
+NoNewPrivileges=yes
+# Read private administrator keys and the privileged listener's /proc FD links
+# for the fixed ss ownership query. Home remains read-only; no ptrace call is made.
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH CAP_SYS_PTRACE
+ProtectSystem=strict
+ReadWritePaths=/etc/ssh /var/lib/debian13s4
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+SystemCallArchitectures=native
+SystemCallFilter=~@mount
+S4_PAYLOAD_7399dc6ed99546a8e4ce4fb283fd72284b571bc11f48577bd5845d9bf3670b3f
+    cat > "$S4B_STAGE/lib/ssh/debian13s4-ssh.timer" <<'S4_PAYLOAD_7554b9365ae78d6a59c1bc1dc1eedfa14a07f5f64aabc79a45f540862a12233d' || return 1
+[Unit]
+Description=Reconcile admin SSH after boot and periodically
+
+[Timer]
+OnBootSec=15s
+OnUnitInactiveSec=1min
+AccuracySec=5s
+Unit=debian13s4-ssh.service
+
+[Install]
+WantedBy=timers.target
+S4_PAYLOAD_7554b9365ae78d6a59c1bc1dc1eedfa14a07f5f64aabc79a45f540862a12233d
+    cat > "$S4B_STAGE/lib/tasks/ssh/apply.sh" <<'S4_PAYLOAD_22ebcfa9fc38e455077130d400e76433948740c8e80c1475bf8224891813a1b9' || return 1
+#!/bin/bash
+# shellcheck source=SSH/common.sh
+. /usr/local/lib/debian13s4/ssh/common.sh
+s4s_apply
+S4_PAYLOAD_22ebcfa9fc38e455077130d400e76433948740c8e80c1475bf8224891813a1b9
+    cat > "$S4B_STAGE/lib/tasks/ssh/verify.sh" <<'S4_PAYLOAD_3e0d51509cf31af2188db77617d6e06ace86350c51b57425b5c066e76059f19e' || return 1
+#!/bin/bash
+# shellcheck source=SSH/common.sh
+. /usr/local/lib/debian13s4/ssh/common.sh
+s4s_verify
+S4_PAYLOAD_3e0d51509cf31af2188db77617d6e06ace86350c51b57425b5c066e76059f19e
     cat > "$S4B_STAGE/files.sha256" <<'S4_CHECKSUMS' || return 1
 5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936  lib/repair.sh
-9a30924a1a877c8da9feb63c068689e3edbba69cf354d27b46f4bbbbbbfae275  lib/tasks.list
+c51fc882b1d507dab10b5d912d5f82b4d0902ef31da87bc7a228fd95d4cd2ec1  lib/tasks.list
 f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934  lib/tasks/prerequisites/apply.sh
 5c2bb90b18725176df85061f2fd7556fc5f00c286991f7ff34445d7b880693fc  lib/tasks/prerequisites/verify.sh
-f99079435a5917ee3a1a69aa9f18e32e4a98ddcd787007336997b5a4fbc2eab9  lib/tasks/prerequisites/common.sh
+84d897f0a349e9f7dc4dbf5aa75fc86c4cb7d67a67ca1f61439a982cdf0c86b4  lib/tasks/prerequisites/common.sh
 7d995cf7bc3d3db5461c7c21a4989495a042e0a5fc34a186cc68bc859c62b0c4  lib/tasks/prerequisites/debian.sources
 e21ba280c03e5c9848930e7a58b87febd59332e777a3a992e3bab1f992c1a3e5  units/debian13s4-repair.service
 8618edcc26838d9f7f56c39d538bcfdba099e101582e8fb0adb38df413c5ce28  units/debian13s4-repair.timer
@@ -3857,6 +5241,15 @@ b7e4737e20c27894bbd2613f8df131614b6d0ebfc9aa589c758df9aac2de8efc  lib/hardening/
 e2de7086c2159bf4cd8a2775d8a3aba484b1c5c5237f9c4a36f7e0db4c8e371a  lib/hardening/debian13s4-hardening.timer
 896f7ea78d7f63a5858bbbe278c13fbfc1b49e34875b22c7fcf32567c32d836b  lib/tasks/hardening/apply.sh
 93f98e5dac2f0a3a4e7479eadfa4b52941ac936d4cce43adf7360ad4d08ec8f7  lib/tasks/hardening/verify.sh
+c96d0066b1cb453daf45d4a7fb41d4bada3c96c499e60dfc7da7ee60dfdc562e  lib/firewall/kernel.py
+77f7c4930772d3beedc70d67f0b27e5e0d4c00410e97e0c965ebeb3e80a059f6  lib/ssh/common.sh
+a826ec818551234b1c98a344e189bb23da4bc4fb173bb00a1ab189d8031692b7  lib/ssh/policy.py
+c695a6f939cef5eb0dec883b04722c71095877f7e0c06f9a76161b6672f35bdf  lib/ssh/repair.sh
+1bb3285e71f2461e8159bd93ba240fae1b89d03cfcf832f811d0d8b411bac735  lib/ssh/debian13s4-admin-ssh.service
+7399dc6ed99546a8e4ce4fb283fd72284b571bc11f48577bd5845d9bf3670b3f  lib/ssh/debian13s4-ssh.service
+7554b9365ae78d6a59c1bc1dc1eedfa14a07f5f64aabc79a45f540862a12233d  lib/ssh/debian13s4-ssh.timer
+22ebcfa9fc38e455077130d400e76433948740c8e80c1475bf8224891813a1b9  lib/tasks/ssh/apply.sh
+3e0d51509cf31af2188db77617d6e06ace86350c51b57425b5c066e76059f19e  lib/tasks/ssh/verify.sh
 S4_CHECKSUMS
 }
 

@@ -1,0 +1,31 @@
+[Unit]
+Description=Key-authenticated Debian admin SSH on positively assigned admin LAN addresses
+After=network-online.target systemd-user-sessions.service
+Wants=network-online.target
+RequiresMountsFor=/usr/local/lib/debian13s4 /var/lib/debian13s4 /etc/ssh /home
+ConditionPathExists=!/var/lib/debian13s4/bootstrap/pending
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+ExecStartPre=/usr/bin/python3 -I -B /usr/local/lib/debian13s4/ssh/policy.py --check
+ExecStart=/usr/sbin/sshd -D -e -f /etc/ssh/debian13s4-admin.conf
+User=root
+Group=root
+UMask=0077
+RuntimeDirectory=sshd
+RuntimeDirectoryMode=0755
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=90s
+TimeoutStopSec=15s
+Restart=on-failure
+RestartSec=15s
+KillMode=control-group
+# Login sessions need the ordinary PAM/PTY and authenticated sudo execution
+# context. Applying NoNewPrivileges or a read-only mount namespace to those
+# sessions would also disable the administrator's existing elevation path.
+
+[Install]
+WantedBy=multi-user.target

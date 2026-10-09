@@ -1,0 +1,40 @@
+[Unit]
+Description=Recheck and rebind the explicit admin SSH configuration
+After=network-online.target
+RequiresMountsFor=/usr/local/lib/debian13s4 /var/lib/debian13s4 /etc/ssh /home
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/ssh/repair.sh
+User=root
+Group=root
+UMask=0077
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+# Four 66s policy admissions, at most 40 bounded 11s controls, and 60s
+# finite local allowance fit 764s. The outer 900s limit does not widen them.
+TimeoutStartSec=900s
+TimeoutStopSec=15s
+Restart=on-failure
+RestartSec=1min
+KillMode=control-group
+NoNewPrivileges=yes
+# Read private administrator keys and the privileged listener's /proc FD links
+# for the fixed ss ownership query. Home remains read-only; no ptrace call is made.
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH CAP_SYS_PTRACE
+ProtectSystem=strict
+ReadWritePaths=/etc/ssh /var/lib/debian13s4
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+SystemCallArchitectures=native
+SystemCallFilter=~@mount
