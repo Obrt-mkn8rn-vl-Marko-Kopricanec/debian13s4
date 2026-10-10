@@ -64,7 +64,18 @@ metadata. Equal samples do not exclude ABA, concurrent changes or future drift.
     return frames[1]
 
 
-def prepare(deadline=None, **readers):
+def _intention(record):
+    return DNS.BASE.canonical(record), record['intention']['compiler']['policy']
+
+
+def _prepare(builder, deadline=None, **readers):
+    """Internal receipt/framing join; public entries own their builders.
+
+This is trusted in-process reuse, not isolation from arbitrary Python callers.
+The public prepare interface admits only the declared reader deliveries.
+"""
+    if not callable(builder):
+        raise Pending('unsupported internal public-DNS intention builder')
     if set(readers) - READERS or any(not callable(reader) for reader in readers.values()):
         raise Pending('unsupported public-DNS preparation delivery')
     start = KERNEL.now()
@@ -91,8 +102,7 @@ def prepare(deadline=None, **readers):
         fence(end, namespace)
         raw_kernel = kernel_pair(query, end, namespace)
         expected = MANIFEST.expected(raw_topology, raw_dns, raw_kernel)
-        text = expected['compiler']['policy']
-        payload = DNS.BASE.canonical({'schema': 1,
+        record = {'schema': 1,
             'profile': 'protected-static-public-dns-empty-source-preparation-v1',
             'state': 'prepared-public-dns-empty-source-intention-only',
             'namespace': namespace, 'admission_profile': ADMISSION,
@@ -100,9 +110,11 @@ def prepare(deadline=None, **readers):
             'service_sha256': hashlib.sha256(original).hexdigest(),
             'topology': raw_topology.decode('utf-8'),
             'dns_configuration': raw_dns.decode('ascii'),
-            'kernel_snapshot': raw_kernel.decode('ascii'), 'intention': expected})
-        if len(payload) > MAX_OUTPUT:
-            raise Pending('complete public-DNS preparation receipt exceeds its byte bound')
+            'kernel_snapshot': raw_kernel.decode('ascii'), 'intention': expected}
+        payload, text = builder(record)
+        if (type(payload) is not bytes or not payload or len(payload) > MAX_OUTPUT or
+            type(text) is not str or not text or len(text.encode('utf-8')) > ASSEMBLY.POLICY.MAX_OUTPUT):
+            raise Pending('complete public-DNS preparation receipt exceeds its immutable byte profile')
         fence(end, namespace)
         # All encoding/hashing and this second REAL protected service preparation
         # precede ASSEMBLY's unchanged final lease/NFT/Legacy/TC/program/link fences.
@@ -118,3 +130,9 @@ def prepare(deadline=None, **readers):
         raise Pending('public-DNS preparation lacks the same complete EMPTY SOURCE intention')
     fence(end, namespace)
     return payload
+
+
+def prepare(deadline=None, **readers):
+    if set(readers) - READERS or any(not callable(reader) for reader in readers.values()):
+        raise Pending('unsupported public-DNS preparation delivery')
+    return _prepare(_intention, deadline=deadline, **readers)
