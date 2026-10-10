@@ -8,15 +8,16 @@ S4G_SERVER=debian13s4-postgresql-server.service
 S4G_SERVICE=debian13s4-postgresql.service
 S4G_TIMER=debian13s4-postgresql.timer
 S4G_LOADED_GENERATION=''
-S4G_FILES=(prepare.py live.py common.sh repair.sh debian13s4-postgresql-server.service
+S4G_FILES=(prepare.py live.py access.py common.sh repair.sh debian13s4-postgresql-server.service
     debian13s4-postgresql.service debian13s4-postgresql.timer)
 
 s4g_policy() (
-    local descriptor=$S4M_REPAIR_FD
+    local descriptor=$S4M_REPAIR_FD script=live.py
+    [[ ${1-} != --access ]] || script=access.py
     trap - EXIT
     [[ -z $descriptor ]] || exec {descriptor}>&-
     timeout --signal=TERM --kill-after=1s 15s env -i PATH="$S4M_PATH" LANG=C LC_ALL=C \
-        /usr/bin/python3 -I -B "$S4G_LIBRARY/live.py" "$@"
+        /usr/bin/python3 -I -B "$S4G_LIBRARY/$script" "$@"
 )
 
 s4g_action() (
@@ -137,14 +138,14 @@ s4g_live() {
     local before
     s4g_loaded || return 1
     before=$S4G_LOADED_GENERATION
-    s4g_policy --check && s4g_loaded && [[ $before == "$S4G_LOADED_GENERATION" ]]
+    s4g_policy --access && s4g_loaded && [[ $before == "$S4G_LOADED_GENERATION" ]]
 }
 
 s4g_start() {
     local before after generation temporary
     s4m_property "$S4G_SERVER" ActiveState inactive && s4m_property "$S4G_SERVER" MainPID 0 || return 1
     before=$(s4g_identity && s4g_policy --identity) && s4g_action start &&
-        s4g_policy --check && after=$(s4g_identity && s4g_policy --identity) && [[ $before == "$after" ]] || return 1
+        s4g_policy --access && after=$(s4g_identity && s4g_policy --identity) && [[ $before == "$after" ]] || return 1
     generation=$(s4g_generation) && [[ ${generation#*$'\n'} == "$before" ]] || return 1
     temporary=$(mktemp -- "$S4M_STATE/postgresql-loaded.XXXXXX") || return 1
     if ! printf '%s\n' "$generation" > "$temporary" || ! chmod 0600 -- "$temporary" ||

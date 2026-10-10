@@ -65,9 +65,16 @@ class PrivatePG:
             self.ledger=self.root/'native.jsonl';self.database=self.root/'manager.json'
             self.write(self.database,json.dumps({'active':{},'enabled':{},'faults':{},'starts':0,'pid':42342}).encode())
             self.write(self.root/'control.txt',self.control);self.write(self.root/'catalog.json',json.dumps(self.reply).encode())
+            for app,item in self.value['applications'].items():
+                peer={'version':170006,'user':item['role'],'database':item['database'],'client':None,
+                    'authentication':'peer:'+item['role'],'start':self.reply['start'],'recovery':False,'read_only':False,
+                    'role':{'super':False,'inherit':False,'createdb':False,'createrole':False,'login':True,'replication':False,'bypass':False},
+                    'database_access':{'owner':item['role'],'encoding':'UTF8','connect':True,'create':True,'temp':True,'public_access':False},
+                    'schema_access':{'owner':'pg_database_owner','usage':True,'create':True,'public_create':False}}
+                self.write(self.root/('peer-'+item['role']+'.json'),json.dumps(peer).encode())
             for path in (self.m.PSQL,self.m.CONTROL,self.m.SERVER):self.write(path,b'#!/bin/sh\nexit 0\n',0o700)
-            self.write(self.m.RUNUSER,('#!/usr/bin/python3\n'+NATIVE.replace('ROOT_REPR',repr(str(self.root)))).encode(),0o700)
-            for name in ('prepare.py','live.py','common.sh','repair.sh','debian13s4-postgresql-server.service','debian13s4-postgresql.service','debian13s4-postgresql.timer'):
+            self.write(self.m.RUNUSER,('#!/usr/bin/python3\n'+PEER_NATIVE.replace('ROOT_REPR',repr(str(self.root)))+NATIVE.replace('ROOT_REPR',repr(str(self.root)))).encode(),0o700)
+            for name in ('prepare.py','live.py','access.py','common.sh','repair.sh','debian13s4-postgresql-server.service','debian13s4-postgresql.service','debian13s4-postgresql.timer'):
                 self.write(self.root/'library/postgresql'/name,(ROOT/'PostgreSQL'/name).read_bytes(),0o700 if name=='repair.sh' else 0o600)
             self.write(self.root/'library/maintenance/common.sh',(ROOT/'Maintenance/common.sh').read_bytes())
             self.write(self.root/'library/firewall/kernel.py',(ROOT/'Firewall/kernel.py').read_bytes())
@@ -75,7 +82,8 @@ class PrivatePG:
             wrapper='''import importlib.util,sys\nfrom pathlib import Path\n'''
             wrapper+=f'root=Path({str(self.root)!r})\nspec=importlib.util.spec_from_file_location("pg_live",root/"library/postgresql/live.py")\nm=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)\n'
             wrapper+=f'spec=importlib.util.spec_from_file_location("fixture_delivery",{str(Path(__file__).resolve())!r})\nf=importlib.util.module_from_spec(spec);spec.loader.exec_module(f)\nf.configure(m,root)\n'
-            wrapper+='with f.ownership_context(root/"data"):\n sys.exit(m.main())\n'
+            wrapper+='with f.ownership_context(root/"data"):\n'
+            wrapper+=' if sys.argv[1:]==["--access"]:\n  spec=importlib.util.spec_from_file_location("pg_access",root/"library/postgresql/access.py")\n  a=importlib.util.module_from_spec(spec);spec.loader.exec_module(a)\n  a.LIVE=m;a.PREP=m.PREP;a.KERNEL=m.KERNEL;a.Pending=m.Pending\n  sys.exit(a.main())\n else:\n  sys.exit(m.main())\n'
             self.write(self.root/'policy.py',wrapper.encode());self.write(self.root/'manager.py',MODEL.encode())
         except BaseException:
             self.directory.cleanup();raise
@@ -234,3 +242,6 @@ with (root/'events.jsonl').open('a') as out:out.write(json.dumps({'action':actio
 if output:print(output)
 raise SystemExit(code)
 '''
+
+
+PEER_NATIVE = "\nimport json,os,pathlib,sys,time\n_peer_root=pathlib.Path(ROOT_REPR);_peer_args=sys.argv[1:]\nif len(_peer_args)>1 and _peer_args[1]!='postgres':\n state=json.loads((_peer_root/'manager.json').read_bytes());faults=state['faults']\n settings=json.loads((_peer_root/'etc/postgresql.json').read_bytes())\n choices={item['role']:item['database'] for item in settings['applications'].values()}\n role=_peer_args[1]\n assert role in choices and _peer_args[:3]==['-u',role,'--'],_peer_args\n assert pathlib.Path(_peer_args[3]).name=='psql',_peer_args\n assert _peer_args[4:18]==['--no-psqlrc','--no-password','--host',str(_peer_root/'socket'),'--port','5432','--username',role,'--dbname',choices[role],'--tuples-only','--no-align','--set','ON_ERROR_STOP=1'],_peer_args\n assert _peer_args[18]=='--command' and len(_peer_args)==20 and 'pg_catalog.has_schema_privilege' in _peer_args[19],_peer_args\n with (_peer_root/'native.jsonl').open('a') as out:out.write(json.dumps({'kind':'peer:'+role,'argv':sys.argv,'environment':dict(os.environ),'pid':os.getpid(),'sid':os.getsid(0)})+'\\n')\n if faults.get('peer_sleep'):time.sleep(10)\n if faults.get('peer_refuse') in (True,role):raise SystemExit(3)\n if faults.get('peer_warning'):sys.stderr.write('peer warning\\n')\n if faults.get('peer_large'):\n  sys.stdout.buffer.write(b'x'*262145);raise SystemExit(0)\n reply=json.loads((_peer_root/('peer-'+role+'.json')).read_bytes())\n if faults.get('peer_public_create'):reply['schema_access']['public_create']=True\n if faults.get('peer_read_only'):reply['read_only']=True\n sys.stdout.write(json.dumps(reply)+'\\n');raise SystemExit(0)\n"

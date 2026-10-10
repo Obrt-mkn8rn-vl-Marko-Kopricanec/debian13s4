@@ -62,6 +62,35 @@ SQL = """SELECT pg_catalog.json_build_object(
 """
 
 
+# Fixed read-only application session/privilege query: no caller SQL or names.
+PEER_SQL = """SELECT pg_catalog.json_build_object(
+ 'version',pg_catalog.current_setting('server_version_num')::integer,
+ 'user',current_user,'database',pg_catalog.current_database(),
+ 'client',pg_catalog.inet_client_addr()::text,'authentication',system_user,
+ 'start',pg_catalog.pg_postmaster_start_time()::text,'recovery',pg_catalog.pg_is_in_recovery(),
+ 'read_only',pg_catalog.current_setting('transaction_read_only')='on',
+ 'role',(SELECT pg_catalog.json_build_object('super',rolsuper,'inherit',rolinherit,
+   'createdb',rolcreatedb,'createrole',rolcreaterole,'login',rolcanlogin,
+   'replication',rolreplication,'bypass',rolbypassrls)
+   FROM pg_catalog.pg_roles WHERE rolname=current_user),
+ 'database_access',(SELECT pg_catalog.json_build_object(
+   'owner',pg_catalog.pg_get_userbyid(datdba),'encoding',pg_catalog.pg_encoding_to_char(encoding),
+   'connect',pg_catalog.has_database_privilege(datname,'CONNECT'),
+   'create',pg_catalog.has_database_privilege(datname,'CREATE'),
+   'temp',pg_catalog.has_database_privilege(datname,'TEMPORARY'),
+   'public_access',EXISTS(SELECT 1 FROM pg_catalog.aclexplode(COALESCE(datacl,
+     pg_catalog.acldefault('d',datdba))) WHERE grantee=0))
+   FROM pg_catalog.pg_database WHERE datname=pg_catalog.current_database()),
+ 'schema_access',(SELECT pg_catalog.json_build_object(
+   'owner',pg_catalog.pg_get_userbyid(nspowner),
+   'usage',pg_catalog.has_schema_privilege(oid,'USAGE'),
+   'create',pg_catalog.has_schema_privilege(oid,'CREATE'),
+   'public_create',EXISTS(SELECT 1 FROM pg_catalog.aclexplode(COALESCE(nspacl,
+     pg_catalog.acldefault('n',nspowner))) WHERE grantee=0 AND privilege_type='CREATE'))
+   FROM pg_catalog.pg_namespace WHERE nspname='public'));
+"""
+
+
 def end_window(deadline):
     end = KERNEL.now() + ATTEMPT_SECONDS
     if deadline is not None:
@@ -138,16 +167,25 @@ def data_read(path, end):
 
 
 def native(kind, end):
+    user = 'postgres'
     if kind == 'control': binary, arguments = CONTROL, ('--pgdata', str(DATA))
     elif kind == 'catalog':
         binary = PSQL
         arguments = ('--no-psqlrc', '--no-password', '--host', PREP.SOCKET_DIRECTORY, '--port', '5432',
                      '--username', 'postgres', '--dbname', 'postgres', '--tuples-only', '--no-align',
                      '--set', 'ON_ERROR_STOP=1', '--command', SQL)
+    elif kind in ('peer:mk8.dns', 'peer:mk8.email'):
+        # Only real protected, validated deployment settings select argv fields.
+        item = PREP.configuration(end)['value']['applications'][kind[5:]]
+        user, database = item['role'], item['database']
+        binary = PSQL
+        arguments = ('--no-psqlrc', '--no-password', '--host', PREP.SOCKET_DIRECTORY, '--port', '5432',
+                     '--username', user, '--dbname', database, '--tuples-only', '--no-align',
+                     '--set', 'ON_ERROR_STOP=1', '--command', PEER_SQL)
     else: raise Pending('unapproved PostgreSQL native read')
     PREP.fence(end); before = (KERNEL.trusted_binary(RUNUSER), KERNEL.trusted_binary(binary))
     until = min(end, KERNEL.now()+KERNEL.QUERY_SECONDS); PREP.fence(until)
-    child = subprocess.Popen([str(RUNUSER), '-u', 'postgres', '--', str(binary), *arguments],
+    child = subprocess.Popen([str(RUNUSER), '-u', user, '--', str(binary), *arguments],
         stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         env={'PATH':'/usr/bin:/usr/sbin','LC_ALL':'C'}, close_fds=True, start_new_session=True)
     buffers = {'stdout':bytearray(), 'stderr':bytearray()}
