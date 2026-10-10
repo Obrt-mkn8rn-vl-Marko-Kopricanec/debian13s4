@@ -16,7 +16,8 @@ S4B_QUIESCE=("$S4B_TIMER" "$S4B_SERVICE" "$S4B_RESUME"
     debian13s4-retention.timer debian13s4-retention.service
     debian13s4-hardening.timer debian13s4-hardening.service
     debian13s4-ssh.timer debian13s4-ssh.service debian13s4-admin-ssh.service
-    debian13s4-postgresql.timer debian13s4-postgresql.service debian13s4-postgresql-server.service)
+    debian13s4-postgresql.timer debian13s4-postgresql.service debian13s4-postgresql-server.service
+    debian13s4-web.timer debian13s4-web.service debian13s4-web-server.service)
 S4B_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4B_LOCK_FD=
 S4B_REPAIR_FD=

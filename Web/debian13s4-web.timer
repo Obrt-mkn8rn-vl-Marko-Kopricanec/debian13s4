@@ -1,0 +1,12 @@
+[Unit]
+Description=Periodic existing TLS/nginx input-generation check
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=5min
+AccuracySec=15s
+Persistent=yes
+Unit=debian13s4-web.service
+
+[Install]
+WantedBy=timers.target

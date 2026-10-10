@@ -18,7 +18,7 @@ def literal(text):
 def assets():
     result = {
         "lib/repair.sh": ((ROOT / "Recovery/repair.sh").read_bytes(), "0755"),
-        "lib/tasks.list": (b"prerequisites:\nnetwork:prerequisites\nhardening:prerequisites\nretention:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\nssh:prerequisites network hardening\npostgresql:prerequisites hardening maintenance\n", "0644"),
+        "lib/tasks.list": (b"prerequisites:\nnetwork:prerequisites\nhardening:prerequisites\nretention:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\nssh:prerequisites network hardening\npostgresql:prerequisites hardening maintenance\nweb:prerequisites network hardening maintenance\n", "0644"),
     }
     for name in ("apply.sh", "verify.sh", "common.sh", "debian.sources"):
         result[f"lib/tasks/prerequisites/{name}"] = (
@@ -78,6 +78,12 @@ def assets():
             (ROOT / 'PostgreSQL' / name).read_bytes(), '0755' if name == 'repair.sh' else '0644')
     for name in ('apply.sh', 'verify.sh'):
         result[f'lib/tasks/postgresql/{name}'] = ((ROOT / 'Tasks/postgresql' / name).read_bytes(), '0644')
+    for name in ('prepare.py', 'live.py', 'common.sh', 'repair.sh',
+                 'debian13s4-web-server.service', 'debian13s4-web.service', 'debian13s4-web.timer'):
+        result[f'lib/web/{name}'] = (
+            (ROOT / 'Web' / name).read_bytes(), '0755' if name == 'repair.sh' else '0644')
+    for name in ('apply.sh', 'verify.sh'):
+        result[f'lib/tasks/web/{name}'] = ((ROOT / 'Tasks/web' / name).read_bytes(), '0644')
     return result
 
 

@@ -16,7 +16,8 @@ S4B_QUIESCE=("$S4B_TIMER" "$S4B_SERVICE" "$S4B_RESUME"
     debian13s4-retention.timer debian13s4-retention.service
     debian13s4-hardening.timer debian13s4-hardening.service
     debian13s4-ssh.timer debian13s4-ssh.service debian13s4-admin-ssh.service
-    debian13s4-postgresql.timer debian13s4-postgresql.service debian13s4-postgresql-server.service)
+    debian13s4-postgresql.timer debian13s4-postgresql.service debian13s4-postgresql-server.service
+    debian13s4-web.timer debian13s4-web.service debian13s4-web-server.service)
 S4B_PATH=/usr/sbin:/usr/bin:/sbin:/bin
 S4B_LOCK_FD=
 S4B_REPAIR_FD=
@@ -404,12 +405,12 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=2fac8814eb7d25eb477fa24f19de4d3c84caa30fe90269a2bc44bd953cf102c1
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=60bf2689da8a91013574bb9baa4a039aa7ae50ac4eb96b70a54cd213d674e93c
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
-    mkdir -p -- "$S4B_STAGE/"lib "$S4B_STAGE/"lib/tasks/prerequisites "$S4B_STAGE/"units "$S4B_STAGE/"lib/maintenance "$S4B_STAGE/"lib/tasks/maintenance "$S4B_STAGE/"lib/dotnet "$S4B_STAGE/"lib/tasks/dotnet "$S4B_STAGE/"lib/network "$S4B_STAGE/"lib/tasks/network "$S4B_STAGE/"lib/retention "$S4B_STAGE/"lib/tasks/retention "$S4B_STAGE/"lib/hardening "$S4B_STAGE/"lib/tasks/hardening "$S4B_STAGE/"lib/firewall "$S4B_STAGE/"lib/ssh "$S4B_STAGE/"lib/tasks/ssh "$S4B_STAGE/"lib/postgresql "$S4B_STAGE/"lib/tasks/postgresql || return 1
+    mkdir -p -- "$S4B_STAGE/"lib "$S4B_STAGE/"lib/tasks/prerequisites "$S4B_STAGE/"units "$S4B_STAGE/"lib/maintenance "$S4B_STAGE/"lib/tasks/maintenance "$S4B_STAGE/"lib/dotnet "$S4B_STAGE/"lib/tasks/dotnet "$S4B_STAGE/"lib/network "$S4B_STAGE/"lib/tasks/network "$S4B_STAGE/"lib/retention "$S4B_STAGE/"lib/tasks/retention "$S4B_STAGE/"lib/hardening "$S4B_STAGE/"lib/tasks/hardening "$S4B_STAGE/"lib/firewall "$S4B_STAGE/"lib/ssh "$S4B_STAGE/"lib/tasks/ssh "$S4B_STAGE/"lib/postgresql "$S4B_STAGE/"lib/tasks/postgresql "$S4B_STAGE/"lib/web "$S4B_STAGE/"lib/tasks/web || return 1
     printf '%s' "#!/bin/bash
 # Internal setup worker. The installer supplies the task bundle automatically.
 
@@ -899,6 +900,7 @@ maintenance:prerequisites
 dotnet:prerequisites
 ssh:prerequisites network hardening
 postgresql:prerequisites hardening maintenance
+web:prerequisites network hardening maintenance
 " > "$S4B_STAGE/"lib/tasks.list || return 1
     printf '%s' "#!/bin/bash
 set -Eeuo pipefail
@@ -6273,8 +6275,982 @@ s4g_apply
 . /usr/local/lib/debian13s4/postgresql/common.sh
 s4g_verify
 " > "$S4B_STAGE/"lib/tasks/postgresql/verify.sh || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Prepare a PARTIAL nginx HTTPS ingress intention; never run or publish it.
+
+Three existing private HTTPS gateways are required. DNS UDP/TCP service, mail
+TCP protocols, application provisioning, certificate cryptography/validity,
+nginx syntax/loaded generation and client locality are outside this profile.
+Protected file bytes are bound, not authenticated or certified usable.
+\"\"\"
+
+import base64
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_web_inputs',
+    Path(__file__).resolve().parents[1] / 'PostgreSQL/prepare.py')
+if not SPEC.origin or not Path(SPEC.origin).is_file():
+    SPEC = importlib.util.spec_from_file_location('debian13s4_web_inputs',
+        Path(__file__).resolve().parents[1] / 'postgresql/prepare.py')
+BASE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(BASE)
+KERNEL = BASE.KERNEL
+Pending = BASE.Pending
+INPUT = Path('/etc/debian13s4/web.json')
+APPLICATIONS = ('mk8.sava', 'mk8.drava', 'mk8.email')
+MAX_INPUT = 8192
+MAX_PEM = 65536
+MAX_OUTPUT = 131073
+ATTEMPT_SECONDS = 10
+# These are product protocol routes, not deployment domains or allocations.
+MAIL_EXACT = ('/.well-known/jmap', '/jmap/session', '/jmap/api', '/jmap/event',
+    '/.well-known/caldav', '/.well-known/carddav', '/dav',
+    '/ews/exchange.asmx', '/autodiscover/autodiscover.xml',
+    '/.well-known/oauth-authorization-server', '/.well-known/openid-configuration',
+    '/oauth/jwks', '/oauth/userinfo', '/oauth/authorize', '/oauth/token', '/oauth/revoke')
+MAIL_PREFIX = ('/jmap/upload/', '/jmap/download/', '/dav/')
+
+
+def hostname(value):
+    if (type(value) is not str or not 3 <= len(value) <= 253 or value != value.lower() or
+        '.' not in value or re.fullmatch(r'[a-z0-9.-]+', value) is None):
+        raise Pending('unsupported explicit ingress hostname')
+    labels = value.split('.')
+    if (any(re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', part) is None
+            for part in labels) or re.fullmatch(r'[a-z][a-z0-9-]*', labels[-1]) is None):
+        raise Pending('noncanonical ingress DNS name')
+    return value
+
+
+def material_path(value):
+    if (type(value) is not str or not 2 <= len(value) <= 240 or
+        re.fullmatch(r'/[A-Za-z0-9_./-]+', value) is None or
+        any(part in ('', '.', '..') for part in value.split('/')[1:]) or
+        os.path.normpath(value) != value):
+        raise Pending('unsupported explicit ingress material path')
+    return value
+
+
+def checked(value):
+    fields = {'schema', 'applications'}
+    KERNEL.known(value, fields, fields)
+    if type(value['schema']) is not int or value['schema'] != 1:
+        raise Pending('unsupported ingress input schema')
+    KERNEL.known(value['applications'], set(APPLICATIONS), set(APPLICATIONS))
+    names, ports, keys, public = set(), set(), set(), set()
+    fields = {'hostname', 'certificate', 'private_key', 'upstream_port',
+              'upstream_name', 'upstream_ca', 'body_bytes', 'idle_seconds'}
+    for app in APPLICATIONS:
+        item = value['applications'][app]
+        KERNEL.known(item, fields, fields)
+        name = hostname(item['hostname']); hostname(item['upstream_name'])
+        for field, minimum, maximum in (('upstream_port', 1024, 65535),
+            ('body_bytes', 1024, 1073741824), ('idle_seconds', 10, 600)):
+            if type(item[field]) is not int or not minimum <= item[field] <= maximum:
+                raise Pending('unsupported explicit ingress bound')
+        port = item['upstream_port']
+        if name in names or port in ports or port == 5432:
+            raise Pending('shared or reserved ingress identity')
+        names.add(name); ports.add(port)
+        for field in ('certificate', 'private_key', 'upstream_ca'):
+            material_path(item[field])
+        keys.add(item['private_key'])
+        public.update((item['certificate'], item['upstream_ca']))
+    if keys & public:
+        raise Pending('private key reused as public ingress material')
+    return json.loads(BASE.canonical(value))
+
+
+def configuration(end):
+    raw, source = BASE.read_protected(INPUT, MAX_INPUT, True, end)
+    try:
+        value = json.loads(raw.decode('ascii'), object_pairs_hook=KERNEL.unique_object,
+            parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite ingress input')))
+        value = checked(value)
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid ingress JSON') from error
+    if raw != BASE.canonical(value):
+        raise Pending('ingress input requires canonical ASCII JSON plus LF')
+    return {'value': value, 'source': source}
+
+
+def pem(raw, private):
+    # A narrow PEM delivery grammar ONLY. This deliberately does not decode
+    # ASN.1, verify signatures/names/dates/key pairing, or trust the issuer.
+    label = b'PRIVATE KEY' if private else b'CERTIFICATE'
+    begin = b'-----BEGIN ' + label + b'-----\\n'
+    end = b'-----END ' + label + b'-----\\n'
+    remaining, blocks = raw, 0
+    while remaining:
+        if not remaining.startswith(begin) or end not in remaining:
+            raise Pending('unsupported ingress PEM framing')
+        body, remaining = remaining[len(begin):].split(end, 1)
+        lines = body[:-1].split(b'\\n') if body.endswith(b'\\n') else []
+        if (not lines or any(len(line) != 64 for line in lines[:-1]) or
+            not 1 <= len(lines[-1]) <= 64):
+            raise Pending('unsupported ingress PEM line grammar')
+        encoded = b''.join(lines)
+        try:
+            decoded = base64.b64decode(encoded, validate=True)
+        except ValueError as error:
+            raise Pending('invalid ingress PEM base64') from error
+        if not decoded or base64.b64encode(decoded) != encoded:
+            raise Pending('noncanonical or empty ingress PEM')
+        blocks += 1
+        if blocks > (1 if private else 16):
+            raise Pending('ingress PEM block count exceeds profile')
+    if blocks == 0:
+        raise Pending('missing ingress PEM')
+    return blocks
+
+
+def materials(settings, end):
+    inputs = {}
+    for app in APPLICATIONS:
+        item = settings['applications'][app]
+        for field in ('certificate', 'private_key', 'upstream_ca'):
+            name = item[field]
+            if name in inputs:
+                continue
+            raw, source = BASE.read_protected(Path(name), MAX_PEM, field == 'private_key', end)
+            count = pem(raw, field == 'private_key')
+            inputs[name] = {'source': source, 'pem_blocks': count,
+                            'kind': 'private-key' if field == 'private_key' else 'certificate'}
+    return inputs
+
+
+def proxy(item):
+    return (f\"            proxy_pass https://127.0.0.1:{item['upstream_port']};\\n\"
+        '            proxy_http_version 1.1;\\n'
+        f\"            proxy_set_header Host {item['hostname']};\\n\"
+        '            proxy_set_header X-Forwarded-Host \$host;\\n'
+        '            proxy_set_header X-Forwarded-Proto https;\\n'
+        '            proxy_set_header X-Forwarded-For \$remote_addr;\\n'
+        '            proxy_set_header X-Real-IP \$remote_addr;\\n'
+        '            proxy_set_header Forwarded \"\";\\n'
+        '            proxy_set_header Proxy \"\";\\n'
+        '            proxy_set_header Upgrade \$http_upgrade;\\n'
+        '            proxy_set_header Connection \$s4_connection;\\n'
+        '            proxy_ssl_server_name on;\\n'
+        f\"            proxy_ssl_name {item['upstream_name']};\\n\"
+        f\"            proxy_ssl_trusted_certificate {item['upstream_ca']};\\n\"
+        '            proxy_ssl_verify on;\\n            proxy_ssl_verify_depth 4;\\n'
+        '            proxy_ssl_protocols TLSv1.2 TLSv1.3;\\n'
+        '            proxy_next_upstream off;\\n            proxy_redirect off;\\n'
+        '            proxy_buffering off;\\n            proxy_request_buffering off;\\n'
+        '            proxy_ignore_headers X-Accel-Redirect X-Accel-Buffering;\\n'
+        '            proxy_max_temp_file_size 0;\\n            proxy_connect_timeout 5s;\\n'
+        f\"            proxy_read_timeout {item['idle_seconds']}s;\\n\"
+        f\"            proxy_send_timeout {item['idle_seconds']}s;\\n\")
+
+
+def render(settings):
+    settings = checked(settings)
+    text = ('user www-data;\\nworker_processes auto;\\npid /run/debian13s4-web/nginx.pid;\\n'
+        'error_log stderr warn;\\nevents { worker_connections 1024; }\\nhttp {\\n'
+        '    server_tokens off;\\n    access_log off;\\n    merge_slashes on;\\n'
+        '    client_header_timeout 10s;\\n    client_body_timeout 30s;\\n'
+        '    send_timeout 30s;\\n    keepalive_timeout 30s;\\n'
+        '    client_body_temp_path /run/debian13s4-web/body;\\n'
+        '    map \$http_upgrade \$s4_connection { default upgrade; \"\" close; }\\n'
+        '    server { listen 80 default_server; listen [::]:80 default_server;\\n'
+        '        server_name \"\"; return 444; }\\n'
+        '    server { listen 443 ssl default_server; listen [::]:443 ssl default_server;\\n'
+        '        ssl_reject_handshake on; return 444; }\\n')
+    for index, app in enumerate(APPLICATIONS):
+        name = settings['applications'][app]['hostname']
+        text += (f'    map \$http_host \$s4_host_{index} {{ default 0; '
+                 f'{name} 1; {name}:443 1; }}\\n')
+    for index, app in enumerate(APPLICATIONS):
+        item = settings['applications'][app]; name = item['hostname']
+        text += (f'    server {{ listen 80; listen [::]:80; server_name {name};\\n'
+                 f'        return 308 https://{name}\$request_uri; }}\\n'
+                 f'    server {{ listen 443 ssl; listen [::]:443 ssl; server_name {name};\\n'
+                 f'        ssl_certificate {item[\"certificate\"]};\\n'
+                 f'        ssl_certificate_key {item[\"private_key\"]};\\n'
+                 '        ssl_protocols TLSv1.2 TLSv1.3;\\n'
+                 '        ssl_session_tickets off;\\n'
+                 f'        client_max_body_size {item[\"body_bytes\"]};\\n'
+                 f'        if (\$ssl_server_name != {name}) {{ return 421; }}\\n'
+                 f'        if (\$host != {name}) {{ return 421; }}\\n'
+                 f'        if (\$s4_host_{index} = 0) {{ return 421; }}\\n'
+                 '        add_header Strict-Transport-Security \"max-age=86400\" always;\\n'
+                 '        add_header X-Content-Type-Options nosniff always;\\n')
+        if app == 'mk8.email':
+            # Block double decoding and encoded separators before the allowlist.
+            # nginx location matching normalizes URI, while proxy_pass without a
+            # URI preserves the client's URI. No public admin catch-all exists.
+            text += '        if (\$request_uri ~* \"%25|%2f|%5c|%00\") { return 400; }\\n'
+            for path in MAIL_EXACT:
+                text += f'        location = {path} {{\\n' + proxy(item) + '        }\\n'
+            for path in MAIL_PREFIX:
+                text += f'        location ^~ {path} {{\\n' + proxy(item) + '        }\\n'
+            text += '        location / { return 404; }\\n'
+        else:
+            if app == 'mk8.drava':
+                text += ('        location ^~ /mk8.drava.proxy.v1.ServiceRegistry/ { return 404; }\\n')
+            text += ('        location ~* ^/(health|metrics|internal|admin|_drava)(/|\$) { return 404; }\\n'
+                     '        location / {\\n' + proxy(item) + '        }\\n')
+        text += '    }\\n'
+    return text + '}\\n'
+
+
+def prepare(deadline=None, scope=KERNEL.namespace):
+    end = KERNEL.now() + ATTEMPT_SECONDS
+    if deadline is not None:
+        if not KERNEL.finite_deadline(deadline):
+            raise Pending('invalid inherited ingress deadline')
+        end = min(end, deadline)
+    BASE.fence(end)
+    context = KERNEL.uint(scope(), 0xffffffffffffffff)
+    if context == 0:
+        raise Pending('missing ingress caller context')
+    settings = configuration(end)
+    inputs = materials(settings['value'], end)
+    config = render(settings['value'])
+    record = {'schema': 1, 'profile': 'nginx-private-https-three-gateway-intention-v1',
+        'state': 'ingress-configuration-intention-only', 'namespace': context,
+        'configuration': settings, 'materials': inputs, 'nginx': config,
+        'nginx_sha256': hashlib.sha256(config.encode('ascii')).hexdigest()}
+    payload = BASE.canonical(record)
+    if len(payload) > MAX_OUTPUT:
+        raise Pending('ingress intention exceeds output bound')
+    if configuration(end) != settings or materials(settings['value'], end) != inputs:
+        raise Pending('ingress configuration or TLS material changed')
+    if KERNEL.uint(scope(), 0xffffffffffffffff) != context:
+        raise Pending('ingress caller context changed')
+    BASE.fence(end)
+    return payload
+
+
+def main():
+    try:
+        if len(sys.argv) != 1:
+            raise Pending('ingress preparation accepts no overrides')
+        sink = sys.stdout.buffer
+        if not callable(getattr(sink, 'write', None)) or not callable(getattr(sink, 'flush', None)):
+            raise Pending('ingress preparation requires binary stdout')
+        payload = prepare()
+        count = sink.write(payload)
+        if type(count) is not int or count != len(payload):
+            raise Pending('incomplete ingress intention publication')
+        sink.flush()
+    except (Pending, OSError, ValueError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: ' + str(error), file=sys.stderr)
+        return 75
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/web/prepare.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Bound existing TLS inputs, fixed native checks and reported nginx listeners.
+
+Calling default checks reads native host state and nginx -t may open/create
+referenced runtime files. Controller start/publication is MUTATING. Neither is
+operationally authorized by source review or by the private fixture evidence.
+Honest native replies/manager reports are not loaded-memory or client proof.
+\"\"\"
+import base64
+import hashlib
+import importlib.util
+import json
+import math
+import os
+from pathlib import Path
+import re
+import selectors
+import signal
+import subprocess
+import sys
+import time
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_web_prepare', Path(__file__).with_name('prepare.py'))
+PREP = importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(PREP)
+KERNEL, Pending = PREP.KERNEL, PREP.Pending
+CONFIG = Path('/etc/debian13s4-web/nginx.conf')
+NGINX = Path('/usr/sbin/nginx')
+OPENSSL = Path('/usr/bin/openssl')
+SS = Path('/usr/bin/ss')
+PASSWD = Path('/etc/passwd')
+GROUP = Path('/etc/group')
+CA = Path('/etc/ssl/certs/ca-certificates.crt')
+PROC = Path('/proc')
+MAX_BYTES = 262144
+ATTEMPT_SECONDS = 60
+
+
+def window(deadline, seconds=ATTEMPT_SECONDS):
+    end = KERNEL.now() + seconds
+    if deadline is not None:
+        if not KERNEL.finite_deadline(deadline): raise Pending('invalid inherited web window')
+        end = min(end, deadline)
+    PREP.BASE.fence(end); return end
+
+
+def worker(raw):
+    try: text=raw.decode('ascii')
+    except UnicodeError as error: raise Pending('unsupported web account encoding') from error
+    if not text.endswith('\\n') or any(c!='\\n' and not 32<=ord(c)<=126 for c in text):
+        raise Pending('unsupported web account inventory')
+    rows=text[:-1].split('\\n'); seen=set();uids=set();selected=None
+    if len(rows)>4096:raise Pending('web account row bound')
+    for line in rows:
+        row=line.split(':')
+        if len(row)!=7 or re.fullmatch(r'[A-Za-z_][A-Za-z0-9_.-]{0,31}',row[0]) is None or row[0] in seen:
+            raise Pending('malformed web account')
+        if any(re.fullmatch(r'0|[1-9][0-9]{0,9}',row[i]) is None for i in (2,3)):
+            raise Pending('malformed web account identity')
+        uid,gid=(KERNEL.uint(int(row[i]),0x7fffffff) for i in (2,3))
+        if uid in uids:raise Pending('shared web account UID')
+        seen.add(row[0]);uids.add(uid)
+        if row[0]=='www-data':
+            if (not 1<=uid<=999 or gid==0 or row[1] not in ('x','!','*') or
+                row[6] not in ('/usr/sbin/nologin','/sbin/nologin','/bin/false')):
+                raise Pending('unsupported existing nginx worker account')
+            selected={'uid':uid,'gid':gid,'name':'www-data'}
+    if selected is None:raise Pending('missing existing nginx worker account')
+    return selected
+
+
+def groups(raw,account):
+    text=raw.decode('ascii')
+    if not text.endswith('\\n') or any(c!='\\n' and not 32<=ord(c)<=126 for c in text):
+        raise Pending('unsupported web group inventory')
+    rows=text[:-1].split('\\n');names=set();gids=set();selected=False
+    if len(rows)>4096:raise Pending('web group row bound')
+    for line in rows:
+        row=line.split(':')
+        if (len(row)!=4 or re.fullmatch(r'[A-Za-z_][A-Za-z0-9_.-]{0,31}',row[0]) is None or
+            row[0] in names or re.fullmatch(r'0|[1-9][0-9]{0,9}',row[2]) is None):
+            raise Pending('malformed web group')
+        gid=KERNEL.uint(int(row[2]),0x7fffffff)
+        if gid in gids:raise Pending('ambiguous web group GID')
+        names.add(row[0]);gids.add(gid)
+        members=row[3].split(',') if row[3] else []
+        if len(set(members))!=len(members) or any(re.fullmatch(r'[A-Za-z_][A-Za-z0-9_.-]{0,31}',member) is None for member in members):
+            raise Pending('malformed web group membership')
+        if row[0]=='www-data':
+            if gid!=account['gid'] or any(member!='www-data' for member in members):
+                raise Pending('shared or changed nginx worker group')
+            selected=True
+        elif 'www-data' in members:raise Pending('supplementary nginx worker group refuses')
+    if not selected:raise Pending('missing dedicated nginx worker group')
+
+
+def inputs(end):
+    record=json.loads(PREP.prepare(deadline=end))
+    raw,source=PREP.BASE.read_protected(PASSWD,262144,False,end)
+    account=worker(raw)
+    group,group_source=PREP.BASE.read_protected(GROUP,262144,False,end);groups(group,account)
+    ca,ca_source=PREP.BASE.read_protected(CA,524288,False,end)
+    if not ca:raise Pending('empty fixed system CA bundle')
+    config,config_source=PREP.BASE.read_protected(CONFIG,PREP.MAX_OUTPUT,False,end)
+    if config!=record['nginx'].encode('ascii'):raise Pending('installed nginx configuration differs')
+    binaries={}
+    for path in (NGINX,OPENSSL,SS):
+        before=KERNEL.trusted_binary(path)
+        _,fact=PREP.BASE.read_protected(path,16777216,False,end)
+        if KERNEL.trusted_binary(path)!=before:raise Pending('web native executable changed')
+        binaries[str(path)]={'signature':list(before),'source':fact}
+    return {'intention':record,'account':account,'account_source':source,'group_source':group_source,'ca_source':ca_source,
+            'config_source':config_source,'binaries':binaries}
+
+
+def arguments(kind,item=None,epoch=None):
+    if kind=='nginx':return NGINX,('-t','-q','-c',str(CONFIG),'-p',str(CONFIG.parent)+'/')
+    if kind=='sockets':return SS,('-H','-n','-l','-t','-p','sport = :80 or sport = :443')
+    if kind not in ('certificate-key','private-key','key-check','verify'):raise Pending('unapproved web native check')
+    if type(item) is not dict:raise Pending('missing checked TLS item')
+    for field in ('certificate','private_key','upstream_ca'):PREP.material_path(item[field])
+    PREP.hostname(item['hostname'])
+    if kind=='certificate-key':args=('x509','-in',item['certificate'],'-pubkey','-noout')
+    elif kind=='private-key':args=('pkey','-in',item['private_key'],'-pubout','-passin','pass:')
+    elif kind=='key-check':args=('pkey','-in',item['private_key'],'-check','-noout','-passin','pass:')
+    else:
+        if type(epoch) is not int or not 1<=epoch<=0x7fffffff:raise Pending('invalid explicit TLS verification time')
+        args=('verify','-x509_strict','-auth_level','2','-purpose','sslserver','-verify_hostname',item['hostname'],
+            '-attime',str(epoch),'-CAfile',str(CA),'-no-CApath','-no-CAstore',
+            '-untrusted',item['certificate'],item['certificate'])
+    return OPENSSL,args
+
+
+def native(kind,item,end,epoch=None):
+    PREP.BASE.fence(end);binary,args=arguments(kind,item,epoch)
+    before=KERNEL.trusted_binary(binary)
+    until=min(end,KERNEL.now()+KERNEL.QUERY_SECONDS);PREP.BASE.fence(until)
+    child=subprocess.Popen([str(binary),*args],stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,bufsize=0,env={'PATH':'/usr/bin:/usr/sbin','LC_ALL':'C'},
+        close_fds=True,start_new_session=True)
+    buffers={'stdout':bytearray(),'stderr':bytearray()}
+    try:
+        with selectors.DefaultSelector() as selector:
+            for name,stream in (('stdout',child.stdout),('stderr',child.stderr)):
+                os.set_blocking(stream.fileno(),False);selector.register(stream,selectors.EVENT_READ,name)
+            while selector.get_map():
+                PREP.BASE.fence(until);remaining=until-KERNEL.now()
+                if remaining<=0:raise Pending('web native capture window expired')
+                for key,_ in selector.select(remaining):
+                    part=os.read(key.fileobj.fileno(),65536)
+                    if not part:selector.unregister(key.fileobj);continue
+                    buffer=buffers[key.data]
+                    if len(buffer)+len(part)>MAX_BYTES:raise Pending('web native channel bound')
+                    buffer.extend(part)
+            PREP.BASE.fence(until);remaining=until-KERNEL.now()
+            if remaining<=0:raise Pending('web native root wait window expired')
+            code=child.wait(timeout=remaining)
+            if type(code) is not int or code!=0 or buffers['stderr']:raise Pending('web native check failed/warned')
+        if KERNEL.trusted_binary(binary)!=before:raise Pending('web native executable drift')
+        PREP.BASE.fence(until);return bytes(buffers['stdout'])
+    finally:
+        try:
+            if child.returncode is None:
+                try:os.killpg(child.pid,signal.SIGKILL)
+                except ProcessLookupError:pass
+                child.wait(timeout=KERNEL.CLEANUP_SECONDS)
+        finally:
+            try:child.stdout.close()
+            finally:child.stderr.close()
+
+
+def public_key(raw):
+    if type(raw) is not bytes or len(raw)>16384:raise Pending('invalid native public key bytes')
+    prefix=b'-----BEGIN PUBLIC KEY-----\\n';suffix=b'-----END PUBLIC KEY-----\\n'
+    if not raw.startswith(prefix) or not raw.endswith(suffix):raise Pending('invalid native public key framing')
+    body=raw[len(prefix):-len(suffix)]
+    if not body.endswith(b'\\n'):raise Pending('invalid native public key newline')
+    lines=body[:-1].split(b'\\n')
+    if not lines or any(len(line)!=64 for line in lines[:-1]) or not 1<=len(lines[-1])<=64:
+        raise Pending('invalid native public key line grammar')
+    encoded=b''.join(lines)
+    try:decoded=base64.b64decode(encoded,validate=True)
+    except ValueError as error:raise Pending('invalid native public key base64') from error
+    if not decoded or base64.b64encode(decoded)!=encoded:raise Pending('noncanonical native public key')
+    return raw
+
+
+def process_stat(raw,pid):
+    if type(raw) is not bytes or len(raw)>4096:raise Pending('web process stat bound')
+    prefix=str(pid).encode()+b' (';end=raw.rfind(b')')
+    if not raw.startswith(prefix) or end<0:raise Pending('unsupported web process stat identity')
+    fields=raw[end+2:].split()
+    if len(fields)<20 or any(re.fullmatch(rb'[0-9]+',fields[i]) is None for i in (1,19)):
+        raise Pending('unsupported web process parent/start fields')
+    return KERNEL.uint(int(fields[1]),0x7fffffff),KERNEL.uint(int(fields[19]),2**64-1)
+
+
+def process_credentials(raw):
+    if type(raw) is not bytes or len(raw)>65536:raise Pending('web process status bound')
+    rows=raw.decode('ascii').split('\\n');result={}
+    for name in ('Uid','Gid'):
+        selected=[row for row in rows if row.startswith(name+':')]
+        if len(selected)!=1 or re.fullmatch(name+r':\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+',selected[0]) is None:
+            raise Pending('unsupported web process credentials')
+        values=[KERNEL.uint(int(value),0x7fffffff) for value in selected[0].split()[1:]]
+        if len(set(values))!=1:raise Pending('mixed web process credentials')
+        result[name.lower()]=values[0]
+    return result
+
+
+def process(pid):
+    # Honest procfs SOURCE identity; mutable CPU/fault/state counters are not
+    # loaded-generation identity and may change during normal serving traffic.
+    if not KERNEL.uint(pid,0x7fffffff):raise Pending('invalid web listener PID')
+    root=PROC/str(pid)
+    ppid,start=process_stat((root/'stat').read_bytes(),pid)
+    credentials=process_credentials((root/'status').read_bytes())
+    loaded=(root/'exe').stat();current=NGINX.stat()
+    if Path(os.readlink(root/'exe'))!=NGINX or (loaded.st_dev,loaded.st_ino)!=(current.st_dev,current.st_ino):
+        raise Pending('web process executable differs')
+    if (process_stat((root/'stat').read_bytes(),pid)!=(ppid,start) or
+        process_credentials((root/'status').read_bytes())!=credentials):
+        raise Pending('web process credentials/parent/start changed')
+    final=(root/'exe').stat();current_after=NGINX.stat()
+    if (Path(os.readlink(root/'exe'))!=NGINX or
+        (final.st_dev,final.st_ino)!=(loaded.st_dev,loaded.st_ino) or
+        (current_after.st_dev,current_after.st_ino)!=(current.st_dev,current.st_ino)):
+        raise Pending('web process executable changed')
+    return {**credentials,'ppid':ppid,'start':start}
+
+
+def sockets(raw,pid,account,proc=process):
+    if not KERNEL.uint(pid,0x7fffffff):raise Pending('invalid nginx master PID')
+    if type(raw) is not bytes or len(raw)>MAX_BYTES:raise Pending('invalid nginx listener bytes')
+    text=raw.decode('ascii')
+    if not text.endswith('\\n') or any(c!='\\n' and not 32<=ord(c)<=126 for c in text):raise Pending('unsupported nginx listener encoding')
+    expected={'0.0.0.0:80','[::]:80','0.0.0.0:443','[::]:443'};found=set();owners={}
+    for line in text[:-1].split('\\n'):
+        parts=line.split()
+        if (len(parts)!=6 or parts[0]!='LISTEN' or parts[3] not in expected or parts[3] in found or
+            parts[4] not in ('0.0.0.0:*','[::]:*','*:*') or
+            any(re.fullmatch(r'[0-9]+',value) is None for value in parts[1:3])):
+            raise Pending('unsupported/foreign nginx listener row')
+        for value in parts[1:3]:KERNEL.uint(int(value))
+        if not parts[5].startswith('users:(') or not parts[5].endswith(')'):raise Pending('missing nginx owner data')
+        body=parts[5][7:-1];matches=re.findall(r'\\(\"nginx\",pid=([1-9][0-9]*),fd=([0-9]+)\\)',body)
+        if not matches or ','.join(f'(\"nginx\",pid={p},fd={fd})' for p,fd in matches)!=body:
+            raise Pending('foreign or malformed nginx socket owners')
+        ids=[]
+        for p,fd in matches:
+            number=KERNEL.uint(int(p),0x7fffffff);KERNEL.uint(int(fd));ids.append(number)
+            if number not in owners:owners[number]=proc(number)
+            info=owners[number]
+            KERNEL.known(info,{'uid','gid','ppid','start'},{'uid','gid','ppid','start'})
+            for field in ('uid','gid','ppid'):KERNEL.uint(info[field],0x7fffffff)
+            if not KERNEL.uint(info['start'],2**64-1):raise Pending('missing process start identity')
+            if number==pid:
+                if info['uid']!=0 or info['gid']!=0:raise Pending('nonroot reported nginx master')
+            elif info['uid']!=account['uid'] or info['gid']!=account['gid'] or info['ppid']!=pid:raise Pending('foreign nginx worker')
+        if pid not in ids or len(set(ids))!=len(ids):raise Pending('missing/duplicate nginx master owner')
+        found.add(parts[3])
+    if found!=expected:raise Pending('incomplete public nginx listener inventory')
+    for number,before in owners.items():
+        if proc(number)!=before:raise Pending('nginx process owner changed')
+
+
+def file_payload(deadline=None):
+    end=window(deadline,10)
+    first=PREP.prepare(deadline=end);record=json.loads(first)
+    payload=record['nginx'].encode('ascii')
+    # Projection/encoding precedes a SECOND complete accepted preparation and
+    # the final outer scope/time fence; only these exact cached bytes return.
+    if PREP.prepare(deadline=end)!=first:raise Pending('web configuration projection changed')
+    if KERNEL.uint(KERNEL.namespace(),2**64-1)!=record['namespace']:raise Pending('web projection context changed')
+    PREP.BASE.fence(end);return payload
+
+
+def identity(deadline=None):
+    end=window(deadline,10);first=inputs(end)
+    payload=PREP.BASE.canonical({'schema':1,'namespace':first['intention']['namespace'],
+        'startup_sha256':hashlib.sha256(PREP.BASE.canonical(first)).hexdigest()})
+    if inputs(end)!=first:raise Pending('web startup inputs changed')
+    if KERNEL.uint(KERNEL.namespace(),2**64-1)!=first['intention']['namespace']:raise Pending('web identity context changed')
+    PREP.BASE.fence(end);return payload
+
+
+def check(read=native,deadline=None,pid=None,proc=process):
+    end=window(deadline)
+    if pid is not None and not KERNEL.uint(pid,0x7fffffff):raise Pending('invalid nginx master PID')
+    first=inputs(end)
+    timestamp=time.time()
+    if type(timestamp) not in (int,float) or not math.isfinite(timestamp) or not 1<=timestamp<=0x7fffffff-3600:
+        raise Pending('invalid web wallclock sample')
+    epoch=int(timestamp)
+    for app in PREP.APPLICATIONS:
+        item=first['intention']['configuration']['value']['applications'][app]
+        certificate=public_key(read('certificate-key',item,end))
+        if public_key(read('private-key',item,end))!=certificate:raise Pending('TLS certificate/private key differ')
+        if read('key-check',item,end)!=b'Key is valid\\n':raise Pending('native private key validation differs')
+        for at in (epoch,epoch+3600):
+            if read('verify',item,end,at)!=(item['certificate']+': OK\\n').encode('ascii'):
+                raise Pending('native TLS purpose/name/chain/current-or-hour check failed')
+    if read('nginx',None,end):raise Pending('nginx quiet syntax check produced output')
+    if pid is not None:sockets(read('sockets',None,end),pid,first['account'],proc)
+    if inputs(end)!=first:raise Pending('web startup inputs drifted during native checks')
+    if KERNEL.uint(KERNEL.namespace(),2**64-1)!=first['intention']['namespace']:raise Pending('web native context changed')
+    final=time.time()
+    if type(final) not in (int,float) or not math.isfinite(final) or not timestamp<=final<timestamp+ATTEMPT_SECONDS:
+        raise Pending('web wallclock changed or native admission expired')
+    PREP.BASE.fence(end)
+
+
+def main():
+    try:
+        args=sys.argv[1:]
+        if args not in (['--file'],['--identity'],['--check']) and not (
+            len(args)==2 and args[0]=='--live' and re.fullmatch(r'[1-9][0-9]{0,9}',args[1])):
+            return 64
+        sink=sys.stdout.buffer
+        if not callable(getattr(sink,'write',None)) or not callable(getattr(sink,'flush',None)):raise Pending('web policy requires binary stdout')
+        if args==['--file']:payload=file_payload()
+        elif args==['--identity']:payload=identity()
+        else:
+            check(pid=int(args[1]) if args[0]=='--live' else None);return 0
+        count=sink.write(payload)
+        if type(count) is not int or count!=len(payload):raise Pending('web policy incomplete byte publication')
+        sink.flush();return 0
+    except (Pending,OSError,ValueError,TypeError,AttributeError,UnicodeError,RecursionError,subprocess.TimeoutExpired) as error:
+        print('debian13s4 web pending: '+str(error),file=sys.stderr);return 75
+
+
+if __name__=='__main__':sys.exit(main())
+" > "$S4B_STAGE/"lib/web/live.py || return 1
+    printf '%s' "#!/bin/bash
+
+# shellcheck source=Maintenance/common.sh
+. /usr/local/lib/debian13s4/maintenance/common.sh
+S4W_LIBRARY=/usr/local/lib/debian13s4/web
+S4W_CONFIG=/etc/debian13s4-web
+S4W_SERVER=debian13s4-web-server.service
+S4W_SERVICE=debian13s4-web.service
+S4W_TIMER=debian13s4-web.timer
+S4W_LOADED_GENERATION=''
+S4W_FILES=(prepare.py live.py common.sh repair.sh debian13s4-web-server.service
+    debian13s4-web.service debian13s4-web.timer)
+
+s4w_policy() (
+    local descriptor=\$S4M_REPAIR_FD seconds=10
+    [[ \${1-} != --check && \${1-} != --live ]] || seconds=65
+    trap - EXIT
+    [[ -z \$descriptor ]] || exec {descriptor}>&-
+    timeout --signal=TERM --kill-after=1s \"\${seconds}s\" env -i PATH=\"\$S4M_PATH\" LANG=C LC_ALL=C \\
+        /usr/bin/python3 -I -B \"\$S4W_LIBRARY/live.py\" \"\$@\"
+)
+
+s4w_action() (
+    local descriptor=\$S4M_REPAIR_FD action=\$1
+    trap - EXIT
+    [[ \$action == stop || \$action == start ]] || return 1
+    [[ -z \$descriptor ]] || exec {descriptor}>&-
+    timeout --signal=TERM --kill-after=1s 120s env -i PATH=\"\$S4M_PATH\" LANG=C LC_ALL=C \\
+        systemctl \"\$action\" \"\$S4W_SERVER\"
+)
+
+s4w_assets() {
+    local name
+    [[ -d \$S4M_STATE && -d \$S4M_SYSTEMD ]] &&
+        s4m_trusted \"\$S4M_STATE\" && s4m_trusted \"\$S4M_SYSTEMD\" || return 1
+    for name in \"\${S4W_FILES[@]}\"; do
+        [[ -f \$S4W_LIBRARY/\$name ]] && s4m_trusted \"\$S4W_LIBRARY/\$name\" || return 1
+    done
+    [[ -x \$S4W_LIBRARY/repair.sh ]] && s4m_trusted \"\$S4M_LIBRARY/common.sh\" &&
+        s4m_trusted \"\${S4W_LIBRARY%/*}/firewall/kernel.py\" &&
+        s4m_trusted \"\${S4W_LIBRARY%/*}/postgresql/prepare.py\"
+}
+
+s4w_identity() {
+    local name digest
+    for name in \"\${S4W_FILES[@]}\"; do
+        digest=\$(sha256sum -- \"\$S4W_LIBRARY/\$name\") || return 1
+        printf '%s web/%s\\n' \"\${digest%% *}\" \"\$name\" || return 1
+    done
+    for name in maintenance/common.sh firewall/kernel.py postgresql/prepare.py; do
+        digest=\$(sha256sum -- \"\${S4W_LIBRARY%/*}/\$name\") || return 1
+        printf '%s %s\\n' \"\${digest%% *}\" \"\$name\" || return 1
+    done
+}
+
+s4w_packages() (
+    # This supported join requires pre-installed nginx/crypto packages, existing private TLS
+    # inputs and an inactive vendor nginx service. It never invokes APT.
+    s4m_load_packages || return 1
+    S4P_PACKAGES=(nginx nginx-common openssl ca-certificates)
+    s4p_query() {
+        s4m_control dpkg-query --show --showformat=\"\\\${Status}\\n\" -- \"\$1\"
+    }
+    s4p_dpkg() {
+        [[ \$# == 1 && \$1 == --audit ]] || return 1
+        s4m_control dpkg --audit
+    }
+    s4p_verify
+)
+
+s4w_stop() {
+    local loaded marker=\$S4M_STATE/web.loaded
+    loaded=\$(s4m_systemctl show --property=LoadState --value \"\$S4W_SERVER\") || return 1
+    if [[ \$loaded == loaded ]]; then
+        s4w_action stop && s4m_property \"\$S4W_SERVER\" ActiveState inactive &&
+            s4m_property \"\$S4W_SERVER\" MainPID 0 || return 1
+    elif [[ \$loaded != not-found ]]; then
+        return 1
+    fi
+    if [[ -e \$marker || -L \$marker ]]; then
+        [[ -f \$marker ]] && s4m_trusted \"\$marker\" && rm -f -- \"\$marker\" || return 1
+        s4m_sync \"\$S4M_STATE\" || return 1
+    fi
+}
+
+s4w_vendor_inactive() {
+    local loaded
+    loaded=\$(s4m_systemctl show --property=LoadState --value nginx.service) || return 1
+    if [[ \$loaded == loaded || \$loaded == masked ]]; then
+        s4m_property nginx.service ActiveState inactive && s4m_property nginx.service MainPID 0
+    else
+        [[ \$loaded == not-found ]]
+    fi
+}
+
+s4w_configure() {
+    local temporary
+    # No foreign/vendor stop or adoption. Only our own server is stopped,
+    # and inactivity is confirmed BEFORE replacing any startup configuration.
+    s4w_vendor_inactive && s4w_stop || return 1
+    if [[ -e \$S4W_CONFIG || -L \$S4W_CONFIG ]]; then
+        [[ -d \$S4W_CONFIG ]] && s4m_trusted \"\$S4W_CONFIG\" || return 1
+    else
+        s4m_trusted \"\${S4W_CONFIG%/*}\" && mkdir -m 0755 -- \"\$S4W_CONFIG\" || return 1
+    fi
+    temporary=\$(mktemp -- \"\$S4M_STATE/web-config.XXXXXX\") || return 1
+    if ! s4w_policy --file > \"\$temporary\" || ! chmod 0600 -- \"\$temporary\" ||
+        ! s4m_atomic \"\$S4W_CONFIG/nginx.conf\" \"\$temporary\" 0644; then
+        rm -f -- \"\$temporary\"
+        return 1
+    fi
+    rm -f -- \"\$temporary\" && s4w_policy --identity > /dev/null
+}
+
+s4w_generation() {
+    local rows key value active='' pid='' invocation=''
+    rows=\$(s4m_systemctl show --property=ActiveState --property=MainPID \\
+        --property=InvocationID \"\$S4W_SERVER\") || return 1
+    [[ \${#rows} -le 512 ]] || return 1
+    while IFS='=' read -r key value; do
+        case \$key in
+            ActiveState) [[ -z \$active && \$value == active ]] || return 1; active=\$value ;;
+            MainPID)
+                [[ -z \$pid && \$value =~ ^[1-9][0-9]{0,9}\$ ]] &&
+                    (( 10#\$value <= 2147483647 )) || return 1; pid=\$value ;;
+            InvocationID)
+                [[ -z \$invocation && \$value =~ ^[0-9a-f]{32}\$ &&
+                    \$value != 00000000000000000000000000000000 ]] || return 1; invocation=\$value ;;
+            *) return 1 ;;
+        esac
+    done <<< \"\$rows\"
+    [[ \$active == active && -n \$pid && -n \$invocation ]] || return 1
+    printf 'instance %s %s\\n' \"\$pid\" \"\$invocation\" && s4w_identity && s4w_policy --identity
+}
+
+s4w_loaded() {
+    local marker=\$S4M_STATE/web.loaded mode size links actual expected
+    [[ -f \$marker ]] && s4m_trusted \"\$marker\" || return 1
+    read -r mode size links < <(stat --format='%a %s %h' -- \"\$marker\") || return 1
+    [[ \$mode == 600 && \$links == 1 && \$size =~ ^[1-9][0-9]{0,4}\$ ]] &&
+        (( 10#\$size <= 24576 )) || return 1
+    expected=\$(s4w_generation) && actual=\$(cat -- \"\$marker\") && [[ \$expected == \"\$actual\" ]] || return 1
+    S4W_LOADED_GENERATION=\$expected
+}
+
+s4w_live() {
+    local before pid
+    s4w_loaded || return 1
+    before=\$S4W_LOADED_GENERATION
+    pid=\${before%%\$'\\n'*}; pid=\${pid#instance }; pid=\${pid%% *}
+    s4w_vendor_inactive && s4w_policy --live \"\$pid\" && s4w_loaded && [[ \$before == \"\$S4W_LOADED_GENERATION\" ]]
+}
+
+s4w_start() {
+    local before after generation temporary pid
+    s4m_property \"\$S4W_SERVER\" ActiveState inactive && s4m_property \"\$S4W_SERVER\" MainPID 0 || return 1
+    s4w_vendor_inactive || return 1
+    before=\$(s4w_identity && s4w_policy --identity) && s4w_action start &&
+        after=\$(s4w_identity && s4w_policy --identity) && [[ \$before == \"\$after\" ]] || return 1
+    generation=\$(s4w_generation) && [[ \${generation#*\$'\\n'} == \"\$before\" ]] || return 1
+    pid=\${generation%%\$'\\n'*}; pid=\${pid#instance }; pid=\${pid%% *}
+    s4w_policy --live \"\$pid\" && [[ \$(s4w_generation) == \"\$generation\" ]] || return 1
+    temporary=\$(mktemp -- \"\$S4M_STATE/web-loaded.XXXXXX\") || return 1
+    if ! printf '%s\\n' \"\$generation\" > \"\$temporary\" || ! chmod 0600 -- \"\$temporary\" ||
+        ! s4m_atomic \"\$S4M_STATE/web.loaded\" \"\$temporary\" 0600; then
+        rm -f -- \"\$temporary\"
+        return 1
+    fi
+    rm -f -- \"\$temporary\" && s4w_loaded
+}
+
+s4w_units() {
+    local name
+    for name in \"\$S4W_SERVER\" \"\$S4W_SERVICE\" \"\$S4W_TIMER\"; do
+        [[ -f \$S4M_SYSTEMD/\$name ]] && s4m_trusted \"\$S4M_SYSTEMD/\$name\" &&
+            cmp --silent -- \"\$S4W_LIBRARY/\$name\" \"\$S4M_SYSTEMD/\$name\" || return 1
+        s4m_property \"\$name\" FragmentPath \"\$S4M_SYSTEMD/\$name\" &&
+            s4m_property \"\$name\" DropInPaths '' || return 1
+    done
+    s4m_enabled \"\$S4W_SERVER\" && s4m_enabled \"\$S4W_TIMER\" && s4m_property \"\$S4W_TIMER\" ActiveState active
+}
+
+s4w_ready() {
+    local actual expected mode size links
+    [[ ! -e \$S4M_STATE/bootstrap/pending && ! -L \$S4M_STATE/bootstrap/pending &&
+        -f \$S4M_STATE/web.ready ]] && s4m_trusted \"\$S4M_STATE/web.ready\" || return 1
+    read -r mode size links < <(stat --format='%a %s %h' -- \"\$S4M_STATE/web.ready\") || return 1
+    [[ \$mode == 600 && \$links == 1 && \$size =~ ^[1-9][0-9]{0,3}\$ ]] &&
+        (( 10#\$size <= 4096 )) || return 1
+    s4w_assets && s4w_units || return 1
+    expected=\$(s4w_identity) && actual=\$(cat -- \"\$S4M_STATE/web.ready\") && [[ \$expected == \"\$actual\" ]]
+}
+
+s4w_verify() {
+    s4w_ready && s4w_packages && s4w_live
+}
+
+s4w_publish() {
+    local name wants resolved temporary
+    for name in \"\$S4W_SERVER\" \"\$S4W_SERVICE\" \"\$S4W_TIMER\"; do
+        s4m_atomic \"\$S4M_SYSTEMD/\$name\" \"\$S4W_LIBRARY/\$name\" || return 1
+    done
+    s4m_systemctl daemon-reload || return 1
+    for name in \"\$S4W_SERVER\" \"\$S4W_TIMER\"; do
+        s4m_systemctl enable \"\$name\" && s4m_enabled \"\$name\" || return 1
+        wants=\$S4M_SYSTEMD/multi-user.target.wants
+        [[ \$name != \"\$S4W_TIMER\" ]] || wants=\$S4M_SYSTEMD/timers.target.wants
+        [[ -d \$wants && -L \$wants/\$name ]] && s4m_trusted \"\$wants\" || return 1
+        resolved=\$(readlink --canonicalize-existing -- \"\$wants/\$name\") && [[ \$resolved == \"\$S4M_SYSTEMD/\$name\" ]] || return 1
+        s4m_sync \"\$wants\" \"\$S4M_SYSTEMD\" \"\$S4M_SYSTEMD/\$name\" || return 1
+    done
+    s4w_start && s4m_systemctl start \"\$S4W_TIMER\" && s4w_units && s4w_live || return 1
+    temporary=\$(mktemp -- \"\$S4M_STATE/web-ready.XXXXXX\") || return 1
+    if ! s4w_identity > \"\$temporary\" || ! chmod 0600 -- \"\$temporary\" ||
+        ! s4m_atomic \"\$S4M_STATE/web.ready\" \"\$temporary\" 0600; then
+        rm -f -- \"\$temporary\"
+        return 1
+    fi
+    rm -f -- \"\$temporary\" && s4w_verify
+}
+
+s4w_apply() {
+    local name loaded
+    s4w_assets && s4w_packages || return 1
+    for name in \"\$S4W_SERVER\" \"\$S4W_SERVICE\" \"\$S4W_TIMER\"; do
+        if [[ -e \$S4M_SYSTEMD/\$name || -L \$S4M_SYSTEMD/\$name ]]; then
+            [[ -f \$S4M_SYSTEMD/\$name ]] && s4m_trusted \"\$S4M_SYSTEMD/\$name\" || return 1
+        fi
+    done
+    if [[ -e \$S4M_STATE/web.ready || -L \$S4M_STATE/web.ready ]]; then
+        [[ -f \$S4M_STATE/web.ready ]] && s4m_trusted \"\$S4M_STATE/web.ready\" &&
+            rm -f -- \"\$S4M_STATE/web.ready\" || return 1
+    fi
+    s4m_sync \"\$S4M_STATE\" || return 1
+    for name in \"\$S4W_TIMER\" \"\$S4W_SERVICE\"; do
+        loaded=\$(s4m_systemctl show --property=LoadState --value \"\$name\") || return 1
+        if [[ \$loaded == loaded ]]; then
+            s4m_systemctl stop \"\$name\" && s4m_property \"\$name\" ActiveState inactive || return 1
+        elif [[ \$loaded != not-found ]]; then return 1; fi
+    done
+    if s4w_configure && s4w_publish; then return 0; fi
+    s4w_stop || return 1
+    return 1
+}
+
+s4w_repair() {
+    [[ ! -e \$S4M_STATE/bootstrap/pending && ! -L \$S4M_STATE/bootstrap/pending ]] || return 75
+    s4m_lock || return 75
+    trap s4m_unlock EXIT
+    if s4w_ready && s4w_packages; then
+        if s4w_live; then return 0; fi
+        if s4w_configure && s4w_start && s4w_live; then return 0; fi
+    fi
+    s4w_stop || return 75
+    return 75
+}
+" > "$S4B_STAGE/"lib/web/common.sh || return 1
+    printf '%s' "#!/bin/bash -p
+set -Eeuo pipefail
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+(( EUID == 0 )) || exit 77
+# shellcheck source=Web/common.sh
+. /usr/local/lib/debian13s4/web/common.sh
+s4w_repair
+" > "$S4B_STAGE/"lib/web/repair.sh || return 1
+    printf '%s' "[Unit]
+Description=Existing private-HTTPS gateway nginx ingress
+After=local-fs.target network.target
+RequiresMountsFor=/usr/local/lib/debian13s4 /etc/debian13s4 /etc/debian13s4-web /etc/ssl
+ConditionPathExists=!/var/lib/debian13s4/bootstrap/pending
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+User=root
+Group=root
+ExecStartPre=/usr/bin/python3 -I -B /usr/local/lib/debian13s4/web/live.py --check
+ExecStart=/usr/sbin/nginx -e stderr -c /etc/debian13s4-web/nginx.conf -p /etc/debian13s4-web/ -g 'daemon off;'
+UMask=0077
+RuntimeDirectory=debian13s4-web
+RuntimeDirectoryMode=0755
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=120s
+TimeoutStopSec=120s
+KillSignal=SIGQUIT
+KillMode=control-group
+Restart=on-failure
+RestartSec=30s
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/run/debian13s4-web
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_SETUID CAP_SETGID CAP_CHOWN CAP_DAC_READ_SEARCH CAP_KILL
+
+[Install]
+WantedBy=multi-user.target
+" > "$S4B_STAGE/"lib/web/debian13s4-web-server.service || return 1
+    printf '%s' "[Unit]
+Description=Check and restore existing TLS/nginx ingress startup inputs
+After=local-fs.target
+RequiresMountsFor=/usr/local/lib/debian13s4 /var/lib/debian13s4 /etc/debian13s4 /etc/debian13s4-web
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/web/repair.sh
+User=root
+Group=root
+UMask=0077
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+# At most84 controls*11 +12 plain policies*11 +4 native policies*66
+# +3 server actions*121 +60 local seconds=1743, below1750 and phase1800.
+# Finite honest SOURCE accounting, not stalled IO/native/hard-progress proof.
+TimeoutStartSec=1750s
+TimeoutStopSec=30s
+KillMode=control-group
+Restart=on-failure
+RestartSec=1min
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+SystemCallArchitectures=native
+" > "$S4B_STAGE/"lib/web/debian13s4-web.service || return 1
+    printf '%s' "[Unit]
+Description=Periodic existing TLS/nginx input-generation check
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=5min
+AccuracySec=15s
+Persistent=yes
+Unit=debian13s4-web.service
+
+[Install]
+WantedBy=timers.target
+" > "$S4B_STAGE/"lib/web/debian13s4-web.timer || return 1
+    printf '%s' "#!/bin/bash
+# shellcheck source=Web/common.sh
+. /usr/local/lib/debian13s4/web/common.sh
+s4w_apply
+" > "$S4B_STAGE/"lib/tasks/web/apply.sh || return 1
+    printf '%s' "#!/bin/bash
+# shellcheck source=Web/common.sh
+. /usr/local/lib/debian13s4/web/common.sh
+s4w_verify
+" > "$S4B_STAGE/"lib/tasks/web/verify.sh || return 1
     printf '%s' "5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936  lib/repair.sh
-0e92c2a6182a3ce87a6afff44ae4fbe7e28f0c3a74f7ccfda611797947ddc206  lib/tasks.list
+0532281d04de4d830a60f3490467f5feff9f0ec018dce6974114da2d76b583ba  lib/tasks.list
 f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934  lib/tasks/prerequisites/apply.sh
 5c2bb90b18725176df85061f2fd7556fc5f00c286991f7ff34445d7b880693fc  lib/tasks/prerequisites/verify.sh
 84d897f0a349e9f7dc4dbf5aa75fc86c4cb7d67a67ca1f61439a982cdf0c86b4  lib/tasks/prerequisites/common.sh
@@ -6347,6 +7323,15 @@ fa6da84d1e731b98c24618ad8f872b0ef90aa287d1e3d76bc3b6cb48b2998405  lib/postgresql
 3854f90c81bdee439875ef75d3e2189097d43286c036cbeda0b88c9e1bf45b98  lib/postgresql/debian13s4-postgresql.timer
 b09b6b1a5ff3e4c162a2d6bae7a47a1bc39dd804d88bf3f9ecdb56ed5f4b5ba5  lib/tasks/postgresql/apply.sh
 71c562845f4f9d7130ac675d4912ce7ae3459b74050d1b90f22e64a25fa36f84  lib/tasks/postgresql/verify.sh
+f648899b4a9f33e7dbcfb4267bb50b35d6e75f89c6568ba3d00353e5274091c6  lib/web/prepare.py
+5f773dba87d02c7e555d5ef4c798ebab826bfde5365fe36f4ace1ed0f5e002cd  lib/web/live.py
+0669be8796ca8608daa1309c4c1d47b6622b00a904ce86f6fc41465357664291  lib/web/common.sh
+1293c7fded0b7f3d157042c6b1dabbbc457721f8d1da0a7963a006dbb045f29d  lib/web/repair.sh
+b2c8beec9d2427ac3f8c1efad7650aa2feab9ae99e193876663a237a3904a328  lib/web/debian13s4-web-server.service
+1358a1eefee41e3ea4e1d91ebf905deca5ae95ece4e9913c628fde3504487131  lib/web/debian13s4-web.service
+fc7dcf7ec6f4650b2cb178e4a9f9954b863f68f12b84c2d88846b3f7a0229e87  lib/web/debian13s4-web.timer
+20c8c90e83399178ba14f7cdef4f8cd22cc3f8aa0529482b03909dd1ae011cd4  lib/tasks/web/apply.sh
+051d3643b9f3d3c54109344adf1003a602bbd28d3b14c0c9b2c1afa01907dc88  lib/tasks/web/verify.sh
 " > "$S4B_STAGE/files.sha256" || return 1
 }
 

@@ -1,0 +1,32 @@
+[Unit]
+Description=Check and restore existing TLS/nginx ingress startup inputs
+After=local-fs.target
+RequiresMountsFor=/usr/local/lib/debian13s4 /var/lib/debian13s4 /etc/debian13s4 /etc/debian13s4-web
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/web/repair.sh
+User=root
+Group=root
+UMask=0077
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+# At most84 controls*11 +12 plain policies*11 +4 native policies*66
+# +3 server actions*121 +60 local seconds=1743, below1750 and phase1800.
+# Finite honest SOURCE accounting, not stalled IO/native/hard-progress proof.
+TimeoutStartSec=1750s
+TimeoutStopSec=30s
+KillMode=control-group
+Restart=on-failure
+RestartSec=1min
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+SystemCallArchitectures=native
