@@ -147,10 +147,16 @@ def accounts(raw, settings):
         text = raw.decode('ascii')
     except UnicodeError as error:
         raise Pending('unsupported local account encoding') from error
-    if not text.endswith('\n') or '\0' in text or len(text.splitlines()) > 4096:
+    if (not text.endswith('\n') or
+        any(character != '\n' and not 32 <= ord(character) <= 126 for character in text)):
+        raise Pending('unsupported local account inventory')
+    # passwd records are delimited ONLY by LF. Other ASCII control bytes
+    # cannot manufacture apparent accounts inside a malformed LF record.
+    records = text[:-1].split('\n')
+    if len(records) > 4096:
         raise Pending('unsupported local account inventory')
     inventory, uids = {}, set()
-    for line in text.splitlines():
+    for line in records:
         fields = line.split(':')
         if (len(fields) != 7 or re.fullmatch(r'[A-Za-z_][A-Za-z0-9_.-]{0,31}', fields[0]) is None or
             fields[0] in inventory or any(re.fullmatch(r'0|[1-9][0-9]{0,9}', fields[i]) is None for i in (2, 3))):

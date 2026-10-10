@@ -165,6 +165,40 @@ class PreparationTests(unittest.TestCase):
             with self.subTest(raw_size=len(raw)), patch.object(self.m, 'render', side_effect=AssertionError('no render')):
                 with self.assertRaises(self.m.Pending): self.prepare()
 
+    def test_non_lf_passwd_separators_cannot_create_apparent_selected_accounts(self):
+        root, dns, mail = self.passwd[:-1].split(b'\n')
+        for separator in (b'\r', b'\r\n', b'\v', b'\f', b'\x1c', b'\x1d', b'\x1e'):
+            cases = (separator.join((root, dns, mail)) + b'\n',
+                     root + separator + dns + b'\n' + mail + b'\n')
+            for raw in cases:
+                with self.subTest(separator=separator, raw=raw):
+                    self.write_accounts(raw)
+                    with patch.object(self.m, 'render', wraps=self.m.render) as renderer:
+                        with self.assertRaises(self.m.Pending): self.prepare()
+                        self.assertEqual(renderer.call_count, 0)
+
+    def test_control_bytes_in_account_fields_refuse_before_render(self):
+        for value in (*range(10), *range(11, 32), 127):
+            raw = self.passwd.replace(b':root:', b':root' + bytes((value,)) + b':', 1)
+            with self.subTest(control=value):
+                self.write_accounts(raw)
+                with patch.object(self.m, 'render', wraps=self.m.render) as renderer:
+                    with self.assertRaises(self.m.Pending): self.prepare()
+                    self.assertEqual(renderer.call_count, 0)
+
+    def test_valid_exact_lf_records_and_4096_row_limit_remain_admitted(self):
+        value = self.record()
+        self.assertEqual(value['accounts']['mk8.dns']['name'], 'dns_demo')
+        self.assertEqual(value['accounts']['mk8.email']['name'], 'mail_demo')
+        filler = b''.join(f'user{i}:x:{10000+i}:100::/nonexistent:/bin/false\n'.encode('ascii')
+                          for i in range(4093))
+        self.write_accounts(self.passwd + filler)
+        self.assertEqual(self.record()['accounts'], value['accounts'])
+        self.write_accounts(self.passwd + filler + b'overflow:x:20000:100::/nonexistent:/bin/false\n')
+        with patch.object(self.m, 'render', wraps=self.m.render) as renderer:
+            with self.assertRaises(self.m.Pending): self.prepare()
+            self.assertEqual(renderer.call_count, 0)
+
     def test_input_mode_owner_links_symbolic_fifo_and_writable_ancestry_refuse(self):
         for mode in (0o644, 0o640, 0o660, 0o400):
             self.m.INPUT.chmod(mode)
@@ -365,6 +399,18 @@ class PreparationTests(unittest.TestCase):
     def test_cli_writes_the_same_actual_utf8_bytes_under_nondefault_text_encoding(self):
         expected = self.prepare(); status, raw, stderr = self.cli()
         self.assertEqual(status, 0); self.assertEqual(raw, expected); self.assertEqual(stderr, '')
+
+    def test_malformed_account_separators_withhold_all_cli_output_bytes(self):
+        root, dns, mail = self.passwd[:-1].split(b'\n')
+        for separator in (b'\r', b'\r\n', b'\v', b'\f', b'\x1c', b'\x1d', b'\x1e'):
+            for inventory in (separator.join((root, dns, mail)) + b'\n',
+                              root + separator + dns + b'\n' + mail + b'\n'):
+                with self.subTest(separator=separator, inventory=inventory):
+                    self.write_accounts(inventory)
+                    with patch.object(self.m, 'render', wraps=self.m.render) as renderer:
+                        status, raw, stderr = self.cli()
+                    self.assertEqual(status, 75); self.assertEqual(raw, b'')
+                    self.assertEqual(renderer.call_count, 0); self.assertIn('Pending:', stderr)
 
     def test_cli_refuses_text_only_sink_and_arguments_before_any_input_reads(self):
         for stdout, argv in ((io.StringIO(), ['prepare.py']), (io.StringIO(), ['prepare.py', '--config', '/tmp/x'])):
