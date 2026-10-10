@@ -2,7 +2,8 @@
 """Derive and check LAN-bound SSH for one existing local administrator.
 
 This does not create credentials, configure an address or attest client locality.
-The IPv6 allocation is used only when a usable assignment is actually reported.
+Private deployment configuration supplies the exact allowed admin prefixes.
+No default network, address assignment or domain is selected by this module.
 Native delivery and the local account database belong to the trusted-base profile.
 """
 
@@ -38,8 +39,8 @@ SSHD = Path('/usr/sbin/sshd')
 SS = Path('/usr/bin/ss')
 TRUST_ROOT = Path('/')
 TRUSTED_UID = 0
-ADMIN4 = ipaddress.ip_network('192.168.90.0/24')
-ADMIN6 = ipaddress.ip_network('fd51:b089:f5e0:90::/64')
+ADMIN_NETWORKS = ETC / 'ssh/debian13s4-admin-networks.json'
+MAX_NETWORK_BYTES = 4096
 MAX_BYTES = 262144
 ATTEMPT_SECONDS = 60
 NAME = re.compile(r'[a-z_][a-z0-9_-]{0,31}\Z')
@@ -51,8 +52,10 @@ def fence(end):
         raise Pending('SSH observation window expired')
 
 
-def trusted_read(path, owners=(0,), private=False):
+def trusted_read(path, owners=(0,), private=False, limit=MAX_BYTES):
     """Read a bounded unique leaf through a checked no-follow descriptor."""
+    if type(limit) is not int or not 0 < limit <= MAX_BYTES:
+        raise Pending('invalid SSH input byte bound')
     if not path.is_absolute() or os.path.normpath(str(path)) != str(path):
         raise Pending('noncanonical SSH input path')
     path.relative_to(TRUST_ROOT)
@@ -68,7 +71,7 @@ def trusted_read(path, owners=(0,), private=False):
             break
         current = current.parent
     before = path.lstat()
-    if before.st_nlink != 1 or before.st_size > MAX_BYTES or private and before.st_mode & 0o077:
+    if before.st_nlink != 1 or before.st_size > limit or private and before.st_mode & 0o077:
         raise Pending('nonunique, oversized or nonprivate SSH input')
     descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
     try:
@@ -76,11 +79,11 @@ def trusted_read(path, owners=(0,), private=False):
             raise Pending('SSH input descriptor differs')
         data = bytearray()
         while True:
-            part = os.read(descriptor, min(65536, MAX_BYTES + 1 - len(data)))
+            part = os.read(descriptor, min(65536, limit + 1 - len(data)))
             if not part:
                 break
             data.extend(part)
-            if len(data) > MAX_BYTES:
+            if len(data) > limit:
                 raise Pending('SSH input byte bound exceeded')
         if (KERNEL.signature(os.fstat(descriptor)) != KERNEL.signature(before) or
             KERNEL.signature(path.lstat()) != KERNEL.signature(before) or len(data) != before.st_size):
@@ -90,6 +93,50 @@ def trusted_read(path, owners=(0,), private=False):
         os.close(descriptor)
     return bytes(data), {'path': str(path), 'identity': list(KERNEL.signature(before)),
                          'sha256': hashlib.sha256(data).hexdigest()}
+
+
+def checked_networks(value):
+    fields = {'schema', 'admin_ipv4', 'admin_ipv6'}
+    KERNEL.known(value, fields, fields)
+    if type(value['schema']) is not int or value['schema'] != 1:
+        raise Pending('unsupported SSH deployment configuration schema')
+    for field, version, length in (('admin_ipv4', 4, 24), ('admin_ipv6', 6, 64)):
+        text = value[field]
+        if field == 'admin_ipv6' and text is None:
+            continue
+        if type(text) is not str or len(text) > 49:
+            raise Pending('untyped or oversized SSH admin prefix')
+        prefix = ipaddress.ip_network(text, strict=True)
+        # These are protocol classification ranges, not deployment defaults.
+        private = (any(prefix.subnet_of(ipaddress.ip_network(block)) for block in
+                       ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')) if version == 4 and prefix.version == 4
+                   else prefix.version == 6 and prefix.subnet_of(ipaddress.ip_network('fd00::/8')))
+        if prefix.version != version or prefix.prefixlen != length or str(prefix) != text or not private:
+            raise Pending('unsupported canonical private SSH admin prefix')
+    return value
+
+
+def deployment_networks():
+    raw, source = trusted_read(ADMIN_NETWORKS, (TRUSTED_UID,), True, MAX_NETWORK_BYTES)
+    if stat.S_IMODE(source['identity'][2]) != 0o600:
+        raise Pending('SSH deployment configuration is not mode600')
+    try:
+        value = json.loads(raw.decode('ascii'), object_pairs_hook=KERNEL.unique_object,
+            parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite SSH deployment configuration')))
+    except (UnicodeError, ValueError, RecursionError) as error:
+        raise Pending('invalid SSH deployment configuration JSON') from error
+    value = checked_networks(value)
+    if raw != (json.dumps(value, sort_keys=True, separators=(',', ':')) + '\n').encode('ascii'):
+        raise Pending('SSH deployment configuration is not canonical JSON plus LF')
+    return {'configuration': value, 'source': source}
+
+
+def allowed_users(admin, settings):
+    value = checked_networks(settings['configuration'])
+    prefixes = ['127.0.0.1/32', '::1/128', value['admin_ipv4']]
+    if value['admin_ipv6'] is not None:
+        prefixes.append(value['admin_ipv6'])
+    return ' '.join(admin['name'] + '@' + prefix for prefix in prefixes)
 
 
 def database(raw, width):
@@ -262,7 +309,8 @@ def checked_admin(value):
     return value
 
 
-def network(snapshot, observed=0):
+def network(snapshot, settings, observed=0):
+    value = checked_networks(settings['configuration'])
     interfaces = KERNEL.normalize(snapshot)
     admitted, loopback, names, expiry = [], [], set(), None
     by_name = {item['name']: item for item in interfaces}
@@ -286,7 +334,10 @@ def network(snapshot, observed=0):
         for address in row['addr_info']:
             version = 4 if address['family'] == 'inet' else 6
             ip = KERNEL.address(address['local'], version)
-            prefix = ADMIN4 if version == 4 else ADMIN6
+            text = value['admin_ipv4' if version == 4 else 'admin_ipv6']
+            if text is None:
+                continue
+            prefix = ipaddress.ip_network(text)
             if ip not in prefix:
                 continue
             if not link['up'] or address['prefixlen'] != prefix.prefixlen or address.get('scope') not in ('global', '0'):
@@ -319,7 +370,7 @@ def network(snapshot, observed=0):
             'loopback': sorted(loopback), 'kernel': interfaces}, expiry
 
 
-def configuration(admin, binding):
+def configuration(admin, binding, settings):
     lines = ['# Generated from checked local administrator and assigned admin addresses.',
         'Port 22', 'AddressFamily any', 'PermitRootLogin no', 'AuthenticationMethods publickey',
         'PubkeyAuthentication yes', 'PasswordAuthentication no', 'KbdInteractiveAuthentication no',
@@ -331,8 +382,7 @@ def configuration(admin, binding):
         f'HostKey {HOST_KEY}', 'PidFile /run/debian13s4-admin-ssh.pid',
         'PubkeyAcceptedAlgorithms ssh-ed25519,rsa-sha2-512,rsa-sha2-256',
         f'AuthorizedKeysFile {admin["key_file"]}',
-        f'AllowUsers {admin["name"]}@127.0.0.1/32 {admin["name"]}@::1/128 '
-        f'{admin["name"]}@{ADMIN4} {admin["name"]}@{ADMIN6}']
+        f'AllowUsers {allowed_users(admin, settings)}']
     for value in [*binding['loopback'], *binding['listeners']]:
         lines.append(f'ListenAddress [{value}]:22' if ':' in value else f'ListenAddress {value}:22')
     return ('\n'.join(lines) + '\n').encode('ascii')
@@ -346,6 +396,8 @@ def prepare(query=KERNEL.native_query, account=administrator, scope=KERNEL.names
     namespace = scope()
     if not KERNEL.uint(namespace, (1 << 64) - 1):
         raise Pending('invalid SSH namespace')
+    settings = deployment_networks()
+    fence(end)
     first_admin = checked_admin(copied(account()))
     records = []
     for _ in range(2):
@@ -357,14 +409,14 @@ def prepare(query=KERNEL.native_query, account=administrator, scope=KERNEL.names
             if name == 'addresses':
                 observed = KERNEL.now()
         raw = copied(raw)
-        binding, expiry = network(raw, observed)
+        binding, expiry = network(raw, settings, observed)
         end = min(end, expiry)
         fence(end)
         records.append({'raw': raw, 'binding': binding})
     last_admin = checked_admin(copied(account()))
-    if first_admin != last_admin or records[0] != records[1]:
+    if first_admin != last_admin or records[0] != records[1] or deployment_networks() != settings:
         raise Pending('SSH administrator or network deliveries changed')
-    payload = configuration(last_admin, records[1]['binding'])
+    payload = configuration(last_admin, records[1]['binding'], settings)
     if len(payload) > MAX_BYTES:
         raise Pending('SSH configuration exceeds byte bound')
     final_namespace = scope()
@@ -372,7 +424,7 @@ def prepare(query=KERNEL.native_query, account=administrator, scope=KERNEL.names
         raise Pending('SSH namespace changed')
     fence(end)
     return {'namespace': namespace, 'admin': last_admin, 'binding': records[1]['binding'],
-            'configuration': payload, 'deadline': end}
+            'configuration': payload, 'networks': settings, 'deadline': end}
 
 
 def capture(binary, arguments, deadline):
@@ -448,8 +500,7 @@ def effective(raw, plan):
     for key, value in required.items():
         if values.get(key) != [value]:
             raise Pending(f'effective sshd setting differs: {key}')
-    users = f'{plan["admin"]["name"]}@127.0.0.1/32 {plan["admin"]["name"]}@::1/128 '
-    users += f'{plan["admin"]["name"]}@{ADMIN4} {plan["admin"]["name"]}@{ADMIN6}'
+    users = allowed_users(plan['admin'], plan['networks'])
     admitted_users = [pattern for row in values.get('allowusers', []) for pattern in row.split()]
     if admitted_users != users.split() or values.get('hostkey') != [str(HOST_KEY)]:
         raise Pending('effective sshd user/key authority differs')
@@ -500,7 +551,8 @@ def check(plan=None, read=capture, live_pid=None):
         HOST_KEY, (TRUSTED_UID,), True) != host_key:
         raise Pending('SSH configuration or host key changed during native checks')
     namespace = KERNEL.namespace()
-    if not KERNEL.uint(namespace, (1 << 64) - 1) or administrator() != plan['admin'] or namespace != plan['namespace']:
+    if (not KERNEL.uint(namespace, (1 << 64) - 1) or administrator() != plan['admin'] or
+        deployment_networks() != plan['networks'] or namespace != plan['namespace']):
         raise Pending('SSH account or namespace changed during native checks')
     fence(plan['deadline'])
 

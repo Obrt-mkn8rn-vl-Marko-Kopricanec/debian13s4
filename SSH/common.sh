@@ -5,6 +5,7 @@
 
 S4S_LIBRARY=/usr/local/lib/debian13s4/ssh
 S4S_CONFIG=/etc/ssh/debian13s4-admin.conf
+S4S_NETWORKS=/etc/ssh/debian13s4-admin-networks.json
 S4S_HOST_KEY=/etc/ssh/ssh_host_ed25519_key
 S4S_SSHD=/usr/sbin/sshd
 S4S_LOADED_GENERATION=''
@@ -148,9 +149,10 @@ s4s_observe_live() {
 s4s_startup_inputs() {
     local config=${1:-$S4S_CONFIG} name path digest
     s4s_identity || return 1
-    for name in configuration host_key executable; do
+    for name in configuration deployment_configuration host_key executable; do
         case $name in
             configuration) path=$config ;;
+            deployment_configuration) path=$S4S_NETWORKS ;;
             host_key) path=$S4S_HOST_KEY ;;
             executable) path=$S4S_SSHD ;;
         esac

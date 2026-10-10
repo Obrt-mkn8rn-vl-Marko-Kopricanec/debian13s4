@@ -403,7 +403,7 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=54c9ff23e8eddc8dcc5a69e11702ae6a91992a129e2a00e81ffd0d0184a88fb8
+S4B_BUNDLE_ID=cfd41b59e52ef4bcf159e6f199a8aa33d2101dbd3d417ff79b236b9c1edf0fd4
 S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh)
 S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644)
 
@@ -4253,6 +4253,7 @@ if __name__ == \"__main__\":
 
 S4S_LIBRARY=/usr/local/lib/debian13s4/ssh
 S4S_CONFIG=/etc/ssh/debian13s4-admin.conf
+S4S_NETWORKS=/etc/ssh/debian13s4-admin-networks.json
 S4S_HOST_KEY=/etc/ssh/ssh_host_ed25519_key
 S4S_SSHD=/usr/sbin/sshd
 S4S_LOADED_GENERATION=''
@@ -4396,9 +4397,10 @@ s4s_observe_live() {
 s4s_startup_inputs() {
     local config=\${1:-\$S4S_CONFIG} name path digest
     s4s_identity || return 1
-    for name in configuration host_key executable; do
+    for name in configuration deployment_configuration host_key executable; do
         case \$name in
             configuration) path=\$config ;;
+            deployment_configuration) path=\$S4S_NETWORKS ;;
             host_key) path=\$S4S_HOST_KEY ;;
             executable) path=\$S4S_SSHD ;;
         esac
@@ -4590,7 +4592,8 @@ s4s_repair() {
 \"\"\"Derive and check LAN-bound SSH for one existing local administrator.
 
 This does not create credentials, configure an address or attest client locality.
-The IPv6 allocation is used only when a usable assignment is actually reported.
+Private deployment configuration supplies the exact allowed admin prefixes.
+No default network, address assignment or domain is selected by this module.
 Native delivery and the local account database belong to the trusted-base profile.
 \"\"\"
 
@@ -4626,8 +4629,8 @@ SSHD = Path('/usr/sbin/sshd')
 SS = Path('/usr/bin/ss')
 TRUST_ROOT = Path('/')
 TRUSTED_UID = 0
-ADMIN4 = ipaddress.ip_network('192.168.90.0/24')
-ADMIN6 = ipaddress.ip_network('fd51:b089:f5e0:90::/64')
+ADMIN_NETWORKS = ETC / 'ssh/debian13s4-admin-networks.json'
+MAX_NETWORK_BYTES = 4096
 MAX_BYTES = 262144
 ATTEMPT_SECONDS = 60
 NAME = re.compile(r'[a-z_][a-z0-9_-]{0,31}\\Z')
@@ -4639,8 +4642,10 @@ def fence(end):
         raise Pending('SSH observation window expired')
 
 
-def trusted_read(path, owners=(0,), private=False):
+def trusted_read(path, owners=(0,), private=False, limit=MAX_BYTES):
     \"\"\"Read a bounded unique leaf through a checked no-follow descriptor.\"\"\"
+    if type(limit) is not int or not 0 < limit <= MAX_BYTES:
+        raise Pending('invalid SSH input byte bound')
     if not path.is_absolute() or os.path.normpath(str(path)) != str(path):
         raise Pending('noncanonical SSH input path')
     path.relative_to(TRUST_ROOT)
@@ -4656,7 +4661,7 @@ def trusted_read(path, owners=(0,), private=False):
             break
         current = current.parent
     before = path.lstat()
-    if before.st_nlink != 1 or before.st_size > MAX_BYTES or private and before.st_mode & 0o077:
+    if before.st_nlink != 1 or before.st_size > limit or private and before.st_mode & 0o077:
         raise Pending('nonunique, oversized or nonprivate SSH input')
     descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
     try:
@@ -4664,11 +4669,11 @@ def trusted_read(path, owners=(0,), private=False):
             raise Pending('SSH input descriptor differs')
         data = bytearray()
         while True:
-            part = os.read(descriptor, min(65536, MAX_BYTES + 1 - len(data)))
+            part = os.read(descriptor, min(65536, limit + 1 - len(data)))
             if not part:
                 break
             data.extend(part)
-            if len(data) > MAX_BYTES:
+            if len(data) > limit:
                 raise Pending('SSH input byte bound exceeded')
         if (KERNEL.signature(os.fstat(descriptor)) != KERNEL.signature(before) or
             KERNEL.signature(path.lstat()) != KERNEL.signature(before) or len(data) != before.st_size):
@@ -4678,6 +4683,50 @@ def trusted_read(path, owners=(0,), private=False):
         os.close(descriptor)
     return bytes(data), {'path': str(path), 'identity': list(KERNEL.signature(before)),
                          'sha256': hashlib.sha256(data).hexdigest()}
+
+
+def checked_networks(value):
+    fields = {'schema', 'admin_ipv4', 'admin_ipv6'}
+    KERNEL.known(value, fields, fields)
+    if type(value['schema']) is not int or value['schema'] != 1:
+        raise Pending('unsupported SSH deployment configuration schema')
+    for field, version, length in (('admin_ipv4', 4, 24), ('admin_ipv6', 6, 64)):
+        text = value[field]
+        if field == 'admin_ipv6' and text is None:
+            continue
+        if type(text) is not str or len(text) > 49:
+            raise Pending('untyped or oversized SSH admin prefix')
+        prefix = ipaddress.ip_network(text, strict=True)
+        # These are protocol classification ranges, not deployment defaults.
+        private = (any(prefix.subnet_of(ipaddress.ip_network(block)) for block in
+                       ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')) if version == 4 and prefix.version == 4
+                   else prefix.version == 6 and prefix.subnet_of(ipaddress.ip_network('fd00::/8')))
+        if prefix.version != version or prefix.prefixlen != length or str(prefix) != text or not private:
+            raise Pending('unsupported canonical private SSH admin prefix')
+    return value
+
+
+def deployment_networks():
+    raw, source = trusted_read(ADMIN_NETWORKS, (TRUSTED_UID,), True, MAX_NETWORK_BYTES)
+    if stat.S_IMODE(source['identity'][2]) != 0o600:
+        raise Pending('SSH deployment configuration is not mode600')
+    try:
+        value = json.loads(raw.decode('ascii'), object_pairs_hook=KERNEL.unique_object,
+            parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite SSH deployment configuration')))
+    except (UnicodeError, ValueError, RecursionError) as error:
+        raise Pending('invalid SSH deployment configuration JSON') from error
+    value = checked_networks(value)
+    if raw != (json.dumps(value, sort_keys=True, separators=(',', ':')) + '\\n').encode('ascii'):
+        raise Pending('SSH deployment configuration is not canonical JSON plus LF')
+    return {'configuration': value, 'source': source}
+
+
+def allowed_users(admin, settings):
+    value = checked_networks(settings['configuration'])
+    prefixes = ['127.0.0.1/32', '::1/128', value['admin_ipv4']]
+    if value['admin_ipv6'] is not None:
+        prefixes.append(value['admin_ipv6'])
+    return ' '.join(admin['name'] + '@' + prefix for prefix in prefixes)
 
 
 def database(raw, width):
@@ -4850,7 +4899,8 @@ def checked_admin(value):
     return value
 
 
-def network(snapshot, observed=0):
+def network(snapshot, settings, observed=0):
+    value = checked_networks(settings['configuration'])
     interfaces = KERNEL.normalize(snapshot)
     admitted, loopback, names, expiry = [], [], set(), None
     by_name = {item['name']: item for item in interfaces}
@@ -4874,7 +4924,10 @@ def network(snapshot, observed=0):
         for address in row['addr_info']:
             version = 4 if address['family'] == 'inet' else 6
             ip = KERNEL.address(address['local'], version)
-            prefix = ADMIN4 if version == 4 else ADMIN6
+            text = value['admin_ipv4' if version == 4 else 'admin_ipv6']
+            if text is None:
+                continue
+            prefix = ipaddress.ip_network(text)
             if ip not in prefix:
                 continue
             if not link['up'] or address['prefixlen'] != prefix.prefixlen or address.get('scope') not in ('global', '0'):
@@ -4907,7 +4960,7 @@ def network(snapshot, observed=0):
             'loopback': sorted(loopback), 'kernel': interfaces}, expiry
 
 
-def configuration(admin, binding):
+def configuration(admin, binding, settings):
     lines = ['# Generated from checked local administrator and assigned admin addresses.',
         'Port 22', 'AddressFamily any', 'PermitRootLogin no', 'AuthenticationMethods publickey',
         'PubkeyAuthentication yes', 'PasswordAuthentication no', 'KbdInteractiveAuthentication no',
@@ -4919,8 +4972,7 @@ def configuration(admin, binding):
         f'HostKey {HOST_KEY}', 'PidFile /run/debian13s4-admin-ssh.pid',
         'PubkeyAcceptedAlgorithms ssh-ed25519,rsa-sha2-512,rsa-sha2-256',
         f'AuthorizedKeysFile {admin[\"key_file\"]}',
-        f'AllowUsers {admin[\"name\"]}@127.0.0.1/32 {admin[\"name\"]}@::1/128 '
-        f'{admin[\"name\"]}@{ADMIN4} {admin[\"name\"]}@{ADMIN6}']
+        f'AllowUsers {allowed_users(admin, settings)}']
     for value in [*binding['loopback'], *binding['listeners']]:
         lines.append(f'ListenAddress [{value}]:22' if ':' in value else f'ListenAddress {value}:22')
     return ('\\n'.join(lines) + '\\n').encode('ascii')
@@ -4934,6 +4986,8 @@ def prepare(query=KERNEL.native_query, account=administrator, scope=KERNEL.names
     namespace = scope()
     if not KERNEL.uint(namespace, (1 << 64) - 1):
         raise Pending('invalid SSH namespace')
+    settings = deployment_networks()
+    fence(end)
     first_admin = checked_admin(copied(account()))
     records = []
     for _ in range(2):
@@ -4945,14 +4999,14 @@ def prepare(query=KERNEL.native_query, account=administrator, scope=KERNEL.names
             if name == 'addresses':
                 observed = KERNEL.now()
         raw = copied(raw)
-        binding, expiry = network(raw, observed)
+        binding, expiry = network(raw, settings, observed)
         end = min(end, expiry)
         fence(end)
         records.append({'raw': raw, 'binding': binding})
     last_admin = checked_admin(copied(account()))
-    if first_admin != last_admin or records[0] != records[1]:
+    if first_admin != last_admin or records[0] != records[1] or deployment_networks() != settings:
         raise Pending('SSH administrator or network deliveries changed')
-    payload = configuration(last_admin, records[1]['binding'])
+    payload = configuration(last_admin, records[1]['binding'], settings)
     if len(payload) > MAX_BYTES:
         raise Pending('SSH configuration exceeds byte bound')
     final_namespace = scope()
@@ -4960,7 +5014,7 @@ def prepare(query=KERNEL.native_query, account=administrator, scope=KERNEL.names
         raise Pending('SSH namespace changed')
     fence(end)
     return {'namespace': namespace, 'admin': last_admin, 'binding': records[1]['binding'],
-            'configuration': payload, 'deadline': end}
+            'configuration': payload, 'networks': settings, 'deadline': end}
 
 
 def capture(binary, arguments, deadline):
@@ -5036,8 +5090,7 @@ def effective(raw, plan):
     for key, value in required.items():
         if values.get(key) != [value]:
             raise Pending(f'effective sshd setting differs: {key}')
-    users = f'{plan[\"admin\"][\"name\"]}@127.0.0.1/32 {plan[\"admin\"][\"name\"]}@::1/128 '
-    users += f'{plan[\"admin\"][\"name\"]}@{ADMIN4} {plan[\"admin\"][\"name\"]}@{ADMIN6}'
+    users = allowed_users(plan['admin'], plan['networks'])
     admitted_users = [pattern for row in values.get('allowusers', []) for pattern in row.split()]
     if admitted_users != users.split() or values.get('hostkey') != [str(HOST_KEY)]:
         raise Pending('effective sshd user/key authority differs')
@@ -5088,7 +5141,8 @@ def check(plan=None, read=capture, live_pid=None):
         HOST_KEY, (TRUSTED_UID,), True) != host_key:
         raise Pending('SSH configuration or host key changed during native checks')
     namespace = KERNEL.namespace()
-    if not KERNEL.uint(namespace, (1 << 64) - 1) or administrator() != plan['admin'] or namespace != plan['namespace']:
+    if (not KERNEL.uint(namespace, (1 << 64) - 1) or administrator() != plan['admin'] or
+        deployment_networks() != plan['networks'] or namespace != plan['namespace']):
         raise Pending('SSH account or namespace changed during native checks')
     fence(plan['deadline'])
 
@@ -5283,8 +5337,8 @@ e2de7086c2159bf4cd8a2775d8a3aba484b1c5c5237f9c4a36f7e0db4c8e371a  lib/hardening/
 896f7ea78d7f63a5858bbbe278c13fbfc1b49e34875b22c7fcf32567c32d836b  lib/tasks/hardening/apply.sh
 93f98e5dac2f0a3a4e7479eadfa4b52941ac936d4cce43adf7360ad4d08ec8f7  lib/tasks/hardening/verify.sh
 c96d0066b1cb453daf45d4a7fb41d4bada3c96c499e60dfc7da7ee60dfdc562e  lib/firewall/kernel.py
-a4a45b676286e7d553103f426645c99cc0b8413db73cc0515802671097dd743b  lib/ssh/common.sh
-a826ec818551234b1c98a344e189bb23da4bc4fb173bb00a1ab189d8031692b7  lib/ssh/policy.py
+8be3551e55ba629d5b428d4b4eb790633e62f389a280c622e9a017992b7fbdb1  lib/ssh/common.sh
+ea0235d4e421a1ae91d9c95eea8bcc50a992d440476f77ff415aaddf14029c87  lib/ssh/policy.py
 c695a6f939cef5eb0dec883b04722c71095877f7e0c06f9a76161b6672f35bdf  lib/ssh/repair.sh
 1bb3285e71f2461e8159bd93ba240fae1b89d03cfcf832f811d0d8b411bac735  lib/ssh/debian13s4-admin-ssh.service
 37346a701711ae61f025720ce4360cc5b8de008fce611ce077c43c1181302b59  lib/ssh/debian13s4-ssh.service

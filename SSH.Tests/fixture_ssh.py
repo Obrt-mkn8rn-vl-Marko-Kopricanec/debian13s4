@@ -70,6 +70,10 @@ class PrivateSSH:
                    b'0123456789012345678901234567890123456789:20000:0:99999:7:::\n')
         self.write(self.home / 'operator/.ssh/authorized_keys', key())
         self.write(self.etc / 'ssh/ssh_host_ed25519_key', b'PRIVATE HOST KEY DELIVERY MODEL\n')
+        # Finite test DATA only. No production module supplies these networks.
+        self.write(self.etc / 'ssh/debian13s4-admin-networks.json',
+            (json.dumps({'schema': 1, 'admin_ipv4': '192.168.90.0/24',
+                         'admin_ipv6': 'fd51:b089:f5e0:90::/64'}, sort_keys=True, separators=(',', ':'))+'\n').encode())
         self.data = topology()
         self.module = load(); self.configure(self.module)
         self.ledger = self.root / 'native.jsonl'
@@ -86,6 +90,7 @@ spec = importlib.util.spec_from_file_location('production_ssh', root / 'library/
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 m.ETC, m.HOME, m.TRUST_ROOT, m.TRUSTED_UID = root/'etc', root/'home', root, os.geteuid()
 m.CONFIG, m.HOST_KEY = root/'etc/ssh/debian13s4-admin.conf', root/'etc/ssh/ssh_host_ed25519_key'
+m.ADMIN_NETWORKS = root/'etc/ssh/debian13s4-admin-networks.json'
 m.SSHD, m.SS = root/'native/sshd', root/'native/ss'
 m.KERNEL.IP_BINARY, m.KERNEL.TRUST_ROOT, m.KERNEL.TRUSTED_UID = root/'native/ip', root, os.geteuid()
 m.KERNEL.namespace = lambda: 4711
@@ -107,6 +112,7 @@ raise SystemExit(m.main())
     def configure(self, module):
         module.ETC, module.HOME, module.TRUST_ROOT, module.TRUSTED_UID = self.etc, self.home, self.root, os.geteuid()
         module.CONFIG, module.HOST_KEY = self.etc / 'ssh/debian13s4-admin.conf', self.etc / 'ssh/ssh_host_ed25519_key'
+        module.ADMIN_NETWORKS = self.etc / 'ssh/debian13s4-admin-networks.json'
         module.KERNEL.TRUST_ROOT, module.KERNEL.TRUSTED_UID = self.root, os.geteuid()
         module.KERNEL.namespace = lambda: 4711
         module.prepare.__defaults__ = (module.KERNEL.native_query, module.administrator, module.KERNEL.namespace, None)
@@ -165,6 +171,7 @@ S4M_SYSTEMD={q(str(self.root / 'systemd'))}
 S4M_LIBRARY={q(str(self.root / 'library/maintenance'))}
 S4S_LIBRARY={q(str(self.root / 'library/ssh'))}
 S4S_CONFIG={q(str(self.module.CONFIG))}
+S4S_NETWORKS={q(str(self.module.ADMIN_NETWORKS))}
 S4S_HOST_KEY={q(str(self.module.HOST_KEY))}
 S4S_SSHD={q(str(self.sshd))}
 s4m_trusted() {{
