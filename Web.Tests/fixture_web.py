@@ -70,6 +70,7 @@ f=importlib.util.module_from_spec(spec);spec.loader.exec_module(f);f.configure(m
 sys.exit(m.main())
 '''
             self.write(self.root/'policy.py',wrapper.encode());self.write(self.root/'manager.py',MODEL.encode())
+            self.write(self.root/'model.lock',b'')
         except BaseException:self.private.cleanup();raise
 
     @staticmethod
@@ -149,6 +150,15 @@ S4M_SYSTEMD={q(str(self.root/'systemd'))}
 S4M_LIBRARY={q(str(self.root/'library/maintenance'))}
 S4W_LIBRARY={q(str(self.root/'library/web'))}
 S4W_CONFIG={q(str(self.m.CONFIG.parent))}
+source {q(str(ROOT/'Bootstrap.Tests/fixture_delivery.sh'))}
+s4_fixture_start {q(str(ROOT/'Web.Tests/fixture_manager.py'))} {q(str(self.root/'manager.py'))} {q(str(self.root))} {q(str(self.root/'events.jsonl'))} {q(str(self.root))}
+S4_WEB_MODEL_OPEN=1
+s4_web_model_stop() {{
+ [[ $BASHPID == "$S4_FIXTURE_OWNER" && $S4_WEB_MODEL_OPEN == 1 ]] || return 0
+ S4_WEB_MODEL_OPEN=0
+ s4_fixture_stop
+}}
+trap s4_web_model_stop EXIT
 s4m_trusted() {{
  local path=$1 owner mode
  [[ $path == {q(str(self.root))} || $path == {q(str(self.root))}/* ]] || return 1
@@ -160,16 +170,17 @@ s4m_trusted() {{
   path=${{path%/*}}
  done
 }}
-s4m_systemctl() {{ /usr/bin/python3 -B {q(str(self.root/'manager.py'))} {q(str(self.root))} systemctl "$@"; }}
+s4m_systemctl() {{ s4_fixture_call systemctl systemctl "$@"; }}
 s4w_action() {{ [[ $1 == start || $1 == stop ]] && s4m_systemctl "$1" "$S4W_SERVER"; }}
 s4w_policy() {{ /usr/bin/python3 -B {q(str(self.root/'policy.py'))} "$@"; }}
-s4m_sync() {{ /usr/bin/python3 -B {q(str(self.root/'manager.py'))} {q(str(self.root))} sync "$@"; }}
+s4m_sync() {{ s4_fixture_call systemctl sync "$@"; }}
 s4m_control() {{ local action=$1;shift; case $action in
- dpkg-query) /usr/bin/python3 -B {q(str(self.root/'manager.py'))} {q(str(self.root))} package "$@" ;;
- dpkg) /usr/bin/python3 -B {q(str(self.root/'manager.py'))} {q(str(self.root))} audit "$@" ;;
+ dpkg-query) s4_fixture_call systemctl package "$@" ;;
+ dpkg) s4_fixture_call systemctl audit "$@" ;;
  *) return 1 ;; esac; }}
 s4m_load_packages() {{ source {q(str(ROOT/'Tasks/prerequisites/common.sh'))}; }}
 {command}
+s4_web_model_stop
 '''
 
 
