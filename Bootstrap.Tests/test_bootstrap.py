@@ -143,7 +143,8 @@ elif action == "systemctl":
                         "debian13s4-network.timer", "debian13s4-network.service",
                  "debian13s4-retention.timer", "debian13s4-retention.service",
                  "debian13s4-hardening.timer", "debian13s4-hardening.service",
-                 "debian13s4-ssh.timer", "debian13s4-ssh.service", "debian13s4-admin-ssh.service"), args
+                 "debian13s4-ssh.timer", "debian13s4-ssh.service", "debian13s4-admin-ssh.service",
+                 "debian13s4-postgresql.timer", "debian13s4-postgresql.service", "debian13s4-postgresql-server.service"), args
         state["active"][unit] = False
     elif operation == "start":
         assert unit in (timer, boot_unit), args
@@ -318,7 +319,7 @@ fi
         self.assertFalse((self.boot / "pending").exists())
         self.assertTrue(self.state()["disk"]["timer_enabled"])
         self.assertTrue(self.state()["active"][TIMER])
-        self.assertEqual((self.library / "tasks.list").read_text(), "prerequisites:\nnetwork:prerequisites\nhardening:prerequisites\nretention:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\nssh:prerequisites network hardening\n")
+        self.assertEqual((self.library / "tasks.list").read_text(), "prerequisites:\nnetwork:prerequisites\nhardening:prerequisites\nretention:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\nssh:prerequisites network hardening\npostgresql:prerequisites hardening maintenance\n")
         self.assertTrue((self.boot / "installed").is_file())
 
     def test_self_contained_payload_matches_all_current_sources(self):
@@ -550,14 +551,53 @@ fi
         spec = importlib.util.spec_from_file_location('ssh_pack', ROOT / 'Bootstrap/pack.py')
         pack = importlib.util.module_from_spec(spec); spec.loader.exec_module(pack)
         assets = pack.assets()
-        self.assertEqual(len(assets), 65)
+        self.assertEqual(len(assets), 74)
         self.assertIn(b'ssh:prerequisites network hardening\n', assets['lib/tasks.list'][0])
         self.assertEqual(assets['lib/firewall/kernel.py'], ((ROOT / 'Firewall/kernel.py').read_bytes(), '0644'))
         for name in ('common.sh', 'policy.py', 'repair.sh', 'debian13s4-admin-ssh.service',
                      'debian13s4-ssh.service', 'debian13s4-ssh.timer'):
             self.assertEqual((self.library / 'ssh' / name).read_bytes(), (ROOT / 'SSH' / name).read_bytes())
         unit = configparser.ConfigParser(interpolation=None); unit.read(self.systemd / BOOT)
-        self.assertEqual(unit['Service']['TimeoutStartSec'], '2634s')
+        self.assertEqual(unit['Service']['TimeoutStartSec'], '2976s')
+
+    def test_old_postgresql_daemon_and_controllers_stop_before_bundle_publication(self):
+        names=('debian13s4-postgresql.timer','debian13s4-postgresql.service',
+               'debian13s4-postgresql-server.service')
+        state=self.state()
+        for name in names:
+            (self.systemd/name).write_text('[Unit]\nDescription=Old private PostgreSQL fixture\n')
+            (self.systemd/name).chmod(0o644);state['active'][name]=True
+        self.database.write_text(json.dumps(state));self.assert_success(self.finish())
+        events=self.events();published=next(i for i,event in enumerate(events) if event['library'])
+        for name in names:
+            stopped=next(i for i,event in enumerate(events) if event['action']=='systemctl' and event['args']==['stop',name])
+            self.assertLess(stopped,published);self.assertTrue(events[stopped]['guard'])
+            self.assertFalse(self.state()['active'][name])
+
+    def test_postgresql_stop_failure_preserves_old_worker_and_durable_pending_guard(self):
+        name='debian13s4-postgresql-server.service'
+        (self.systemd/name).write_text('[Unit]\nDescription=Old PostgreSQL fixture\n');(self.systemd/name).chmod(0o644)
+        self.library.mkdir();self.library.chmod(0o755)
+        (self.library/'repair.sh').write_text('old-worker\n');(self.library/'repair.sh').chmod(0o755)
+        self.faults(**{'stop_'+name:True})
+        self.assertNotEqual(self.finish().returncode,0)
+        self.assertEqual((self.library/'repair.sh').read_text(),'old-worker\n')
+        self.assertTrue(self.state()['disk']['boot_enabled']);self.assertIn('pending',self.state()['disk']['boot'])
+
+    def test_postgresql_payload_registry_and_preprovisioned_profile_are_exact(self):
+        self.assert_success(self.finish())
+        spec=importlib.util.spec_from_file_location('postgres_pack',ROOT/'Bootstrap/pack.py')
+        pack=importlib.util.module_from_spec(spec);spec.loader.exec_module(pack);assets=pack.assets()
+        self.assertEqual(len(assets),74)
+        self.assertIn(b'postgresql:prerequisites hardening maintenance\n',assets['lib/tasks.list'][0])
+        for name in ('prepare.py','live.py','common.sh','repair.sh','debian13s4-postgresql-server.service',
+                     'debian13s4-postgresql.service','debian13s4-postgresql.timer'):
+            self.assertEqual((self.library/'postgresql'/name).read_bytes(),(ROOT/'PostgreSQL'/name).read_bytes())
+            self.assertEqual(assets['lib/postgresql/'+name][1],'0755' if name=='repair.sh' else '0644')
+        for name in ('apply.sh','verify.sh'):
+            self.assertEqual((self.library/'tasks/postgresql'/name).read_bytes(),(ROOT/'Tasks/postgresql'/name).read_bytes())
+        unit=configparser.ConfigParser(interpolation=None);unit.read(self.systemd/BOOT)
+        self.assertEqual(unit['Service']['TimeoutStartSec'],'2976s')
 
     def test_lock_contention_cannot_replace_the_running_worker(self):
         result = self.run_script(self.harness() + '''

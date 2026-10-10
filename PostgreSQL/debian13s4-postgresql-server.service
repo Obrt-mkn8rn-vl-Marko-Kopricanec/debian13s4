@@ -1,0 +1,45 @@
+[Unit]
+Description=Enrolled pre-provisioned local-only Debian PostgreSQL 17
+After=local-fs.target
+RequiresMountsFor=/usr/local/lib/debian13s4 /etc/debian13s4 /etc/debian13s4-postgresql /var/lib/debian13s4-postgresql
+ConditionPathExists=!/var/lib/debian13s4/bootstrap/pending
+StartLimitIntervalSec=0
+
+[Service]
+Type=notify
+NotifyAccess=main
+User=postgres
+Group=postgres
+# The root prestart checker needs private enrollment and performs bounded
+# read-only runuser/pg_controldata delivery. '+' is deliberate, not isolation.
+ExecStartPre=+/usr/bin/python3 -I -B /usr/local/lib/debian13s4/postgresql/live.py --prestart
+ExecStart=/usr/lib/postgresql/17/bin/postgres -D /var/lib/debian13s4-postgresql -c config_file=/etc/debian13s4-postgresql/postgresql.conf
+UMask=0077
+RuntimeDirectory=debian13s4-postgresql
+RuntimeDirectoryMode=0755
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=120s
+TimeoutStopSec=120s
+KillSignal=SIGINT
+KillMode=control-group
+Restart=on-failure
+RestartSec=30s
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/debian13s4-postgresql /run/debian13s4-postgresql
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_UNIX
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

@@ -18,7 +18,7 @@ def literal(text):
 def assets():
     result = {
         "lib/repair.sh": ((ROOT / "Recovery/repair.sh").read_bytes(), "0755"),
-        "lib/tasks.list": (b"prerequisites:\nnetwork:prerequisites\nhardening:prerequisites\nretention:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\nssh:prerequisites network hardening\n", "0644"),
+        "lib/tasks.list": (b"prerequisites:\nnetwork:prerequisites\nhardening:prerequisites\nretention:prerequisites\nmaintenance:prerequisites\ndotnet:prerequisites\nssh:prerequisites network hardening\npostgresql:prerequisites hardening maintenance\n", "0644"),
     }
     for name in ("apply.sh", "verify.sh", "common.sh", "debian.sources"):
         result[f"lib/tasks/prerequisites/{name}"] = (
@@ -71,6 +71,13 @@ def assets():
             (ROOT / 'SSH' / name).read_bytes(), '0755' if name == 'repair.sh' else '0644')
     for name in ('apply.sh', 'verify.sh'):
         result[f'lib/tasks/ssh/{name}'] = ((ROOT / 'Tasks/ssh' / name).read_bytes(), '0644')
+    for name in ('prepare.py', 'live.py', 'common.sh', 'repair.sh',
+                 'debian13s4-postgresql-server.service', 'debian13s4-postgresql.service',
+                 'debian13s4-postgresql.timer'):
+        result[f'lib/postgresql/{name}'] = (
+            (ROOT / 'PostgreSQL' / name).read_bytes(), '0755' if name == 'repair.sh' else '0644')
+    for name in ('apply.sh', 'verify.sh'):
+        result[f'lib/tasks/postgresql/{name}'] = ((ROOT / 'Tasks/postgresql' / name).read_bytes(), '0644')
     return result
 
 

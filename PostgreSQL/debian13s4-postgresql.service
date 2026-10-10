@@ -1,0 +1,31 @@
+[Unit]
+Description=Check and restore the enrolled local PostgreSQL startup generation
+After=local-fs.target
+RequiresMountsFor=/usr/local/lib/debian13s4 /var/lib/debian13s4 /etc/debian13s4 /etc/debian13s4-postgresql /var/lib/debian13s4-postgresql
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/debian13s4/postgresql/repair.sh
+User=root
+Group=root
+UMask=0077
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+# Finite honest-work admission: 60 controls*11 + 15 policy*16 + 3 server
+# actions*121 + 60 local seconds =1323, below1500. Not stalled-work proof.
+TimeoutStartSec=1500s
+TimeoutStopSec=30s
+KillMode=control-group
+Restart=on-failure
+RestartSec=1min
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_UNIX
+SystemCallArchitectures=native

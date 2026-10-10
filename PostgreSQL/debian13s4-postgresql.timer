@@ -1,0 +1,12 @@
+[Unit]
+Description=Periodic enrolled local PostgreSQL source and loaded-generation check
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=5min
+AccuracySec=15s
+Persistent=yes
+Unit=debian13s4-postgresql.service
+
+[Install]
+WantedBy=timers.target
