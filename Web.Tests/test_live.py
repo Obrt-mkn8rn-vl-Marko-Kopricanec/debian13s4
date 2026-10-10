@@ -137,6 +137,54 @@ class WebLiveTests(unittest.TestCase):
         with self.assertRaises(self.m.Pending):self.m.sockets(raw,100,{'uid':33,'gid':33},lambda pid:{'uid':33,'gid':33,'ppid':1,'start':500})
         with self.assertRaises(self.m.Pending):self.m.sockets(raw,100,{'uid':33,'gid':33},lambda pid:{'uid':0 if pid==100 else 33,'gid':0 if pid==100 else 33,'ppid':99,'start':500})
 
+
+    def test_owner_admission_requires_a_worker_on_each_listener(self):
+        addresses=('0.0.0.0:80','[::]:80','0.0.0.0:443','[::]:443')
+        master='("nginx",pid=100,fd=6)'
+        worker='("nginx",pid=101,fd=6)'
+        proc=lambda pid:{'uid':0 if pid==100 else 33,'gid':0 if pid==100 else 33,
+            'ppid':1 if pid==100 else 100,'start':500}
+        def rows(missing):
+            return b''.join(('LISTEN 0 511 '+address+' *:* users:('+master+
+                ('' if index in missing else ','+worker)+')\n').encode()
+                for index,address in enumerate(addresses))
+        self.m.sockets(rows(set()),100,{'uid':33,'gid':33},proc)
+        for missing in ({0,1,2,3},{0},{1},{2},{3}):
+            with self.subTest(missing=missing),self.assertRaises(self.m.Pending):
+                self.m.sockets(rows(missing),100,{'uid':33,'gid':33},proc)
+
+    def test_owner_admission_rejects_other_primary_group_before_native_entry(self):
+        path=self.m.PASSWD;good=path.read_bytes()
+        other=b'other:x:34:33::/:/bin/false\n'
+        for raw in (other+good,good+other):
+            with self.subTest(order=raw.startswith(other)):
+                path.write_bytes(raw)
+                with patch.object(self.m,'native') as native,self.assertRaises(self.m.Pending):
+                    self.m.check(read=native)
+                native.assert_not_called()
+        path.write_bytes(good)
+        self.m.check(read=self.model)
+
+
+    def test_other_primary_group_is_permitted_without_weakening_worker_identity(self):
+        good=self.m.PASSWD.read_bytes();other=b'other:x:34:34::/:/bin/false\n'
+        for raw in (other+good,good+other):
+            with self.subTest(order=raw.startswith(other)):
+                self.assertEqual(self.m.worker(raw),{'uid':33,'gid':33,'name':'www-data'})
+
+    def test_worker_bearing_listener_inventory_repeats_all_owner_identities(self):
+        raw=b''.join(('LISTEN 0 511 '+address+' *:* users:(("nginx",pid=100,fd=6),("nginx",pid=101,fd=6))\n').encode()
+            for address in ('0.0.0.0:80','[::]:80','0.0.0.0:443','[::]:443'))
+        for changed in (100,101):
+            calls=[]
+            def proc(pid):
+                calls.append(pid)
+                return {'uid':0 if pid==100 else 33,'gid':0 if pid==100 else 33,
+                    'ppid':1 if pid==100 else 100,'start':501 if pid==changed and calls.count(pid)>1 else 500}
+            with self.subTest(changed=changed),self.assertRaises(self.m.Pending):
+                self.m.sockets(raw,100,{'uid':33,'gid':33},proc)
+            self.assertGreaterEqual(calls.count(changed),2)
+
     def test_reported_process_identity_drift_refuses(self):
         raw=b''.join(('LISTEN 0 511 '+address+' *:* users:(("nginx",pid=100,fd=6))\n').encode()
             for address in ('0.0.0.0:80','[::]:80','0.0.0.0:443','[::]:443'))

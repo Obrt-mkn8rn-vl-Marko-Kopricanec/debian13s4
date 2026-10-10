@@ -405,7 +405,7 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=60bf2689da8a91013574bb9baa4a039aa7ae50ac4eb96b70a54cd213d674e93c
+S4B_BUNDLE_ID=631a441c37a7b903aed6910368925cef4e5a44c46a7610ddbb626f72eb8c3025
 S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh)
 S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644)
 
@@ -6600,7 +6600,7 @@ def worker(raw):
     except UnicodeError as error: raise Pending('unsupported web account encoding') from error
     if not text.endswith('\\n') or any(c!='\\n' and not 32<=ord(c)<=126 for c in text):
         raise Pending('unsupported web account inventory')
-    rows=text[:-1].split('\\n'); seen=set();uids=set();selected=None
+    rows=text[:-1].split('\\n'); seen=set();uids=set();primary_gids={};selected=None
     if len(rows)>4096:raise Pending('web account row bound')
     for line in rows:
         row=line.split(':')
@@ -6610,13 +6610,15 @@ def worker(raw):
             raise Pending('malformed web account identity')
         uid,gid=(KERNEL.uint(int(row[i]),0x7fffffff) for i in (2,3))
         if uid in uids:raise Pending('shared web account UID')
-        seen.add(row[0]);uids.add(uid)
+        seen.add(row[0]);uids.add(uid);primary_gids[row[0]]=gid
         if row[0]=='www-data':
             if (not 1<=uid<=999 or gid==0 or row[1] not in ('x','!','*') or
                 row[6] not in ('/usr/sbin/nologin','/sbin/nologin','/bin/false')):
                 raise Pending('unsupported existing nginx worker account')
             selected={'uid':uid,'gid':gid,'name':'www-data'}
     if selected is None:raise Pending('missing existing nginx worker account')
+    if any(name!=selected['name'] and gid==selected['gid'] for name,gid in primary_gids.items()):
+        raise Pending('shared nginx worker primary group')
     return selected
 
 
@@ -6809,6 +6811,7 @@ def sockets(raw,pid,account,proc=process):
                 if info['uid']!=0 or info['gid']!=0:raise Pending('nonroot reported nginx master')
             elif info['uid']!=account['uid'] or info['gid']!=account['gid'] or info['ppid']!=pid:raise Pending('foreign nginx worker')
         if pid not in ids or len(set(ids))!=len(ids):raise Pending('missing/duplicate nginx master owner')
+        if not any(number!=pid for number in ids):raise Pending('missing validated nginx worker owner')
         found.add(parts[3])
     if found!=expected:raise Pending('incomplete public nginx listener inventory')
     for number,before in owners.items():
@@ -7324,7 +7327,7 @@ fa6da84d1e731b98c24618ad8f872b0ef90aa287d1e3d76bc3b6cb48b2998405  lib/postgresql
 b09b6b1a5ff3e4c162a2d6bae7a47a1bc39dd804d88bf3f9ecdb56ed5f4b5ba5  lib/tasks/postgresql/apply.sh
 71c562845f4f9d7130ac675d4912ce7ae3459b74050d1b90f22e64a25fa36f84  lib/tasks/postgresql/verify.sh
 f648899b4a9f33e7dbcfb4267bb50b35d6e75f89c6568ba3d00353e5274091c6  lib/web/prepare.py
-5f773dba87d02c7e555d5ef4c798ebab826bfde5365fe36f4ace1ed0f5e002cd  lib/web/live.py
+297ed3357e3cdae5e2cc601504e12514d1e31d9f4c09c2a54907241d3a78bd76  lib/web/live.py
 0669be8796ca8608daa1309c4c1d47b6622b00a904ce86f6fc41465357664291  lib/web/common.sh
 1293c7fded0b7f3d157042c6b1dabbbc457721f8d1da0a7963a006dbb045f29d  lib/web/repair.sh
 b2c8beec9d2427ac3f8c1efad7650aa2feab9ae99e193876663a237a3904a328  lib/web/debian13s4-web-server.service

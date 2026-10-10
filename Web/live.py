@@ -48,7 +48,7 @@ def worker(raw):
     except UnicodeError as error: raise Pending('unsupported web account encoding') from error
     if not text.endswith('\n') or any(c!='\n' and not 32<=ord(c)<=126 for c in text):
         raise Pending('unsupported web account inventory')
-    rows=text[:-1].split('\n'); seen=set();uids=set();selected=None
+    rows=text[:-1].split('\n'); seen=set();uids=set();primary_gids={};selected=None
     if len(rows)>4096:raise Pending('web account row bound')
     for line in rows:
         row=line.split(':')
@@ -58,13 +58,15 @@ def worker(raw):
             raise Pending('malformed web account identity')
         uid,gid=(KERNEL.uint(int(row[i]),0x7fffffff) for i in (2,3))
         if uid in uids:raise Pending('shared web account UID')
-        seen.add(row[0]);uids.add(uid)
+        seen.add(row[0]);uids.add(uid);primary_gids[row[0]]=gid
         if row[0]=='www-data':
             if (not 1<=uid<=999 or gid==0 or row[1] not in ('x','!','*') or
                 row[6] not in ('/usr/sbin/nologin','/sbin/nologin','/bin/false')):
                 raise Pending('unsupported existing nginx worker account')
             selected={'uid':uid,'gid':gid,'name':'www-data'}
     if selected is None:raise Pending('missing existing nginx worker account')
+    if any(name!=selected['name'] and gid==selected['gid'] for name,gid in primary_gids.items()):
+        raise Pending('shared nginx worker primary group')
     return selected
 
 
@@ -257,6 +259,7 @@ def sockets(raw,pid,account,proc=process):
                 if info['uid']!=0 or info['gid']!=0:raise Pending('nonroot reported nginx master')
             elif info['uid']!=account['uid'] or info['gid']!=account['gid'] or info['ppid']!=pid:raise Pending('foreign nginx worker')
         if pid not in ids or len(set(ids))!=len(ids):raise Pending('missing/duplicate nginx master owner')
+        if not any(number!=pid for number in ids):raise Pending('missing validated nginx worker owner')
         found.add(parts[3])
     if found!=expected:raise Pending('incomplete public nginx listener inventory')
     for number,before in owners.items():
