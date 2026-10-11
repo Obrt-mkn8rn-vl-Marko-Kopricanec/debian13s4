@@ -276,6 +276,51 @@ s4_fixture_stop
         self.assertEqual((self.fixture.root / 'retirement').read_text(), '0::\n')
         self.assertEqual(len(self.fixture.events()), 1)
 
+    def test_stop_retires_worker_reference_before_waiting_for_that_same_worker_once(self):
+        result = self.script('''
+wait() {
+    printf '%s:%s:%s\n' "$#" "${1-missing}" "${S4_FIXTURE_WORKER-unretired}" >> "$S4_FIXTURE_ROOT/worker-waits"
+    builtin wait "$@"
+}
+s4b_systemctl daemon-reload
+s4_fixture_stop
+[[ -z ${S4_FIXTURE_WORKER-unretired} ]]
+s4_fixture_stop
+''')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        worker = (self.fixture.root / 'model.pid').read_text()
+        self.assertEqual((self.fixture.root / 'worker-waits').read_text(),
+                         '1:' + worker.strip() + ':\n')
+        self.assertFalse(Path('/proc/' + worker.strip()).exists())
+        self.assertEqual(len(self.fixture.events()), 1)
+
+    def test_closed_call_and_repeated_stop_preserve_independently_reused_output_descriptor(self):
+        result = self.script('''
+s4b_systemctl daemon-reload
+old_input=$S4_FIXTURE_INPUT
+old_output=$S4_FIXTURE_OUTPUT
+s4_fixture_stop
+printf 'response remains unread\n' > "$S4_FIXTURE_ROOT/replacement-output"
+exec {reserved}<> "$S4_FIXTURE_ROOT/reserved-input"
+exec {response}< "$S4_FIXTURE_ROOT/replacement-output"
+[[ $reserved == "$old_input" && $response == "$old_output" ]]
+if s4_fixture_call trust "$S4_FIXTURE_ROOT"; then exit 99; else status=$?; fi
+[[ $status == 75 ]]
+s4_fixture_stop
+IFS= read -r line <&"$response"
+[[ $line == 'response remains unread' ]]
+printf 'reserved remains open\n' >&"$reserved"
+exec {response}<&-
+exec {reserved}>&-
+''')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.fixture.root / 'replacement-output').read_bytes(),
+                         b'response remains unread\n')
+        self.assertEqual((self.fixture.root / 'reserved-input').read_bytes(),
+                         b'reserved remains open\n')
+        self.assertFalse((self.fixture.root / 'model.failed').exists())
+        self.assertEqual(len(self.fixture.events()), 1)
+
 
 if __name__ == '__main__':
     unittest.main()
