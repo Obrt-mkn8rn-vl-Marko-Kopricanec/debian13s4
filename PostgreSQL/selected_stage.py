@@ -33,10 +33,11 @@ MAX_OUTPUT = BACKUP.MAX_OUTPUT + DUMP.MAX_RECEIPT + STAGE.MAX_RECEIPT + 8192
 
 class Incomplete(RuntimeError):
     """Preserve original failure/uncertainty, known receipts and separate cleanup."""
-    def __init__(self, cause, uncertainty, stream_receipt, stage_receipt, cleanup):
+    def __init__(self, cause, uncertainty, stream_receipt, stage_receipt, cleanup, provenance):
         super().__init__('selected backup stage may exist; no automatic retry or publication')
         self.cause, self.uncertainty = cause, uncertainty
         self.stream_receipt, self.stage_receipt, self.cleanup = stream_receipt, stage_receipt, cleanup
+        self.provenance = provenance # Original immutable intention and AFTER-cleanup capture.
 
 
 def fence(end, context):
@@ -133,4 +134,5 @@ def stage_selected(application, stderr_limit, read=None, deadline=None):
         if isinstance(cause,DUMP.Uncertain): uncertainty = cause
         if uncertainty is None and stream.started and not stream.done:
             uncertainty = DUMP.Uncertain(cause,stream.evidence(),tuple(cleanup))
-        raise Incomplete(cause,uncertainty,stream.receipt,staged,tuple(cleanup)) from cause
+        raise Incomplete(cause,uncertainty,stream.receipt,staged,tuple(cleanup),
+            (original,application,stderr_limit,stream.evidence())) from cause
