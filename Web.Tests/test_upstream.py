@@ -286,4 +286,54 @@ class NativeDeliveryTests(unittest.TestCase):
         self.assertEqual(self.events.count(('channel-close',)),1)
 
 
+    def test_ragged_tls_eof_after_complete_http_refuses_and_retires_channel(self):
+        failure = ssl.SSLEOFError('private modeled missing TLS close_notify')
+
+        class RaggedParts(list):
+            def pop(inner, index=0):
+                value = super().pop(index)
+                if not value:
+                    raise failure
+                return value
+
+        self.parts = RaggedParts([http('mk8.email'), b''])
+        with self.assertRaises(ssl.SSLEOFError) as caught:
+            self.run_native()
+        self.assertIs(caught.exception, failure)
+        self.assertEqual(sum(row[0] == 'recv' for row in self.events), 2)
+        self.assertEqual(self.events.count(('channel-close',)), 1)
+        self.assertNotIn(('raw-close',), self.events)
+
+    def test_certificate_retrieval_failure_prevents_request_and_retires_channel(self):
+        self.fail = 'certificate'
+        with self.assertRaisesRegex(OSError, 'private injected certificate'):
+            self.run_native()
+        self.assertEqual(sum(row[0] == 'certificate' for row in self.events), 1)
+        self.assertFalse(any(row[0] in ('send', 'recv') for row in self.events))
+        self.assertEqual(self.events.count(('channel-close',)), 1)
+        self.assertNotIn(('raw-close',), self.events)
+
+    def test_each_blocking_operation_receives_shrinking_same_deadline(self):
+        outer = self
+
+        class ClockedEvents(list):
+            def append(inner, value):
+                super().append(value)
+                if value[0] in ('connect', 'handshake', 'certificate', 'send', 'recv'):
+                    outer.clock.return_value += 0.25
+
+        for parent, initial in ((20, 3), (11.75, 1.75)):
+            with self.subTest(parent=parent), patch.object(self.m.KERNEL, 'now', return_value=10) as self.clock:
+                self.events = ClockedEvents()
+                self.parts = [http('mk8.email'), b'']
+                result = self.m.native('mk8.email', self.item, b'CA MODEL', parent)
+                self.assertEqual(result['response'], http('mk8.email'))
+                limits = [row[1] for row in self.events if row[0] in ('raw-timeout', 'timeout')]
+                self.assertEqual(limits, [initial, initial, initial - .25,
+                                          initial - .75, initial - 1, initial - 1.25])
+                self.assertEqual(self.clock.return_value, 11.5)
+                self.assertEqual(self.events.count(('channel-close',)), 1)
+                self.assertNotIn(('raw-close',), self.events)
+
+
 if __name__=='__main__':unittest.main()
