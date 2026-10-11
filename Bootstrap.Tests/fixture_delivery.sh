@@ -1,6 +1,7 @@
 # Private test transport only. Never sourced by the installer or host units.
 s4_fixture_start() {
     local helper=$1 model=$2 database=$3 log=$4 root=$5 input output
+    S4_FIXTURE_OPEN=0
     S4_FIXTURE_OWNER=$BASHPID
     S4_FIXTURE_ROOT=$root
     rm -f -- "$root/model.failed"
@@ -15,20 +16,28 @@ s4_fixture_start() {
     exec {input}>&-
     exec {output}<&-
     printf '%s\n' "$S4_FIXTURE_WORKER" > "$root/model.pid"
+    S4_FIXTURE_OPEN=1
 }
 
 s4_fixture_stop() {
     # Pipeline/substitution children must never terminate the parent interpreter.
-    [[ $BASHPID == "$S4_FIXTURE_OWNER" ]] || return 0
-    exec {S4_FIXTURE_INPUT}>&-
-    exec {S4_FIXTURE_OUTPUT}<&-
+    [[ $BASHPID == "$S4_FIXTURE_OWNER" && ${S4_FIXTURE_OPEN-0} == 1 ]] || return 0
+    local input=$S4_FIXTURE_INPUT output=$S4_FIXTURE_OUTPUT worker=$S4_FIXTURE_WORKER
+    # Retire before cleanup: repeated/EXIT calls cannot act on reused numbers.
+    S4_FIXTURE_OPEN=0
+    S4_FIXTURE_INPUT=
+    S4_FIXTURE_OUTPUT=
+    S4_FIXTURE_WORKER=
+    exec {input}>&-
+    exec {output}<&-
     # EOF terminates the reader; run_bash's unchanged outer deadline/session
     # cleanup still owns a blocked interpreter and every fixture descendant.
-    wait "$S4_FIXTURE_WORKER" 2>/dev/null || :
+    wait "$worker" 2>/dev/null || :
 }
 
 s4_fixture_call() {
     local lock status=75 code stdout stderr
+    [[ ${S4_FIXTURE_OPEN-0} == 1 ]] || return 75
     [[ ! -e $S4_FIXTURE_ROOT/model.failed ]] || return 75
     exec {lock}<> "$S4_FIXTURE_ROOT/model.lock"
     if {

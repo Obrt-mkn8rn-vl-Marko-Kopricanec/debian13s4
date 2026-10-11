@@ -213,5 +213,69 @@ printf 'unexpected success\n'
             self.assertEqual(normalize(self.fixture.events(), self.fixture), normalize(other.events(), other))
 
 
+    def test_repeated_stop_preserves_reused_descriptor_and_waits_once(self):
+        result = self.script('''
+wait() {
+    printf 'wait\n' >> "$S4_FIXTURE_ROOT/waits"
+    builtin wait "$@"
+}
+s4b_systemctl daemon-reload
+old_input=$S4_FIXTURE_INPUT
+s4_fixture_stop
+exec {retained}>> "$S4_FIXTURE_ROOT/retained"
+[[ $retained == "$old_input" ]]
+s4_fixture_stop
+printf 'preserved\n' >&"$retained"
+exec {retained}>&-
+''')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.fixture.root / 'retained').read_bytes(), b'preserved\n')
+        self.assertEqual((self.fixture.root / 'waits').read_text(), 'wait\n')
+        self.assertEqual(len(self.fixture.events()), 1)
+
+    def test_request_after_stop_refuses_before_writing_reused_descriptor(self):
+        result = self.script('''
+s4b_systemctl daemon-reload
+old_input=$S4_FIXTURE_INPUT
+s4_fixture_stop
+exec {retained}>> "$S4_FIXTURE_ROOT/retained"
+[[ $retained == "$old_input" ]]
+printf 'preserved\n' >&"$retained"
+if s4_fixture_call trust "$S4_FIXTURE_ROOT"; then exit 99; else status=$?; fi
+[[ $status == 75 ]]
+exec {retained}>&-
+''')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.fixture.root / 'retained').read_bytes(), b'preserved\n')
+        self.assertFalse((self.fixture.root / 'model.failed').exists())
+        self.assertEqual(len(self.fixture.events()), 1)
+
+    def test_substitution_stop_cannot_retire_parent_delivery(self):
+        result = self.script('''
+value=$(s4_fixture_stop; [[ ${S4_FIXTURE_OPEN-closed} == 1 ]] || exit 99; printf 'child\n')
+[[ $value == child ]]
+s4b_systemctl daemon-reload
+s4b_systemctl daemon-reload
+''')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(self.fixture.events()), 2)
+
+    def test_stop_retires_references_before_wait_and_never_retries_wait_failure(self):
+        result = self.script('''
+wait() {
+    printf '%s:%s:%s\n' "${S4_FIXTURE_OPEN-missing}" "$S4_FIXTURE_INPUT" "$S4_FIXTURE_OUTPUT" >> "$S4_FIXTURE_ROOT/retirement"
+    builtin wait "$@"
+    return 19
+}
+s4b_systemctl daemon-reload
+s4_fixture_stop
+[[ $S4_FIXTURE_OPEN == 0 && -z $S4_FIXTURE_INPUT && -z $S4_FIXTURE_OUTPUT ]]
+s4_fixture_stop
+''')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.fixture.root / 'retirement').read_text(), '0::\n')
+        self.assertEqual(len(self.fixture.events()), 1)
+
+
 if __name__ == '__main__':
     unittest.main()
