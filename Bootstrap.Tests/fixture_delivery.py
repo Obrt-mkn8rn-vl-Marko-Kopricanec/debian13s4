@@ -2,7 +2,9 @@
 
 from contextlib import redirect_stderr, redirect_stdout
 import io
+import os
 from pathlib import Path
+import stat
 import sys
 import traceback
 
@@ -37,9 +39,33 @@ def request(stream):
         remaining -= len(item) + 1
         # The maintained model uses UTF-8 paths and logical strings, not byte IO.
         args.append(item.decode('utf-8'))
-    if args[0] not in ('sync', 'systemctl') or not args[1]:
+    if args[0] not in ('sync', 'systemctl', 'trust') or not args[1]:
         raise ValueError('invalid fixture model admission')
+    if args[0] == 'trust' and len(args) != 2:
+        raise ValueError('private trust request accepts one path')
     return args
+
+
+def trusted(root, path):
+    # Fresh lstat of EVERY component on EVERY request, never a cached verdict.
+    # Equivalent to the private harness's -e/!-L/-O/mode/ancestry grammar only;
+    # this is not production root trust, hostile mount containment or atomicity.
+    root = str(root)
+    if (type(path) is not str or not root.startswith('/') or
+        (path != root and not path.startswith(root + '/')) or
+        '/./' in path or path.endswith('/.') or '/../' in path or
+        path.endswith('/..') or '//' in path):
+        return False
+    while True:
+        try:
+            fact = os.lstat(path)
+        except OSError:
+            return False
+        if stat.S_ISLNK(fact.st_mode) or fact.st_uid != os.geteuid() or fact.st_mode & 0o022:
+            return False
+        if path == root:
+            return True
+        path = path.rsplit('/', 1)[0]
 
 
 def execute(code, model, database, log, args):
@@ -75,7 +101,10 @@ def execute(code, model, database, log, args):
 def serve(model, database, log, source, sink):
     code = compile(Path(model).read_text(), str(model), 'exec')
     while (args := request(source)) is not None:
-        payload = execute(code, model, database, log, args)
+        if args[0] == 'trust':
+            payload = (b'0' if trusted(Path(database).parent, args[1]) else b'1') + b'\0\0\0'
+        else:
+            payload = execute(code, model, database, log, args)
         if sink.write(payload) != len(payload):
             raise OSError('short fixture response')
         sink.flush()

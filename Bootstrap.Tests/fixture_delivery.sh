@@ -31,7 +31,14 @@ s4_fixture_call() {
     local lock status=75 code stdout stderr
     [[ ! -e $S4_FIXTURE_ROOT/model.failed ]] || return 75
     exec {lock}<> "$S4_FIXTURE_ROOT/model.lock"
-    if flock --exclusive --timeout 10 "$lock"; then
+    if {
+        if [[ ${1-} == trust ]]; then
+            # Production-lock fault hooks must not intercept transport locking.
+            command flock --exclusive --timeout 10 "$lock"
+        else
+            flock --exclusive --timeout 10 "$lock"
+        fi
+    }; then
         if [[ ! -e $S4_FIXTURE_ROOT/model.failed ]] &&
             printf '%s\0' "$#" "$@" >&"$S4_FIXTURE_INPUT" &&
             IFS= read -r -d '' -t 10 code <&"$S4_FIXTURE_OUTPUT" &&

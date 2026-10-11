@@ -206,6 +206,11 @@ S4B_BOOT_DIR={quote(str(self.boot))}
 S4B_LIBRARY_DIR={quote(str(self.library))}
 S4B_SYSTEMD_DIR={quote(str(self.systemd))}
 s4b_trusted() {{
+    # Keep explicit native-stat fault deliveries on their original path.
+    if ! declare -F stat >/dev/null; then
+        s4_fixture_call trust "$1"
+        return $?
+    fi
     local path=$1 mode output
     local -a paths=() modes=()
     [[ $path == {quote(str(self.root))} || $path == {quote(str(self.root))}/* ]] || return 1
