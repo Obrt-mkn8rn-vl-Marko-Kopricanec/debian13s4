@@ -82,7 +82,7 @@ def correspondence(values):
     try:
         dns_roles = DNS.bindings(dns['identities'], dns['dns_service'])
         pg_roles = PG.bindings(pg['identities'], pg['postgresql'])
-    except (DNS.Pending, PG.Pending) as error:
+    except (DNS.Pending, PG.Pending, DNS.DNS.Pending) as error:
         raise Pending('application role prerequisite refused') from error
     if (BASE.canonical(dns['unit_bindings']) != BASE.canonical(dns_roles) or
         BASE.canonical(pg['role_bindings']) != BASE.canonical(pg_roles)):

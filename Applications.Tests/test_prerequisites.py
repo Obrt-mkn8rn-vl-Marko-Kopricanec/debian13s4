@@ -255,6 +255,25 @@ class PrerequisiteTests(unittest.TestCase):
                 with self.subTest(tag=child[0], bad=bad), patch.object(child[1], 'prepare', return_value=bad):
                     with self.assertRaises(self.m.Pending): self.m.prepared(child, self.m.KERNEL.now()+10, 4711)
 
+    def test_real_distinct_dns_profile_validator_refusal_has_public_pending_and_same_original_cause(self):
+        values = self.values(); profile = self.m.DNS.DNS
+        self.assertIsNot(profile.Pending, self.m.DNS.Pending)
+        self.assertIsNot(profile.Pending, self.m.Pending)
+        values['dns']['dns_service']['configuration']['value']['schema'] = True
+        validator = profile.checked; original = []
+        def checked(value):
+            try:
+                return validator(value)
+            except profile.Pending as error:
+                original.append(error)
+                raise
+        with patch.object(profile, 'checked', side_effect=checked):
+            with self.assertRaises(self.m.Pending) as caught:
+                self.m.correspondence(values)
+        self.assertEqual(len(original), 1)
+        self.assertIs(type(original[0]), profile.Pending)
+        self.assertIs(caught.exception.__cause__, original[0])
+
     def test_actual_private_interpreter_pipe_is_encoding_independent_and_refusal_has_no_stdout(self):
         program = '''import importlib.util,os,sys
 from pathlib import Path
