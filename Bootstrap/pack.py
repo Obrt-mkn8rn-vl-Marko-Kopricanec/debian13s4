@@ -78,7 +78,7 @@ def assets():
             (ROOT / 'PostgreSQL' / name).read_bytes(), '0755' if name == 'repair.sh' else '0644')
     for name in ('apply.sh', 'verify.sh'):
         result[f'lib/tasks/postgresql/{name}'] = ((ROOT / 'Tasks/postgresql' / name).read_bytes(), '0644')
-    for name in ('prepare.py', 'live.py', 'common.sh', 'repair.sh',
+    for name in ('prepare.py', 'live.py', 'upstream.py', 'common.sh', 'repair.sh',
                  'debian13s4-web-server.service', 'debian13s4-web.service', 'debian13s4-web.timer'):
         result[f'lib/web/{name}'] = (
             (ROOT / 'Web' / name).read_bytes(), '0755' if name == 'repair.sh' else '0644')

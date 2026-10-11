@@ -4,6 +4,7 @@ Native public-key/verify replies are MODELS (not an independent crypto oracle).
 Start snapshots keep disk bytes separate from acknowledged daemon inputs.
 """
 import importlib.util
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -26,6 +27,34 @@ def configure(m,root):
         state=json.loads((root/'manager.json').read_bytes())
         return {'uid':0 if pid==state['pid'] else 33,'gid':0 if pid==state['pid'] else 33,'ppid':1 if pid==state['pid'] else state['pid'],'start':500+state['starts']}
     m.check.__defaults__=(m.native,None,None,process)
+
+
+def configure_upstream(module,live,root):
+    # REAL accepted preparation/parser/fences, private observed HTTPS replies.
+    # This is not socket/TLS/crypto/app/formatter or native-origin evidence.
+    module.PREP=live.PREP;module.KERNEL=live.KERNEL;module.Pending=live.Pending
+    def read(app,item,ca,end):
+        state=json.loads((root/'manager.json').read_bytes());faults=state['faults']
+        with (root/'upstream.jsonl').open('a') as out:
+            out.write(json.dumps({'app':app,'item':item,'ca_sha256':hashlib.sha256(ca).hexdigest(),
+                'starts':state['starts'],'pid':os.getpid(),'sid':os.getsid(0),
+                'delivery':'in-process observed-HTTPS MODEL, not native TLS'})+'\n')
+        if faults.get('upstream')==app or faults.get('upstream_after_start')==app and state['starts']:
+            raise module.Pending('private upstream unavailable MODEL')
+        if faults.get('upstream_config_drift'):
+            value=json.loads(module.PREP.INPUT.read_bytes())
+            value['applications']['mk8.sava']['body_bytes']+=1024
+            module.PREP.INPUT.write_bytes(module.PREP.BASE.canonical(value))
+        if app=='mk8.sava':
+            body=json.dumps({'status':'ready','component':'gateway','application':'ready','metadata':'ready',
+                'integrity':{'status':'healthy','complete':False,'checkedChunks':0,'missingChunks':0,
+                    'corruptChunks':0,'customerKeyChunks':0,'checkedAt':None}}).encode()
+        elif app=='mk8.drava':body=b'running'
+        else:body=b'{"status":"ready"}'
+        media=b'text/plain; charset=utf-8' if app=='mk8.drava' else b'application/json; charset=utf-8'
+        response=b'HTTP/1.0 200 OK\r\nContent-Type: '+media+b'\r\nContent-Length: '+str(len(body)).encode()+b'\r\n\r\n'+body
+        return {'tls':'TLSv1.3','certificate':b'PRIVATE TLS CERTIFICATE MODEL','response':response}
+    module.native=read
 
 
 class PrivateWeb:
@@ -55,7 +84,7 @@ class PrivateWeb:
             self.write(self.m.CONFIG,self.m.PREP.render(self.value).encode(),0o644)
             for path in (self.m.NGINX,self.m.OPENSSL,self.m.SS):
                 self.write(path,('#!/usr/bin/python3\n'+NATIVE.replace('ROOT_REPR',repr(str(self.root)))).encode(),0o700)
-            for name in ('prepare.py','live.py','common.sh','repair.sh','debian13s4-web-server.service','debian13s4-web.service','debian13s4-web.timer'):
+            for name in ('prepare.py','live.py','upstream.py','common.sh','repair.sh','debian13s4-web-server.service','debian13s4-web.service','debian13s4-web.timer'):
                 self.write(self.root/'library/web'/name,(ROOT/'Web'/name).read_bytes(),0o700 if name=='repair.sh' else 0o600)
             for source,target in (('PostgreSQL/prepare.py','library/postgresql/prepare.py'),('Firewall/kernel.py','library/firewall/kernel.py'),
                                   ('Maintenance/common.sh','library/maintenance/common.sh'),('Tasks/prerequisites/common.sh','library/tasks/prerequisites/common.sh')):
@@ -67,6 +96,10 @@ spec=importlib.util.spec_from_file_location('web_policy',root/'library/web/live.
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 spec=importlib.util.spec_from_file_location('fixture_delivery',{str(Path(__file__).resolve())!r})
 f=importlib.util.module_from_spec(spec);spec.loader.exec_module(f);f.configure(m,root)
+if sys.argv[1:]==['--upstream']:
+ spec=importlib.util.spec_from_file_location('private_upstream_policy',root/'library/web/upstream.py')
+ u=importlib.util.module_from_spec(spec);spec.loader.exec_module(u);f.configure_upstream(u,m,root)
+ sys.argv=[sys.argv[0]];sys.exit(u.main())
 sys.exit(m.main())
 '''
             self.write(self.root/'policy.py',wrapper.encode());self.write(self.root/'manager.py',MODEL.encode())

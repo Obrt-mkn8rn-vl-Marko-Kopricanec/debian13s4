@@ -8,16 +8,22 @@ S4W_SERVER=debian13s4-web-server.service
 S4W_SERVICE=debian13s4-web.service
 S4W_TIMER=debian13s4-web.timer
 S4W_LOADED_GENERATION=''
-S4W_FILES=(prepare.py live.py common.sh repair.sh debian13s4-web-server.service
+S4W_FILES=(prepare.py live.py upstream.py common.sh repair.sh debian13s4-web-server.service
     debian13s4-web.service debian13s4-web.timer)
 
 s4w_policy() (
-    local descriptor=$S4M_REPAIR_FD seconds=10
+    local descriptor=$S4M_REPAIR_FD seconds=10 script=live.py
     [[ ${1-} != --check && ${1-} != --live ]] || seconds=65
+    if [[ ${1-} == --upstream ]]; then
+        [[ $# == 1 ]] || return 1
+        script=upstream.py
+        seconds=15
+        shift
+    fi
     trap - EXIT
     [[ -z $descriptor ]] || exec {descriptor}>&-
     timeout --signal=TERM --kill-after=1s "${seconds}s" env -i PATH="$S4M_PATH" LANG=C LC_ALL=C \
-        /usr/bin/python3 -I -B "$S4W_LIBRARY/live.py" "$@"
+        /usr/bin/python3 -I -B "$S4W_LIBRARY/$script" "$@"
 )
 
 s4w_action() (
@@ -148,18 +154,21 @@ s4w_live() {
     s4w_loaded || return 1
     before=$S4W_LOADED_GENERATION
     pid=${before%%$'\n'*}; pid=${pid#instance }; pid=${pid%% *}
-    s4w_vendor_inactive && s4w_policy --live "$pid" && s4w_loaded && [[ $before == "$S4W_LOADED_GENERATION" ]]
+    s4w_vendor_inactive && s4w_policy --live "$pid" && s4w_policy --upstream > /dev/null &&
+        s4w_loaded && [[ $before == "$S4W_LOADED_GENERATION" ]]
 }
 
 s4w_start() {
     local before after generation temporary pid
     s4m_property "$S4W_SERVER" ActiveState inactive && s4m_property "$S4W_SERVER" MainPID 0 || return 1
     s4w_vendor_inactive || return 1
+    s4w_policy --upstream > /dev/null || return 1
     before=$(s4w_identity && s4w_policy --identity) && s4w_action start &&
         after=$(s4w_identity && s4w_policy --identity) && [[ $before == "$after" ]] || return 1
     generation=$(s4w_generation) && [[ ${generation#*$'\n'} == "$before" ]] || return 1
     pid=${generation%%$'\n'*}; pid=${pid#instance }; pid=${pid%% *}
-    s4w_policy --live "$pid" && [[ $(s4w_generation) == "$generation" ]] || return 1
+    s4w_policy --live "$pid" && s4w_policy --upstream > /dev/null &&
+        [[ $(s4w_generation) == "$generation" ]] || return 1
     temporary=$(mktemp -- "$S4M_STATE/web-loaded.XXXXXX") || return 1
     if ! printf '%s\n' "$generation" > "$temporary" || ! chmod 0600 -- "$temporary" ||
         ! s4m_atomic "$S4M_STATE/web.loaded" "$temporary" 0600; then

@@ -13,8 +13,10 @@ UMask=0077
 StandardInput=null
 StandardOutput=journal
 StandardError=journal
-# At most84 controls*11 +12 plain policies*11 +4 native policies*66
-# +3 server actions*121 +60 local seconds=1743, below1750 and phase1800.
+# At most84 controls*11 +11 plain policies*11 +3 native policies*66
+# +4 upstream policies*16 +3 server actions*121 +60 local seconds=1730.
+# ExecStartPre's check is INCLUDED in the server start's121, not charged twice.
+# This remains below unchanged1750 and phase1800; no old predicate is removed.
 # Finite honest SOURCE accounting, not stalled IO/native/hard-progress proof.
 TimeoutStartSec=1750s
 TimeoutStopSec=30s
