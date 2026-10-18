@@ -30,6 +30,8 @@ CHECKS = {
                 'protected-sava-gateway-ingress-source-only'),
     'sava-service': ('sava_service.py', 'sava-systemd-credential-service-intentions-v1',
                      'protected-sava-service-intention-only'),
+    'email-worker': ('email_worker.py', 'email-worker-credential-service-intentions-v1',
+                     'protected-email-worker-service-intention-only'),
     'prerequisites': ('prepare.py', 'application-file-prerequisites-v1',
                       'application-file-prerequisites-source-only'),
 }
