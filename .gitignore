@@ -1,4 +1,7 @@
 # Internal documentation and agent state
+# Keep project documentation local; do not publish notes or guide copies.
+/docs/
+/README.md
 **/docs/internal/
 **/internal-docs/
 **/[Aa][Gg][Ee][Nn][Tt].[Mm][Dd]
