@@ -147,6 +147,7 @@ def data_read(path, end):
         before.st_uid != uid or before.st_gid != gid or stat.S_IMODE(before.st_mode) != 0o600 or
         before.st_nlink != 1 or before.st_size > 4096):
         raise Pending('unsupported PostgreSQL data directory/leaf identity')
+    cause = None
     fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
     try:
         if KERNEL.signature(os.fstat(fd)) != KERNEL.signature(before): raise Pending('PostgreSQL data FD differs')
@@ -160,7 +161,12 @@ def data_read(path, end):
             KERNEL.signature(path.lstat()) != KERNEL.signature(before) or len(raw)!=before.st_size or
             KERNEL.signature(DATA.lstat()) != KERNEL.signature(directory)):
             raise Pending('PostgreSQL data leaf/ancestry changed')
-    finally: os.close(fd)
+    except BaseException as error:
+        cause = error
+        raise
+    finally:
+        closing, fd = fd, None
+        PREP.close_descriptor(closing, cause)
     PREP.fence(end)
     return bytes(raw), {'path': str(path), 'identity': list(KERNEL.signature(before)),
                         'sha256': hashlib.sha256(raw).hexdigest()}

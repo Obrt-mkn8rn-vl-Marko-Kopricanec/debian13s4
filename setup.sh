@@ -405,7 +405,7 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=6d0cb793d0bacddfed5301041d708c8e96aefd4f0aa23e80e5d91d69bff5a145
+S4B_BUNDLE_ID=9b037732126dccc2963def496d77ef2f3a7eb96e6710ce7ae13cb762d5df030b
 S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/backup_run.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/linux_linkage.py lib/applications/managed_runtime.py lib/applications/cli_image.py lib/applications/managed_images.py lib/applications/managed_assets.py lib/dns/prepare.py)
 S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
@@ -5326,6 +5326,23 @@ MAX_OUTPUT = 262145
 ATTEMPT_SECONDS = 10
 
 
+class CleanupFailure(Pending):
+    \"\"\"A protected read refused and its retired descriptor also failed to close.\"\"\"
+    def __init__(self, cause, cleanup):
+        super().__init__('protected PostgreSQL read and descriptor cleanup incomplete')
+        self.cause, self.cleanup = cause, cleanup
+
+
+def close_descriptor(descriptor, cause):
+    \"\"\"Close one already-retired descriptor without replacing a read refusal.\"\"\"
+    try:
+        os.close(descriptor)
+    except BaseException as error:
+        if cause is None:
+            raise
+        raise CleanupFailure(cause, (error,)) from cause
+
+
 def fence(end):
     if not KERNEL.finite_deadline(end) or KERNEL.now() >= end:
         raise Pending('PostgreSQL preparation window expired')
@@ -5355,6 +5372,7 @@ def read_protected(path, limit, private, end):
     if (before.st_nlink != 1 or before.st_size > limit or
         private and stat.S_IMODE(before.st_mode) != 0o600):
         raise Pending('nonunique, oversized or nonprivate PostgreSQL input')
+    cause = None
     descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
     try:
         if KERNEL.signature(os.fstat(descriptor)) != KERNEL.signature(before):
@@ -5371,9 +5389,13 @@ def read_protected(path, limit, private, end):
         if (KERNEL.signature(os.fstat(descriptor)) != KERNEL.signature(before) or
             KERNEL.signature(path.lstat()) != KERNEL.signature(before) or len(data) != before.st_size):
             raise Pending('PostgreSQL input changed during read')
+    except BaseException as error:
+        cause = error
+        raise
     finally:
         # One close only. Linux may retire/reuse the number before an error.
-        os.close(descriptor)
+        closing, descriptor = descriptor, None
+        close_descriptor(closing, cause)
     fence(end)
     raw = bytes(data)
     return raw, {'path': str(path), 'identity': list(KERNEL.signature(before)),
@@ -5713,6 +5735,7 @@ def data_read(path, end):
         before.st_uid != uid or before.st_gid != gid or stat.S_IMODE(before.st_mode) != 0o600 or
         before.st_nlink != 1 or before.st_size > 4096):
         raise Pending('unsupported PostgreSQL data directory/leaf identity')
+    cause = None
     fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
     try:
         if KERNEL.signature(os.fstat(fd)) != KERNEL.signature(before): raise Pending('PostgreSQL data FD differs')
@@ -5726,7 +5749,12 @@ def data_read(path, end):
             KERNEL.signature(path.lstat()) != KERNEL.signature(before) or len(raw)!=before.st_size or
             KERNEL.signature(DATA.lstat()) != KERNEL.signature(directory)):
             raise Pending('PostgreSQL data leaf/ancestry changed')
-    finally: os.close(fd)
+    except BaseException as error:
+        cause = error
+        raise
+    finally:
+        closing, fd = fd, None
+        PREP.close_descriptor(closing, cause)
     PREP.fence(end)
     return bytes(raw), {'path': str(path), 'identity': list(KERNEL.signature(before)),
                         'sha256': hashlib.sha256(raw).hexdigest()}
@@ -14322,8 +14350,8 @@ c695a6f939cef5eb0dec883b04722c71095877f7e0c06f9a76161b6672f35bdf  lib/ssh/repair
 7554b9365ae78d6a59c1bc1dc1eedfa14a07f5f64aabc79a45f540862a12233d  lib/ssh/debian13s4-ssh.timer
 22ebcfa9fc38e455077130d400e76433948740c8e80c1475bf8224891813a1b9  lib/tasks/ssh/apply.sh
 3e0d51509cf31af2188db77617d6e06ace86350c51b57425b5c066e76059f19e  lib/tasks/ssh/verify.sh
-61fb86d5519905de336e86aed17b86a5ebe241890f044fb6a288f2587142cf31  lib/postgresql/prepare.py
-7025ded987cb7d78cc3459e11b22eb05b7539d02aacdfac5aa16a83286dca648  lib/postgresql/live.py
+897c27a540ac4d6156651942ef03ba0090aee160a11abeb5264f5beb7db64e9c  lib/postgresql/prepare.py
+fb1df98101a5e50fb34b6a5702e3b0113b2d088887a0d34d668b6f365f9eace6  lib/postgresql/live.py
 e73ce455f1cb8c5aeb8cc73b77dce4cffe6bdd95d30bd2480bf44da16ca5f944  lib/postgresql/access.py
 075d1757636bc1a2d75809c8bc999be8e8907b02043fa38f1150eb916eef801f  lib/postgresql/backup.py
 59e81c10f8f8b05a096bd97b582fd7daabb6335ce9e3e517cc5733b6e0f911bd  lib/postgresql/archive_stage.py

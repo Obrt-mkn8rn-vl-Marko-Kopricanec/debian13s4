@@ -40,6 +40,23 @@ MAX_OUTPUT = 262145
 ATTEMPT_SECONDS = 10
 
 
+class CleanupFailure(Pending):
+    """A protected read refused and its retired descriptor also failed to close."""
+    def __init__(self, cause, cleanup):
+        super().__init__('protected PostgreSQL read and descriptor cleanup incomplete')
+        self.cause, self.cleanup = cause, cleanup
+
+
+def close_descriptor(descriptor, cause):
+    """Close one already-retired descriptor without replacing a read refusal."""
+    try:
+        os.close(descriptor)
+    except BaseException as error:
+        if cause is None:
+            raise
+        raise CleanupFailure(cause, (error,)) from cause
+
+
 def fence(end):
     if not KERNEL.finite_deadline(end) or KERNEL.now() >= end:
         raise Pending('PostgreSQL preparation window expired')
@@ -69,6 +86,7 @@ def read_protected(path, limit, private, end):
     if (before.st_nlink != 1 or before.st_size > limit or
         private and stat.S_IMODE(before.st_mode) != 0o600):
         raise Pending('nonunique, oversized or nonprivate PostgreSQL input')
+    cause = None
     descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
     try:
         if KERNEL.signature(os.fstat(descriptor)) != KERNEL.signature(before):
@@ -85,9 +103,13 @@ def read_protected(path, limit, private, end):
         if (KERNEL.signature(os.fstat(descriptor)) != KERNEL.signature(before) or
             KERNEL.signature(path.lstat()) != KERNEL.signature(before) or len(data) != before.st_size):
             raise Pending('PostgreSQL input changed during read')
+    except BaseException as error:
+        cause = error
+        raise
     finally:
         # One close only. Linux may retire/reuse the number before an error.
-        os.close(descriptor)
+        closing, descriptor = descriptor, None
+        close_descriptor(closing, cause)
     fence(end)
     raw = bytes(data)
     return raw, {'path': str(path), 'identity': list(KERNEL.signature(before)),
