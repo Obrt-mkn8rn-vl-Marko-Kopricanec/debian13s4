@@ -21,6 +21,8 @@ CHECKS = {
                  'protected-preinstalled-release-source-only'),
     'linux-images': ('linux_images.py', 'four-app-linux-elf64-entry-structure-v1',
                      'protected-linux-entry-structure-source-only'),
+    'linux-linkage': ('linux_linkage.py', 'four-app-elf-dynamic-dependency-files-v1',
+                      'protected-linux-linkage-declarations-source-only'),
     'managed-runtime': ('managed_runtime.py', 'four-app-dotnet10-framework-metadata-v1',
                         'protected-managed-runtime-metadata-source-only'),
     'managed-images': ('managed_images.py', 'four-app-pe-cli-entry-structure-v1',

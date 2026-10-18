@@ -405,9 +405,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=a1ba3b6024e1f380a43366a33249ba7a1a3a27efdf634c4dab0e4374f7245fb0
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/backup_run.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/managed_runtime.py lib/applications/cli_image.py lib/applications/managed_images.py lib/applications/managed_assets.py lib/dns/prepare.py)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=58e9a46ef29be119aae5b80336cb976e05ae997c3791391ea81d9987619eefd5
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/backup_run.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/linux_linkage.py lib/applications/managed_runtime.py lib/applications/cli_image.py lib/applications/managed_images.py lib/applications/managed_assets.py lib/dns/prepare.py)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     mkdir -p -- "$S4B_STAGE/"lib "$S4B_STAGE/"lib/tasks/prerequisites "$S4B_STAGE/"units "$S4B_STAGE/"lib/maintenance "$S4B_STAGE/"lib/tasks/maintenance "$S4B_STAGE/"lib/dotnet "$S4B_STAGE/"lib/tasks/dotnet "$S4B_STAGE/"lib/network "$S4B_STAGE/"lib/tasks/network "$S4B_STAGE/"lib/retention "$S4B_STAGE/"lib/tasks/retention "$S4B_STAGE/"lib/hardening "$S4B_STAGE/"lib/tasks/hardening "$S4B_STAGE/"lib/firewall "$S4B_STAGE/"lib/ssh "$S4B_STAGE/"lib/tasks/ssh "$S4B_STAGE/"lib/postgresql "$S4B_STAGE/"lib/tasks/postgresql "$S4B_STAGE/"lib/web "$S4B_STAGE/"lib/tasks/web "$S4B_STAGE/"lib/applications "$S4B_STAGE/"lib/dns || return 1
@@ -12393,6 +12393,8 @@ CHECKS = {
                  'protected-preinstalled-release-source-only'),
     'linux-images': ('linux_images.py', 'four-app-linux-elf64-entry-structure-v1',
                      'protected-linux-entry-structure-source-only'),
+    'linux-linkage': ('linux_linkage.py', 'four-app-elf-dynamic-dependency-files-v1',
+                      'protected-linux-linkage-declarations-source-only'),
     'managed-runtime': ('managed_runtime.py', 'four-app-dotnet10-framework-metadata-v1',
                         'protected-managed-runtime-metadata-source-only'),
     'managed-images': ('managed_images.py', 'four-app-pe-cli-entry-structure-v1',
@@ -12996,6 +12998,201 @@ def main():
 if __name__ == '__main__':
     sys.exit(main())
 " > "$S4B_STAGE/"lib/applications/linux_images.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Read bounded ELF dynamic dependency declarations without invoking a loader.
+
+This optional file profile rejects embedded RPATH/RUNPATH, audit/filter hooks
+and declared text relocations. It does not resolve dependencies or verify the
+remaining dynamic tags, relocations, symbols, loader environment or ABI.
+\"\"\"
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import re
+import struct
+import sys
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_linux_linkage_images',
+    Path(__file__).resolve().with_name('linux_images.py'))
+IMAGE = importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(IMAGE)
+BASE, KERNEL, Pending = IMAGE.BASE, IMAGE.KERNEL, IMAGE.Pending
+PROFILE = 'four-app-elf-dynamic-dependency-files-v1'
+STATE = 'protected-linux-linkage-declarations-source-only'
+ATTEMPT_SECONDS, MAX_OUTPUT = 2 * IMAGE.ATTEMPT_SECONDS + 30, 262145
+MAX_DYNAMIC, MAX_STRINGS, MAX_NEEDED = 4096, 1048576, 64
+DYNAMIC = struct.Struct('<qQ')
+# Standard RPATH, TEXTREL and RUNPATH; GNU audit/dependency-audit and
+# auxiliary/filter objects can also introduce distinct loader behavior.
+FORBIDDEN = {15, 22, 29, 0x6ffffefb, 0x6ffffefc, 0x7ffffffd, 0x7fffffff}
+
+
+def mapped(image, address, size):
+    matches = []
+    for row in image['loads']:
+        offset = address-row['address']
+        extent = min(row['file_bytes'], row['memory_bytes'])
+        if 0 <= offset <= extent and size <= extent-offset:
+            matches.append(row['file_offset']+offset)
+    if len(matches) != 1:
+        raise Pending('dynamic data must fit one unambiguous file-backed load range')
+    return matches[0]
+
+
+def library_name(strings, offset):
+    if not 0 < offset < len(strings):
+        raise Pending('dependency string offset is outside the declared table')
+    end = strings.find(b'\\0', offset, min(len(strings), offset+256))
+    if end == -1:
+        raise Pending('dependency name lacks a bounded terminator')
+    try:
+        name = strings[offset:end].decode('ascii')
+    except UnicodeError as error:
+        raise Pending('dependency name is not ASCII') from error
+    if re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.+-]{0,254}', name) is None:
+        raise Pending('dependency names must be nonempty basenames without paths or substitutions')
+    return name
+
+
+def inspect(raw, architecture, interpreter):
+    image = IMAGE.inspect(raw, architecture, interpreter)
+    header = IMAGE.ELF_HEADER.unpack_from(raw)
+    dynamic = []
+    for index in range(header[10]):
+        row = IMAGE.PROGRAM_HEADER.unpack_from(raw, header[5]+index*header[9])
+        if row[0] == IMAGE.PT_DYNAMIC:
+            dynamic.append(row)
+    if not dynamic:
+        return {'dynamic_segment': False, 'needed': [], 'soname': None,
+                'uninterpreted_tags': [], 'dependency_resolution_verified': False,
+                'relocations_verified': False, 'loader_environment_verified': False}
+    if len(dynamic) != 1:
+        raise Pending('dynamic declarations require one segment')
+    _, _, offset, address, _, size, memory, _ = dynamic[0]
+    if (size == 0 or size % DYNAMIC.size or size > MAX_DYNAMIC*DYNAMIC.size or
+        memory < size or mapped(image, address, size) != offset):
+        raise Pending('dynamic table extent or file mapping differs')
+    entries, terminated = [], False
+    for position in range(offset, offset+size, DYNAMIC.size):
+        tag, value = DYNAMIC.unpack_from(raw, position)
+        if terminated:
+            if tag != 0 or value != 0:
+                raise Pending('dynamic padding after termination must be zero')
+            continue
+        if tag == 0:
+            if value != 0: raise Pending('dynamic terminator must have zero value')
+            terminated = True
+        else:
+            if not 0 < tag <= 0x7fffffff:
+                raise Pending('unsupported dynamic tag range')
+            if tag in FORBIDDEN or tag == 30 and value & 4:
+                raise Pending('embedded loader path/hook or text-relocation declaration refused')
+            entries.append((tag, value))
+    if not terminated:
+        raise Pending('dynamic table lacks its terminator')
+    singleton = {}
+    for tag in (5, 10, 14, 30):
+        values = [value for kind, value in entries if kind == tag]
+        if len(values) > 1:
+            raise Pending('duplicate dynamic string/flag declaration')
+        if values: singleton[tag] = values[0]
+    if 5 not in singleton or 10 not in singleton or not 1 <= singleton[10] <= MAX_STRINGS:
+        raise Pending('dynamic declarations require a bounded explicit string table')
+    start = mapped(image, singleton[5], singleton[10]); stop = start+singleton[10]
+    if start < offset+size and offset < stop:
+        raise Pending('dynamic table and its strings overlap')
+    strings = raw[start:stop]
+    if strings[:1] != b'\\0' or strings[-1:] != b'\\0':
+        raise Pending('dynamic string table requires leading and trailing NUL')
+    offsets = [value for tag, value in entries if tag == 1]
+    if len(offsets) > MAX_NEEDED:
+        raise Pending('dependency names exceed their count bound')
+    needed = [library_name(strings, value) for value in offsets]
+    if len(set(needed)) != len(needed):
+        raise Pending('dependency names are duplicate or exceed their count bound')
+    soname = library_name(strings, singleton[14]) if 14 in singleton else None
+    return {'dynamic_segment': True, 'dynamic_entries': len(entries),
+            'string_table_bytes': len(strings), 'needed': needed, 'soname': soname,
+            'uninterpreted_tags': sorted({tag for tag, _ in entries}-{1, 5, 10, 14}),
+            'dependency_resolution_verified': False, 'relocations_verified': False,
+            'loader_environment_verified': False}
+
+
+def prerequisite(end, context):
+    BASE.fence(end)
+    try: raw = IMAGE.prepare(deadline=end)
+    except IMAGE.Pending as error: raise Pending('complete Linux image preparation refused') from error
+    if type(raw) is not bytes or not raw or len(raw) > IMAGE.MAX_OUTPUT:
+        raise Pending('unsupported complete Linux image receipt')
+    try:
+        value = json.loads(raw, object_pairs_hook=KERNEL.unique_object)
+        fields = {'schema', 'profile', 'state', 'namespace', 'configuration', 'release_sha256', 'applications'}
+        KERNEL.known(value, fields, fields)
+        if (type(value['schema']) is not int or value['schema'] != 1 or value['profile'] != IMAGE.PROFILE or
+            value['state'] != IMAGE.STATE or KERNEL.uint(value['namespace'], 0xffffffffffffffff) != context or
+            raw != BASE.canonical(value)):
+            raise Pending('Linux image receipt profile/context/canonical bytes differ')
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid complete Linux image receipt') from error
+    BASE.fence(end)
+    return raw, value
+
+
+def observations(images, end):
+    settings = images['configuration']['value']
+    result = {}
+    for app in IMAGE.RELEASE.APPLICATIONS:
+        result[app] = {}
+        for role in IMAGE.RELEASE.SERVICES:
+            expected = images['applications'][app][role]['source']
+            raw, source = BASE.read_protected(Path(expected['path']), IMAGE.RELEASE.MAX_FILE_BYTES, False, end)
+            if BASE.canonical(source) != BASE.canonical(expected):
+                raise Pending('Linux dependency entry differs from the complete image observation')
+            BASE.fence(end)
+            result[app][role] = {'source': source,
+                'linkage': inspect(raw, settings['architecture'], settings['interpreter'])}
+            BASE.fence(end)
+    return result
+
+
+def prepare(deadline=None):
+    end = KERNEL.now()+ATTEMPT_SECONDS
+    if deadline is not None:
+        if not KERNEL.finite_deadline(deadline): raise Pending('invalid inherited Linux linkage window')
+        end = min(end, deadline)
+    BASE.fence(end)
+    context = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
+    if not context: raise Pending('missing Linux linkage namespace')
+    original, images = prerequisite(end, context)
+    observed = observations(images, end)
+    raw = BASE.canonical({'schema': 1, 'profile': PROFILE, 'state': STATE, 'namespace': context,
+        'image_sha256': hashlib.sha256(original).hexdigest(), 'release_sha256': images['release_sha256'],
+        'configuration': images['configuration'], 'applications': observed})
+    if len(raw) > MAX_OUTPUT: raise Pending('Linux linkage report exceeds its output bound')
+    after, final = prerequisite(end, context)
+    if after != original or BASE.canonical(observations(final, end)) != BASE.canonical(observed):
+        raise Pending('complete Linux image or linkage observations changed after encoding')
+    if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != context:
+        raise Pending('Linux linkage namespace changed')
+    BASE.fence(end)
+    return raw
+
+
+def main():
+    try:
+        if len(sys.argv) != 1: raise Pending('Linux linkage inspection accepts no overrides')
+        raw = prepare(); count = sys.stdout.buffer.write(raw)
+        if type(count) is not int or count != len(raw): raise Pending('incomplete Linux linkage output')
+        sys.stdout.buffer.flush()
+        return 0
+    except (Pending, OSError, ValueError, KeyError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: '+str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/applications/linux_linkage.py || return 1
     printf '%s' "#!/usr/bin/python3
 \"\"\"Check conventional framework-dependent .NET10 release metadata as files.
 
@@ -14131,9 +14328,10 @@ e146268fc4e5f727d730135c3875282149c807079d989eb63f7e30da8d457c0d  lib/applicatio
 0ef1b8e9e6258d3492353bb1fcddce322e165c8c24b930c71522c8480ab19528  lib/applications/email_worker.py
 fffc4daf3a061c6223fc6ffb52125ea62b8bdef1ec9d0ebfd05b15b64474d8ed  lib/applications/email_gateway.py
 4668dcff64153729aa7dd09cdba6583adb9044f22e42bb8f230894339955d2b4  lib/applications/prepare.py
-3afea365b4d83c18585e7046a01c9e915ac365e0661337ded2238e7d9c696101  lib/applications/preflight.py
+f32f97656c45d3b675bbd238e08bb12820f494757ca1887f5b78c8458df7b0b2  lib/applications/preflight.py
 1de119181721839e120647eaf34023d5879602ab1b7b9793e32750c0f65a43e7  lib/applications/release_manifest.py
 ba6972cd98dfe8761ea62d77f542ade67741d794f9b967c5bd84bd973e22913d  lib/applications/linux_images.py
+f0e90295b042249e23c3f0f6c20673c0d0ca098cad77c039c0f681d26893064f  lib/applications/linux_linkage.py
 9f0009b9cdf5436649268b9b99dddbef78ce16092e48f554798fbab91c5aedb1  lib/applications/managed_runtime.py
 6e2221da7775202b8f485966c16ad270c799cbe0a216a1142619c11e975e6952  lib/applications/cli_image.py
 07f5d29181a12228fb2846509c2efd6c41fa138057bcbda721efc9de5c409c9d  lib/applications/managed_images.py
