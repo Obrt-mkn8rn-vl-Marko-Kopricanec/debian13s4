@@ -405,12 +405,12 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=83649742726a0b8c746fdc66d0d78ffe09fc19705458549f61b5019021975cda
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=f0a2e847a7fe61df416c931b9519117afd5de72450d85cb3e14264a5d949ee59
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/dns/prepare.py)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
-    mkdir -p -- "$S4B_STAGE/"lib "$S4B_STAGE/"lib/tasks/prerequisites "$S4B_STAGE/"units "$S4B_STAGE/"lib/maintenance "$S4B_STAGE/"lib/tasks/maintenance "$S4B_STAGE/"lib/dotnet "$S4B_STAGE/"lib/tasks/dotnet "$S4B_STAGE/"lib/network "$S4B_STAGE/"lib/tasks/network "$S4B_STAGE/"lib/retention "$S4B_STAGE/"lib/tasks/retention "$S4B_STAGE/"lib/hardening "$S4B_STAGE/"lib/tasks/hardening "$S4B_STAGE/"lib/firewall "$S4B_STAGE/"lib/ssh "$S4B_STAGE/"lib/tasks/ssh "$S4B_STAGE/"lib/postgresql "$S4B_STAGE/"lib/tasks/postgresql "$S4B_STAGE/"lib/web "$S4B_STAGE/"lib/tasks/web || return 1
+    mkdir -p -- "$S4B_STAGE/"lib "$S4B_STAGE/"lib/tasks/prerequisites "$S4B_STAGE/"units "$S4B_STAGE/"lib/maintenance "$S4B_STAGE/"lib/tasks/maintenance "$S4B_STAGE/"lib/dotnet "$S4B_STAGE/"lib/tasks/dotnet "$S4B_STAGE/"lib/network "$S4B_STAGE/"lib/tasks/network "$S4B_STAGE/"lib/retention "$S4B_STAGE/"lib/tasks/retention "$S4B_STAGE/"lib/hardening "$S4B_STAGE/"lib/tasks/hardening "$S4B_STAGE/"lib/firewall "$S4B_STAGE/"lib/ssh "$S4B_STAGE/"lib/tasks/ssh "$S4B_STAGE/"lib/postgresql "$S4B_STAGE/"lib/tasks/postgresql "$S4B_STAGE/"lib/web "$S4B_STAGE/"lib/tasks/web "$S4B_STAGE/"lib/applications "$S4B_STAGE/"lib/dns || return 1
     printf '%s' "#!/bin/bash
 # Internal setup worker. The installer supplies the task bundle automatically.
 
@@ -7684,6 +7684,1991 @@ s4w_apply
 . /usr/local/lib/debian13s4/web/common.sh
 s4w_verify
 " > "$S4B_STAGE/"lib/tasks/web/verify.sh || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Observe complete protected, preinstalled four-app release file intentions.
+
+No binary is executed, installed, adopted or authenticated. Matching public
+hashes and repeated filesystem facts are SOURCE correspondence only, not a
+signed publisher/release, loaded memory, ABI, service or readiness certificate.
+\"\"\"
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import stat
+import sys
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_release_reader',
+    Path(__file__).resolve().parents[1] / 'PostgreSQL/prepare.py')
+if not Path(SPEC.origin).is_file():
+    SPEC = importlib.util.spec_from_file_location('debian13s4_release_reader',
+        Path(__file__).resolve().parents[1] / 'postgresql/prepare.py')
+BASE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(BASE)
+KERNEL, Pending = BASE.KERNEL, BASE.Pending
+INPUT = Path('/etc/debian13s4/application-releases.json')
+RELEASE_ROOT = Path('/opt/debian13s4-apps')
+APPLICATIONS = ('mk8.sava', 'mk8.drava', 'mk8.dns', 'mk8.email')
+SERVICES = ('application', 'gateway')
+MAX_INPUT = 262145
+MAX_OUTPUT = 1048577
+MAX_FILES = 256
+MAX_DIRECTORIES = 256
+MAX_TREE_ITEMS = 1024
+MAX_FILE_BYTES = 64 * 1024 * 1024
+MAX_TOTAL_BYTES = 512 * 1024 * 1024
+ATTEMPT_SECONDS = 60
+
+
+def relative(value):
+    if (type(value) is not str or not 1 <= len(value) <= 160 or
+        re.fullmatch(r'[A-Za-z0-9_.-]{1,64}(?:/[A-Za-z0-9_.-]{1,64}){0,7}', value) is None or
+        any(part in ('.', '..') for part in value.split('/'))):
+        raise Pending('unsupported canonical relative release path')
+    return value
+
+
+def sha(value):
+    if (type(value) is not str or re.fullmatch(r'[0-9a-f]{64}', value) is None or
+        value == '0' * 64):
+        raise Pending('unsupported release SHA256 spelling')
+    return value
+
+
+def generation(entries, files):
+    return hashlib.sha256(BASE.canonical({'entry_points': entries, 'files': files})).hexdigest()
+
+
+def checked(value):
+    KERNEL.known(value, {'schema', 'applications'}, {'schema', 'applications'})
+    if type(value['schema']) is not int or value['schema'] != 1:
+        raise Pending('unsupported application release schema')
+    KERNEL.known(value['applications'], set(APPLICATIONS), set(APPLICATIONS))
+    total = 0
+    for app in APPLICATIONS:
+        row = value['applications'][app]
+        fields = {'generation', 'directory', 'entry_points', 'files'}
+        KERNEL.known(row, fields, fields)
+        marker = sha(row['generation'])
+        if type(row['directory']) is not str or row['directory'] != str(RELEASE_ROOT / app / marker):
+            raise Pending('release requires its explicit product/generation directory')
+        KERNEL.known(row['entry_points'], set(SERVICES), set(SERVICES))
+        entries = [relative(row['entry_points'][role]) for role in SERVICES]
+        if entries[0] == entries[1]:
+            raise Pending('application and gateway entry points must differ')
+        files = row['files']
+        if type(files) is not dict or not 2 <= len(files) <= MAX_FILES:
+            raise Pending('release requires a complete bounded file inventory')
+        for name, item in files.items():
+            relative(name)
+            KERNEL.known(item, {'bytes', 'mode', 'sha256'}, {'bytes', 'mode', 'sha256'})
+            if type(item['mode']) is not str or item['mode'] not in ('0644', '0755'):
+                raise Pending('unsupported release file mode')
+            total += KERNEL.uint(item['bytes'], MAX_FILE_BYTES)
+            sha(item['sha256'])
+        if total > MAX_TOTAL_BYTES:
+            raise Pending('whole release inventory byte capacity exceeded')
+        for name in entries:
+            if name not in files or files[name]['mode'] != '0755' or files[name]['bytes'] == 0:
+                raise Pending('release entry requires a declared nonempty executable')
+        if generation(row['entry_points'], files) != marker:
+            raise Pending('release generation does not bind the complete declared inventory')
+    return json.loads(BASE.canonical(value))
+
+
+def configuration(end):
+    raw, source = BASE.read_protected(INPUT, MAX_INPUT, True, end)
+    try:
+        value = json.loads(raw.decode('ascii'), object_pairs_hook=KERNEL.unique_object,
+            parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite release JSON')))
+        value = checked(value)
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid protected application release input') from error
+    if raw != BASE.canonical(value):
+        raise Pending('release input requires canonical ASCII JSON plus LF')
+    return {'value': value, 'source': source}
+
+
+def protected_directory(path, end):
+    BASE.fence(end)
+    if not path.is_absolute() or os.path.normpath(str(path)) != str(path):
+        raise Pending('noncanonical release directory')
+    path.relative_to(BASE.TRUST_ROOT)
+    current = path
+    while True:
+        info = current.lstat()
+        if (not stat.S_ISDIR(info.st_mode) or info.st_uid != BASE.TRUSTED_UID or
+            info.st_mode & 0o022):
+            raise Pending('unprotected release directory or ancestry')
+        if current == BASE.TRUST_ROOT:
+            break
+        current = current.parent
+    return path.lstat()
+
+
+def tree(directory, end):
+    \"\"\"Fresh bounded whole tree, retaining directory identities, never content cache.\"\"\"
+    stack = [(Path(directory), '')]
+    directories, files, device, items = {}, set(), None, 0
+    while stack:
+        BASE.fence(end)
+        path, name = stack.pop()
+        before = protected_directory(path, end)
+        if (not stat.S_ISDIR(before.st_mode) or before.st_uid != BASE.TRUSTED_UID or
+            stat.S_IMODE(before.st_mode) != 0o755 or
+            device is not None and before.st_dev != device):
+            raise Pending('release tree requires protected same-device 0755 directories')
+        device = before.st_dev
+        directories[name or '.'] = list(KERNEL.signature(before))
+        if len(directories) > MAX_DIRECTORIES:
+            raise Pending('release directory count exceeds its bound')
+        with os.scandir(path) as entries:
+            for entry in entries:
+                BASE.fence(end)
+                items += 1
+                if items > MAX_TREE_ITEMS:
+                    raise Pending('release tree exceeds its entry bound')
+                child = entry.name if not name else name + '/' + entry.name
+                relative(child)
+                fact = entry.stat(follow_symlinks=False)
+                if fact.st_dev != device:
+                    raise Pending('release tree crosses a device boundary')
+                if stat.S_ISDIR(fact.st_mode):
+                    stack.append((path / entry.name, child))
+                elif stat.S_ISREG(fact.st_mode):
+                    files.add(child)
+                    if len(files) > MAX_FILES:
+                        raise Pending('release tree exceeds its file count')
+                else:
+                    raise Pending('release tree contains a link or unsupported object')
+        if KERNEL.signature(path.lstat()) != KERNEL.signature(before):
+            raise Pending('release directory changed during enumeration')
+    return {'directories': directories, 'files': sorted(files)}
+
+
+def observe(row, end):
+    directory = Path(row['directory'])
+    before = tree(directory, end)
+    expected_directories = {'.'}
+    for name in row['files']:
+        expected_directories.update(str(parent) for parent in Path(name).parents if str(parent) != '.')
+    if set(before['files']) != set(row['files']) or set(before['directories']) != expected_directories:
+        raise Pending('complete release tree differs from declared files or parents')
+    sources = {}
+    for name in sorted(row['files']):
+        item = row['files'][name]
+        raw, source = BASE.read_protected(directory / name, item['bytes'], False, end)
+        identity = source['identity']
+        if (len(raw) != item['bytes'] or source['sha256'] != item['sha256'] or
+            stat.S_IMODE(identity[2]) != int(item['mode'], 8) or identity[0] != before['directories']['.'][0]):
+            raise Pending('protected release file bytes, mode or device differs')
+        sources[name] = source
+    if tree(directory, end) != before:
+        raise Pending('complete release tree changed during file reads')
+    return {'generation': row['generation'], 'directory': str(directory),
+        'entry_points': {role: str(directory / row['entry_points'][role]) for role in SERVICES},
+        'directories': before['directories'], 'files': sources}
+
+
+def prepare(deadline=None):
+    end = KERNEL.now() + ATTEMPT_SECONDS
+    if deadline is not None:
+        if not KERNEL.finite_deadline(deadline):
+            raise Pending('invalid inherited release window')
+        end = min(end, deadline)
+    BASE.fence(end)
+    context = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
+    if context == 0:
+        raise Pending('missing release caller namespace')
+    settings = configuration(end)
+    observed = {app: observe(settings['value']['applications'][app], end) for app in APPLICATIONS}
+    payload = BASE.canonical({'schema': 1, 'profile': 'four-app-complete-release-files-v1',
+        'state': 'protected-preinstalled-release-source-only', 'namespace': context,
+        'configuration': settings, 'applications': observed})
+    if len(payload) > MAX_OUTPUT:
+        raise Pending('complete release receipt exceeds its output bound')
+    if configuration(end) != settings:
+        raise Pending('protected release intentions changed')
+    for app in APPLICATIONS:
+        if observe(settings['value']['applications'][app], end) != observed[app]:
+            raise Pending('protected release files or identities changed')
+    if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != context:
+        raise Pending('release caller namespace changed')
+    BASE.fence(end)
+    return payload
+
+
+def main():
+    try:
+        if len(sys.argv) != 1:
+            raise Pending('release admission accepts no overrides')
+        sink = sys.stdout.buffer
+        if not callable(getattr(sink, 'write', None)) or not callable(getattr(sink, 'flush', None)):
+            raise Pending('release admission requires binary stdout')
+        payload = prepare()
+        count = sink.write(payload)
+        if type(count) is not int or count != len(payload):
+            raise Pending('incomplete release receipt publication')
+        sink.flush()
+        return 0
+    except (Pending, OSError, ValueError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: ' + str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/applications/releases.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Bind protected release files to explicit existing local account intentions.
+
+These repeated file observations do not authenticate NSS/PAM, effective process
+credentials, group privileges, IPC, publisher provenance or running services.
+No accounts, directories, units or processes are created or changed.
+\"\"\"
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import re
+import sys
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_identity_releases',
+    Path(__file__).resolve().with_name('releases.py'))
+RELEASE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(RELEASE)
+BASE, KERNEL, Pending = RELEASE.BASE, RELEASE.KERNEL, RELEASE.Pending
+INPUT = Path('/etc/debian13s4/application-identities.json')
+PASSWD, GROUP = Path('/etc/passwd'), Path('/etc/group')
+MAX_INPUT = 8192
+MAX_INVENTORY = 262144
+MAX_ROWS = 4096
+MAX_OUTPUT = 2097153
+ATTEMPT_SECONDS = 130
+
+
+def name(value):
+    if (type(value) is not str or
+        re.fullmatch(r'[a-z][a-z0-9_]{0,30}', value) is None or value == 'root'):
+        raise Pending('unsupported explicit application account or group name')
+    return value
+
+
+def checked(value):
+    KERNEL.known(value, {'schema', 'applications'}, {'schema', 'applications'})
+    if type(value['schema']) is not int or value['schema'] != 1:
+        raise Pending('unsupported application identity schema')
+    KERNEL.known(value['applications'], set(RELEASE.APPLICATIONS), set(RELEASE.APPLICATIONS))
+    names = set()
+    for app in RELEASE.APPLICATIONS:
+        row = value['applications'][app]
+        fields = {'application_user', 'gateway_user', 'shared_groups'}
+        KERNEL.known(row, fields, fields)
+        shared = row['shared_groups']
+        if type(shared) is not list or len(shared) > 8:
+            raise Pending('explicit shared groups require a bounded list, possibly empty')
+        for entry in [row['application_user'], row['gateway_user'], *shared]:
+            entry = name(entry)
+            if entry in names:
+                raise Pending('application roles and shared groups must have distinct names')
+            names.add(entry)
+    return json.loads(BASE.canonical(value))
+
+
+def configuration(end):
+    raw, source = BASE.read_protected(INPUT, MAX_INPUT, True, end)
+    try:
+        value = json.loads(raw.decode('ascii'), object_pairs_hook=KERNEL.unique_object,
+            parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite identity input')))
+        value = checked(value)
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid protected application identity input') from error
+    if raw != BASE.canonical(value):
+        raise Pending('identity input requires canonical ASCII JSON plus LF')
+    return {'value': value, 'source': source}
+
+
+def records(raw, columns):
+    if (type(raw) is not bytes or not raw or len(raw) > MAX_INVENTORY or
+        not raw.endswith(b'\\n') or any(c != 10 and not 32 <= c <= 126 for c in raw)):
+        raise Pending('account inventories require bounded printable ASCII LF records')
+    lines = raw[:-1].decode('ascii').split('\\n')
+    if len(lines) > MAX_ROWS:
+        raise Pending('account inventory exceeds its row bound')
+    rows = {}
+    for line in lines:
+        fields = line.split(':')
+        if (len(fields) != columns or
+            re.fullmatch(r'[A-Za-z_][A-Za-z0-9_.-]{0,31}', fields[0]) is None or
+            fields[0] in rows):
+            raise Pending('malformed or duplicate account inventory record')
+        rows[fields[0]] = fields
+    return rows
+
+
+def numeric(text):
+    if re.fullmatch(r'0|[1-9][0-9]{0,9}', text) is None:
+        raise Pending('noncanonical account inventory number')
+    return KERNEL.uint(int(text), 0x7fffffff)
+
+
+def accounts(passwd, group, settings):
+    settings = checked(settings)
+    users, groups = records(passwd, 7), records(group, 4)
+    primary, uids, gids, memberships = {}, set(), set(), {}
+    for account, row in users.items():
+        uid, gid = numeric(row[2]), numeric(row[3])
+        if uid in uids:
+            raise Pending('ambiguous application account UID')
+        uids.add(uid); primary[account] = (uid, gid)
+    for group_name, row in groups.items():
+        gid = numeric(row[2]); members = row[3].split(',') if row[3] else []
+        if (gid in gids or len(members) != len(set(members)) or
+            any(member not in users for member in members)):
+            raise Pending('ambiguous application group identity or membership')
+        gids.add(gid); memberships[group_name] = (gid, set(members))
+    result = {}
+    for app in RELEASE.APPLICATIONS:
+        intended = settings['applications'][app]
+        pair = {intended['application_user'], intended['gateway_user']}
+        roles, shared = {}, {}
+        for role in RELEASE.SERVICES:
+            account = intended[role+'_user']
+            if account not in users or account not in memberships:
+                raise Pending('application service account or named primary group is missing')
+            row = users[account]; uid, gid = primary[account]
+            if (not 100 <= uid <= 999 or not 100 <= gid <= 999 or
+                row[1] not in ('x', '!', '*') or
+                row[6] not in ('/usr/sbin/nologin', '/sbin/nologin', '/bin/false') or
+                memberships[account][0] != gid or memberships[account][1] - {account} or
+                any(other != account and other_gid == gid for other, (_, other_gid) in primary.items())):
+                raise Pending('application requires a dedicated nonlogin system account and primary group')
+            allowed = {account, *intended['shared_groups']}
+            if any(account in members and group_name not in allowed
+                   for group_name, (_, members) in memberships.items()):
+                raise Pending('application account has undeclared supplementary membership')
+            roles[role] = {'name': account, 'uid': uid, 'primary_group': account,
+                'primary_gid': gid, 'shell': row[6]}
+        for group_name in intended['shared_groups']:
+            if group_name not in memberships:
+                raise Pending('declared application shared group is missing')
+            gid, members = memberships[group_name]
+            if (not 100 <= gid <= 999 or members != pair or
+                any(primary_gid == gid for _, primary_gid in primary.values())):
+                raise Pending('shared group requires only the explicit supplementary role pair')
+            shared[group_name] = gid
+        result[app] = {'roles': roles, 'shared_groups': shared}
+    return result
+
+
+def release_bytes(end):
+    BASE.fence(end)
+    raw = RELEASE.prepare(deadline=end)
+    if type(raw) is not bytes or len(raw) > RELEASE.MAX_OUTPUT:
+        raise Pending('unsupported complete release receipt bytes')
+    BASE.fence(end)
+    return raw
+
+
+def prepare(deadline=None):
+    end = KERNEL.now() + ATTEMPT_SECONDS
+    if deadline is not None:
+        if not KERNEL.finite_deadline(deadline):
+            raise Pending('invalid inherited application identity window')
+        end = min(end, deadline)
+    BASE.fence(end)
+    context = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
+    if context == 0:
+        raise Pending('missing application identity namespace')
+    settings = configuration(end)
+    passwd, user_source = BASE.read_protected(PASSWD, MAX_INVENTORY, False, end)
+    group, group_source = BASE.read_protected(GROUP, MAX_INVENTORY, False, end)
+    selected = accounts(passwd, group, settings['value'])
+    raw_release = release_bytes(end)
+    release = json.loads(raw_release, object_pairs_hook=KERNEL.unique_object)
+    if (KERNEL.uint(release['namespace'], 0xffffffffffffffff) != context or
+        raw_release != BASE.canonical(release)):
+        raise Pending('complete protected release namespace or canonical bytes differ')
+    bindings = {}
+    for app in RELEASE.APPLICATIONS:
+        bindings[app] = {role: {**selected[app]['roles'][role],
+            'shared_groups': selected[app]['shared_groups'],
+            'entry_point': release['applications'][app]['entry_points'][role]}
+            for role in RELEASE.SERVICES}
+    payload = BASE.canonical({'schema': 1, 'profile': 'four-app-release-account-intention-v1',
+        'state': 'protected-application-execution-identity-source-only', 'namespace': context,
+        'configuration': settings, 'passwd_source': user_source, 'group_source': group_source,
+        'releases': release, 'release_sha256': hashlib.sha256(raw_release).hexdigest(),
+        'execution_bindings': bindings})
+    if len(payload) > MAX_OUTPUT:
+        raise Pending('complete execution identity receipt exceeds its output bound')
+    if configuration(end) != settings:
+        raise Pending('protected execution account intentions changed')
+    for path, raw, source in ((PASSWD, passwd, user_source), (GROUP, group, group_source)):
+        after, after_source = BASE.read_protected(path, MAX_INVENTORY, False, end)
+        if after != raw or after_source != source:
+            raise Pending('complete application account or group inventory changed')
+    if release_bytes(end) != raw_release:
+        raise Pending('complete protected application releases changed')
+    if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != context:
+        raise Pending('application execution identity namespace changed')
+    BASE.fence(end)
+    return payload
+
+
+def main():
+    try:
+        if len(sys.argv) != 1:
+            raise Pending('application identities accept no overrides')
+        sink = sys.stdout.buffer
+        if not callable(getattr(sink, 'write', None)) or not callable(getattr(sink, 'flush', None)):
+            raise Pending('application identities require binary stdout')
+        payload = prepare()
+        count = sink.write(payload)
+        if type(count) is not int or count != len(payload):
+            raise Pending('incomplete identity receipt publication')
+        sink.flush()
+        return 0
+    except (Pending, OSError, ValueError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: '+str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/applications/identities.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Join protected release/account FILE intentions with the existing DNS profile.
+
+No unit, account, binary, signed zone, process or socket is installed, adopted,
+executed or authenticated. This preprovisioned replica SOURCE join supplies no
+catalog, publisher, enrollment, native ownership, enforcement or readiness proof.
+\"\"\"
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import sys
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_dns_service_identities',
+    Path(__file__).resolve().with_name('identities.py'))
+IDENTITIES = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(IDENTITIES)
+SPEC = importlib.util.spec_from_file_location('debian13s4_dns_service_profile',
+    Path(__file__).resolve().parents[1]/'DNS/prepare.py')
+if not Path(SPEC.origin).is_file():
+    SPEC = importlib.util.spec_from_file_location('debian13s4_dns_service_profile',
+        Path(__file__).resolve().parents[1]/'dns/prepare.py')
+DNS = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(DNS)
+BASE, KERNEL, Pending = IDENTITIES.BASE, IDENTITIES.KERNEL, IDENTITIES.Pending
+MAX_OUTPUT = 4194305
+ATTEMPT_SECONDS = 290
+PROFILE_FIELDS = {'schema', 'profile', 'state', 'namespace', 'configuration',
+    'user_source', 'group_source', 'accounts', 'plan', 'unit_sha256'}
+IDENTITY_FIELDS = {'schema', 'profile', 'state', 'namespace', 'configuration',
+    'passwd_source', 'group_source', 'releases', 'release_sha256', 'execution_bindings'}
+
+
+def prepared_bytes(module, end):
+    if module is not IDENTITIES and module is not DNS:
+        raise Pending('unsupported DNS service dependency')
+    BASE.fence(end)
+    try:
+        raw = (module.prepare(deadline=end) if module is IDENTITIES else
+            module.prepare(deadline=end, scope=module.KERNEL.namespace))
+    except (IDENTITIES.Pending, DNS.Pending) as error:
+        raise Pending('protected DNS service dependency refused') from error
+    if type(raw) is not bytes or len(raw) > module.MAX_OUTPUT:
+        raise Pending('unsupported complete service dependency bytes')
+    BASE.fence(end)
+    return raw
+
+
+def prepared(module, end, context):
+    raw = prepared_bytes(module, end)
+    try:
+        value = json.loads(raw.decode('ascii'), object_pairs_hook=KERNEL.unique_object,
+            parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite dependency JSON')))
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid service dependency JSON') from error
+    fields, profile, state = ((IDENTITY_FIELDS, 'four-app-release-account-intention-v1',
+        'protected-application-execution-identity-source-only') if module is IDENTITIES else
+        (PROFILE_FIELDS, 'mk8-dns-preprovisioned-static-replica-intention-v1', 'dns-service-intention-only'))
+    KERNEL.known(value, fields, fields)
+    if (type(value['schema']) is not int or value['schema'] != 1 or
+        value['profile'] != profile or value['state'] != state or
+        KERNEL.uint(value['namespace'], 0xffffffffffffffff) != context or
+        raw != BASE.canonical(value)):
+        raise Pending('service dependency schema, scope or canonical bytes differ')
+    BASE.fence(end)
+    return raw, value
+
+
+def bindings(identities, service):
+    \"\"\"Cross-component correspondence; reported facts are not authentication.\"\"\"
+    for left, right in (('passwd_source', 'user_source'), ('group_source', 'group_source')):
+        if BASE.canonical(identities[left]) != BASE.canonical(service[right]):
+            raise Pending('DNS and application identities observed different account sources')
+    settings = DNS.checked(service['configuration']['value'])
+    KERNEL.known(identities['execution_bindings'], set(IDENTITIES.RELEASE.APPLICATIONS),
+        set(IDENTITIES.RELEASE.APPLICATIONS))
+    roles = identities['execution_bindings']['mk8.dns']
+    KERNEL.known(roles, {'application', 'gateway'}, {'application', 'gateway'})
+    KERNEL.known(service['accounts'], {'users', 'ipc_group'}, {'users', 'ipc_group'})
+    pair = {settings['application_user'], settings['gateway_user']}
+    KERNEL.known(service['accounts']['users'], pair, pair)
+    ipc = service['accounts']['ipc_group']
+    KERNEL.known(ipc, {'name', 'gid'}, {'name', 'gid'})
+    if ipc['name'] != settings['ipc_group']:
+        raise Pending('DNS IPC intention differs from its selected group')
+    shared = {ipc['name']: KERNEL.uint(ipc['gid'], 0x7fffffff)}
+    for role in ('application', 'gateway'):
+        row = roles[role]
+        fields = {'name', 'uid', 'primary_group', 'primary_gid', 'shell', 'shared_groups', 'entry_point'}
+        KERNEL.known(row, fields, fields)
+        if (not 100 <= KERNEL.uint(row['uid'], 0x7fffffff) <= 999 or
+            not 100 <= KERNEL.uint(row['primary_gid'], 0x7fffffff) <= 999):
+            raise Pending('unsupported admitted DNS role numeric identity')
+        account = settings[role+'_user']
+        reported = service['accounts']['users'][account]
+        expected = {'uid': row['uid'], 'primary_gid': row['primary_gid'], 'shell': row['shell']}
+        if (row['name'] != account or row['primary_group'] != account or
+            row['entry_point'] != settings[role+'_binary'] or
+            BASE.canonical(row['shared_groups']) != BASE.canonical(shared) or
+            BASE.canonical(reported) != BASE.canonical(expected)):
+            raise Pending('DNS unit role, executable or account/group facts differ from admitted release identities')
+    plan = DNS.render(settings)
+    hashes = {unit: hashlib.sha256(text.encode('ascii')).hexdigest() for unit, text in plan['units'].items()}
+    if (BASE.canonical(service['plan']) != BASE.canonical(plan) or
+        BASE.canonical(service['unit_sha256']) != BASE.canonical(hashes)):
+        raise Pending('complete DNS unit intentions differ from the real profile renderer')
+    result = {}
+    for unit, argv in plan['argv'].items():
+        role = 'application' if unit == DNS.APP_UNIT else 'gateway'
+        row = roles[role]
+        if argv[0] != row['entry_point']:
+            raise Pending('DNS unit invocation differs from the admitted role entry')
+        result[unit] = {'role': role, 'user': row['name'], 'uid': row['uid'],
+            'account_primary_gid': row['primary_gid'], 'unit_group': ipc['name'],
+            'unit_gid': ipc['gid'], 'entry_point': argv[0]}
+    return result
+
+
+def prepare(deadline=None):
+    end = KERNEL.now()+ATTEMPT_SECONDS
+    if deadline is not None:
+        if not KERNEL.finite_deadline(deadline):
+            raise Pending('invalid inherited DNS service preparation window')
+        end = min(end, deadline)
+    BASE.fence(end)
+    context = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
+    if context == 0:
+        raise Pending('missing DNS service caller namespace')
+    identity_raw, identities = prepared(IDENTITIES, end, context)
+    dns_raw, service = prepared(DNS, end, context)
+    selected = bindings(identities, service)
+    payload = BASE.canonical({'schema': 1, 'profile': 'protected-dns-release-service-intention-v1',
+        'state': 'protected-dns-release-service-intention-only', 'namespace': context,
+        'identities': identities, 'dns_service': service, 'unit_bindings': selected,
+        'identity_sha256': hashlib.sha256(identity_raw).hexdigest(),
+        'dns_service_sha256': hashlib.sha256(dns_raw).hexdigest()})
+    if len(payload) > MAX_OUTPUT:
+        raise Pending('complete DNS release/service intention exceeds its output bound')
+    if prepared_bytes(IDENTITIES, end) != identity_raw:
+        raise Pending('complete protected release/account identities changed')
+    if prepared_bytes(DNS, end) != dns_raw:
+        raise Pending('complete protected DNS service intentions changed')
+    if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != context:
+        raise Pending('DNS release/service caller namespace changed')
+    BASE.fence(end)
+    return payload
+
+
+def main():
+    try:
+        if len(sys.argv) != 1:
+            raise Pending('DNS service preparation accepts no overrides')
+        sink = sys.stdout.buffer
+        if not callable(getattr(sink, 'write', None)) or not callable(getattr(sink, 'flush', None)):
+            raise Pending('DNS service preparation requires binary stdout')
+        payload = prepare()
+        count = sink.write(payload)
+        if type(count) is not int or count != len(payload):
+            raise Pending('incomplete DNS service intention publication')
+        sink.flush()
+        return 0
+    except (Pending, OSError, ValueError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: '+str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/applications/dns_service.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Join protected application-role FILE intentions to local-peer PG intentions.
+
+Only the selected DNS and Email application roles are joined. This does not
+authenticate NSS/PAM, grant Gateway database access, validate application
+configuration/ABI, enroll services, connect, execute SQL or authorize retry.
+\"\"\"
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import sys
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_pg_application_identities',
+    Path(__file__).resolve().with_name('identities.py'))
+IDENTITIES = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(IDENTITIES)
+PG = IDENTITIES.BASE
+KERNEL, Pending = PG.KERNEL, PG.Pending
+MAX_OUTPUT = 4194305
+ATTEMPT_SECONDS = 290
+IDENTITY_FIELDS = {'schema', 'profile', 'state', 'namespace', 'configuration',
+    'passwd_source', 'group_source', 'releases', 'release_sha256', 'execution_bindings'}
+PG_FIELDS = {'schema', 'profile', 'state', 'namespace', 'configuration',
+    'account_source', 'accounts', 'plan'}
+
+
+def prepared_bytes(module, end):
+    \"\"\"Owned real preparations only; every complete return is bounded first.\"\"\"
+    PG.fence(end)
+    raw = (PG.prepare(deadline=end, scope=KERNEL.namespace) if module is PG else
+           IDENTITIES.prepare(deadline=end))
+    if type(raw) is not bytes or len(raw) > module.MAX_OUTPUT:
+        raise Pending('unsupported whole application/PG preparation bytes')
+    PG.fence(end)
+    return raw
+
+
+def prepared(module, end, context):
+    raw = prepared_bytes(module, end)
+    try:
+        value = json.loads(raw, object_pairs_hook=KERNEL.unique_object,
+            parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite preparation')))
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid application/PG preparation JSON') from error
+    fields, profile, state = ((PG_FIELDS, 'postgresql17-local-peer-new-cluster-intention-v1',
+        'local-peer-provisioning-intention-only') if module is PG else
+        (IDENTITY_FIELDS, 'four-app-release-account-intention-v1',
+         'protected-application-execution-identity-source-only'))
+    KERNEL.known(value, fields, fields)
+    if (type(value['schema']) is not int or value['schema'] != 1 or
+        value['profile'] != profile or value['state'] != state or
+        KERNEL.uint(value['namespace'], 0xffffffffffffffff) != context or
+        raw != PG.canonical(value)):
+        raise Pending('application/PG preparation schema, scope or canonical bytes differ')
+    PG.fence(end)
+    return raw, value
+
+
+def bindings(identities, postgres):
+    \"\"\"Reported correspondence only; public hashes do not authenticate origin.\"\"\"
+    if PG.canonical(identities['passwd_source']) != PG.canonical(postgres['account_source']):
+        raise Pending('application and PostgreSQL account source observations differ')
+    settings = PG.checked(postgres['configuration']['value'])
+    plan = PG.render(settings)
+    if PG.canonical(postgres['plan']) != PG.canonical(plan):
+        raise Pending('complete PostgreSQL intention differs from the real renderer')
+    KERNEL.known(identities['execution_bindings'], set(IDENTITIES.RELEASE.APPLICATIONS),
+        set(IDENTITIES.RELEASE.APPLICATIONS))
+    KERNEL.known(postgres['accounts'], set(PG.APPLICATIONS), set(PG.APPLICATIONS))
+    result = {}
+    for app in PG.APPLICATIONS:
+        pair = identities['execution_bindings'][app]
+        KERNEL.known(pair, {'application', 'gateway'}, {'application', 'gateway'})
+        role = pair['application']
+        fields = {'name', 'uid', 'primary_group', 'primary_gid', 'shell', 'shared_groups', 'entry_point'}
+        KERNEL.known(role, fields, fields)
+        selected = settings['applications'][app]
+        expected = {'name': role['name'], 'uid': role['uid'], 'gid': role['primary_gid'], 'shell': role['shell']}
+        if (role['name'] != selected['role'] or role['primary_group'] != selected['role'] or
+            not 100 <= KERNEL.uint(role['uid'], 0x7fffffff) <= 999 or
+            not 100 <= KERNEL.uint(role['primary_gid'], 0x7fffffff) <= 999 or
+            role['shell'] not in ('/usr/sbin/nologin', '/sbin/nologin', '/bin/false') or
+            PG.canonical(postgres['accounts'][app]) != PG.canonical(expected) or
+            role['entry_point'] != identities['releases']['applications'][app]['entry_points']['application']):
+            raise Pending('PostgreSQL peer role differs from the admitted application execution identity')
+        result[app] = {'execution_role': 'application', 'user': role['name'],
+            'uid': role['uid'], 'primary_gid': role['primary_gid'], 'shell': role['shell'],
+            'entry_point': role['entry_point'], 'database': selected['database'],
+            'connection_limit': selected['connection_limit'],
+            'connection_intention': plan['connections'][app]}
+    return result
+
+
+def prepare(deadline=None):
+    end = KERNEL.now()+ATTEMPT_SECONDS
+    if deadline is not None:
+        if not KERNEL.finite_deadline(deadline):
+            raise Pending('invalid inherited application/PG join window')
+        end = min(end, deadline)
+    PG.fence(end)
+    context = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
+    if context == 0:
+        raise Pending('missing application/PG caller namespace')
+    identity_raw, identities = prepared(IDENTITIES, end, context)
+    pg_raw, postgres = prepared(PG, end, context)
+    selected = bindings(identities, postgres)
+    payload = PG.canonical({'schema': 1, 'profile': 'application-postgresql-peer-role-files-v1',
+        'state': 'protected-application-postgresql-role-intention-only', 'namespace': context,
+        'identities': identities, 'postgresql': postgres, 'role_bindings': selected,
+        'identity_sha256': hashlib.sha256(identity_raw).hexdigest(),
+        'postgresql_sha256': hashlib.sha256(pg_raw).hexdigest()})
+    if len(payload) > MAX_OUTPUT:
+        raise Pending('whole application/PG join exceeds its output bound')
+    if prepared_bytes(IDENTITIES, end) != identity_raw:
+        raise Pending('complete protected application execution identities changed')
+    if prepared_bytes(PG, end) != pg_raw:
+        raise Pending('complete protected PostgreSQL intentions changed')
+    if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != context:
+        raise Pending('application/PG caller namespace changed')
+    PG.fence(end)
+    return payload
+
+
+def main():
+    try:
+        if len(sys.argv) != 1:
+            raise Pending('application/PG preparation accepts no overrides')
+        sink = sys.stdout.buffer
+        if not callable(getattr(sink, 'write', None)) or not callable(getattr(sink, 'flush', None)):
+            raise Pending('application/PG preparation requires binary stdout')
+        payload = prepare()
+        count = sink.write(payload)
+        if type(count) is not int or count != len(payload):
+            raise Pending('incomplete application/PG intention output')
+        sink.flush()
+        return 0
+    except (Pending, OSError, ValueError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: '+str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/applications/postgresql_identity.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Observe paired Sava transport/policy files and private key SOURCE material.
+
+Only selected fields and whole-file correspondence are admitted. This does not
+validate every CLR option, listener, credential delivery, storage, account power,
+native RPC authentication or service launch. Secret values are never returned.
+\"\"\"
+import base64
+import hashlib
+import importlib.util
+import json
+import math
+import os
+from pathlib import Path
+import re
+import sys
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_sava_identities',
+    Path(__file__).resolve().with_name('identities.py'))
+IDENTITIES = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(IDENTITIES)
+BASE, KERNEL, Pending = IDENTITIES.BASE, IDENTITIES.KERNEL, IDENTITIES.Pending
+INPUT = Path('/etc/debian13s4/sava-transport.json')
+SETTINGS_ROOT = Path('/etc/debian13s4-sava')
+MAX_INPUT = 8192
+MAX_SETTINGS = 1048576
+MAX_KEY_FILE = 4096
+MAX_NODES = 16384
+MAX_OUTPUT = 4194305
+ATTEMPT_SECONDS = 280
+FILES = ('application_settings', 'gateway_settings', 'access_key')
+TRANSPORT_FIELDS = {'Endpoint', 'AccessKeyFile', 'MaximumControlFrameBytes', 'ConnectTimeout', 'RequestTimeout'}
+POLICY_FIELDS = {'DataPath', 'DefaultAccount', 'Accounts', 'DataEncryptionKeys',
+    'AccountCapabilities', 'ObjectReplicationPolicies', 'AllowAnonymousPublicAccess',
+    'MaximumRequestBodyBytes', 'BearerAuthentication'}
+
+
+def material(text):
+    if type(text) is not str or not 44 <= len(text) <= 684:
+        raise Pending('unsupported bounded base64 key spelling')
+    try:
+        raw = base64.b64decode(text, validate=True)
+    except (ValueError, UnicodeError) as error:
+        raise Pending('invalid canonical base64 key') from error
+    if not 32 <= len(raw) <= 512 or not any(raw) or base64.b64encode(raw).decode('ascii') != text:
+        raise Pending('key requires canonical nonzero 32..512 byte material')
+    return raw
+
+
+def duration(value, maximum):
+    if type(value) is not str or re.fullmatch(r'[0-9]{2}:[0-5][0-9]:[0-5][0-9]', value) is None:
+        raise Pending('explicit transport duration requires canonical HH:MM:SS')
+    h, m, s = map(int, value.split(':')); seconds = h*3600+m*60+s
+    if not 1 <= seconds <= maximum:
+        raise Pending('transport duration exceeds its supported source bound')
+    return seconds
+
+
+def endpoint(value):
+    match = re.fullmatch(r'http://(127\\.0\\.0\\.1|\\[::1\\]):([1-9][0-9]{0,4})/internal/application', value) if type(value) is str else None
+    if match is None or not 1024 <= int(match[2]) <= 65535 or int(match[2]) == 5432:
+        raise Pending('this profile requires an explicit canonical loopback HTTP RPC endpoint')
+    return {'address': '::1' if match[1] == '[::1]' else match[1], 'port': int(match[2]),
+        'path': '/internal/application', 'scheme': 'http'}
+
+
+def checked(value):
+    KERNEL.known(value, {'schema', *FILES}, {'schema', *FILES})
+    if type(value['schema']) is not int or value['schema'] != 1:
+        raise Pending('unsupported Sava transport source schema')
+    selected = set()
+    for field in FILES:
+        text = value[field]
+        if type(text) is not str or not 1 <= len(text) <= 240 or os.path.normpath(text) != text:
+            raise Pending('unsupported explicit protected Sava settings path')
+        try:
+            name = str(Path(text).relative_to(SETTINGS_ROOT))
+        except ValueError as error:
+            raise Pending('Sava inputs must be explicit descendants of the product settings directory') from error
+        IDENTITIES.RELEASE.relative(name)
+        if not name.endswith('.key' if field == 'access_key' else '.json') or text in selected:
+            raise Pending('Sava settings/key paths require distinct named files')
+        selected.add(text)
+    return json.loads(BASE.canonical(value))
+
+
+def structural(value):
+    \"\"\"Finite JSON structure only; not the complete CLR configuration validator.\"\"\"
+    stack = [(value, 0)]; count = 0
+    while stack:
+        item, depth = stack.pop(); count += 1
+        if count > MAX_NODES or depth > 32:
+            raise Pending('Sava settings exceed their structural bound')
+        if type(item) is dict:
+            for key, child in item.items():
+                if type(key) is not str or not 1 <= len(key) <= 128 or any(not 32 <= ord(c) <= 126 for c in key):
+                    raise Pending('unsupported settings property spelling')
+                stack.append((child, depth+1))
+        elif type(item) is list:
+            stack.extend((child, depth+1) for child in item)
+        elif type(item) is str:
+            if len(item) > 65536 or any(not 32 <= ord(c) <= 126 for c in item):
+                raise Pending('unsupported settings string')
+        elif type(item) is int:
+            if not -(2**63) <= item <= 2**63-1: raise Pending('settings integer exceeds signed64 source range')
+        elif type(item) is float:
+            if not math.isfinite(item): raise Pending('nonfinite Sava settings number')
+        elif item is not None and type(item) is not bool:
+            raise Pending('unsupported settings value')
+
+
+def document(path, limit, end):
+    raw, source = BASE.read_protected(path, limit, True, end)
+    try:
+        value = json.loads(raw.decode('ascii'), object_pairs_hook=KERNEL.unique_object,
+            parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite Sava JSON')))
+        structural(value)
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid protected Sava JSON') from error
+    if type(value) is not dict or raw != BASE.canonical(value):
+        raise Pending('Sava input requires canonical ASCII JSON object plus LF')
+    return raw, value, source
+
+
+def settings(value, key_path):
+    if not {'Sava', 'ApplicationTransport'} <= set(value):
+        raise Pending('both selected Sava sections must be explicit')
+    transport, policy = value['ApplicationTransport'], value['Sava']
+    KERNEL.known(transport, TRANSPORT_FIELDS, TRANSPORT_FIELDS)
+    listener = endpoint(transport['Endpoint'])
+    if transport['AccessKeyFile'] != key_path or type(transport['AccessKeyFile']) is not str:
+        raise Pending('transport must reference the declared protected key file')
+    if not 4096 <= KERNEL.uint(transport['MaximumControlFrameBytes'], 64*1024*1024) <= 64*1024*1024:
+        raise Pending('unsupported explicit control frame capacity')
+    duration(transport['ConnectTimeout'], 60); duration(transport['RequestTimeout'], 3600)
+    if type(policy) is not dict or not POLICY_FIELDS <= set(policy):
+        raise Pending('selected Sava policy fields must be explicit')
+    data = policy['DataPath']
+    if (type(data) is not str or not 6 <= len(data) <= 240 or
+        re.fullmatch(r'/(srv|var/lib)/[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*', data) is None or
+        any(part in ('.', '..') for part in data.split('/')[1:])):
+        raise Pending('storage requires an explicit canonical supported directory intention')
+    accounts = policy['Accounts']
+    if type(accounts) is not dict or not 1 <= len(accounts) <= 64:
+        raise Pending('Sava policy requires explicit bounded account material')
+    for account, key in accounts.items():
+        if re.fullmatch(r'[a-z0-9]{3,24}', account) is None: raise Pending('unsupported storage account name')
+        material(key)
+    if type(policy['DefaultAccount']) is not str or policy['DefaultAccount'] not in accounts:
+        raise Pending('default storage account must explicitly identify declared material')
+    encryption = policy['DataEncryptionKeys']
+    if type(encryption) is not dict or set(encryption) != set(accounts):
+        raise Pending('each account requires explicit data encryption material, without fallback')
+    for key in encryption.values(): material(key)
+    capabilities = policy['AccountCapabilities']
+    if type(capabilities) is not dict or set(capabilities) != set(accounts) or any(type(row) is not dict for row in capabilities.values()):
+        raise Pending('each account requires an explicit capability object')
+    if type(policy['ObjectReplicationPolicies']) is not list or len(policy['ObjectReplicationPolicies']) > 64:
+        raise Pending('unsupported explicit replication policy list')
+    if type(policy['AllowAnonymousPublicAccess']) is not bool or policy['AllowAnonymousPublicAccess']:
+        raise Pending('this source profile refuses anonymous public access')
+    if not 1 <= KERNEL.uint(policy['MaximumRequestBodyBytes'], 5_000*1024*1024):
+        raise Pending('unsupported explicit request body capacity')
+    bearer = policy['BearerAuthentication']
+    if type(bearer) is not dict or type(bearer.get('Enabled')) is not bool:
+        raise Pending('bearer enablement must be explicit; native option validation remains required')
+    return listener
+
+
+def observe(end):
+    descriptor_raw, descriptor, descriptor_source = document(INPUT, MAX_INPUT, end)
+    descriptor = checked(descriptor)
+    app_raw, app, app_source = document(Path(descriptor['application_settings']), MAX_SETTINGS, end)
+    gateway_raw, gateway, gateway_source = document(Path(descriptor['gateway_settings']), MAX_SETTINGS, end)
+    listener = settings(app, descriptor['access_key']); settings(gateway, descriptor['access_key'])
+    if (BASE.canonical(app['Sava']) != BASE.canonical(gateway['Sava']) or
+        BASE.canonical(app['ApplicationTransport']) != BASE.canonical(gateway['ApplicationTransport'])):
+        raise Pending('whole selected Sava policy or transport sections differ between hosts')
+    key_raw, key_source = BASE.read_protected(Path(descriptor['access_key']), MAX_KEY_FILE, True, end)
+    try:
+        key = material(key_raw[:-1].decode('ascii'))
+    except UnicodeError as error:
+        raise Pending('invalid protected RPC key encoding') from error
+    if key_raw != base64.b64encode(key)+b'\\n':
+        raise Pending('protected RPC key requires canonical base64 plus exact LF')
+    record = {'configuration_source': descriptor_source, 'application_source': app_source,
+        'gateway_source': gateway_source, 'access_key_source': key_source,
+        'rpc': listener, 'control_frame_bytes': app['ApplicationTransport']['MaximumControlFrameBytes'],
+        'connect_seconds': duration(app['ApplicationTransport']['ConnectTimeout'], 60),
+        'request_seconds': duration(app['ApplicationTransport']['RequestTimeout'], 3600),
+        'policy_sha256': hashlib.sha256(BASE.canonical(app['Sava'])).hexdigest(),
+        'transport_sha256': hashlib.sha256(BASE.canonical(app['ApplicationTransport'])).hexdigest(),
+        'key_bytes': len(key), 'key_material_sha256': hashlib.sha256(key).hexdigest(),
+        'storage_directory_intention': app['Sava']['DataPath']}
+    # Private comparison buffers stay in this preparation; never serialize them.
+    return record, (descriptor_raw, app_raw, gateway_raw, key_raw)
+
+
+def identity_bytes(end):
+    BASE.fence(end)
+    raw = IDENTITIES.prepare(deadline=end)
+    if type(raw) is not bytes or len(raw) > IDENTITIES.MAX_OUTPUT:
+        raise Pending('unsupported whole protected release/account receipt')
+    BASE.fence(end)
+    return raw
+
+
+def prepare(deadline=None):
+    end = KERNEL.now()+ATTEMPT_SECONDS
+    if deadline is not None:
+        if not KERNEL.finite_deadline(deadline): raise Pending('invalid inherited Sava preparation window')
+        end = min(end, deadline)
+    BASE.fence(end)
+    context = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
+    if context == 0: raise Pending('missing Sava caller namespace')
+    identities = identity_bytes(end)
+    identity = json.loads(identities, object_pairs_hook=KERNEL.unique_object)
+    if KERNEL.uint(identity['namespace'], 0xffffffffffffffff) != context:
+        raise Pending('Sava release/account namespace differs')
+    observed, private = observe(end)
+    payload = BASE.canonical({'schema': 1, 'profile': 'sava-paired-transport-policy-files-v1',
+        'state': 'sava-split-transport-policy-source-only', 'namespace': context,
+        'identities': identity, 'identity_sha256': hashlib.sha256(identities).hexdigest(),
+        'settings': observed})
+    if len(payload) > MAX_OUTPUT: raise Pending('Sava source receipt exceeds its complete output bound')
+    after, after_private = observe(end)
+    if after != observed or after_private != private: raise Pending('whole Sava settings/key file observations changed')
+    if identity_bytes(end) != identities: raise Pending('complete release/account identities changed')
+    if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != context: raise Pending('Sava caller namespace changed')
+    BASE.fence(end)
+    return payload
+
+
+def main():
+    try:
+        if len(sys.argv) != 1: raise Pending('Sava source preparation accepts no overrides')
+        sink = sys.stdout.buffer
+        if not callable(getattr(sink, 'write', None)) or not callable(getattr(sink, 'flush', None)):
+            raise Pending('Sava source preparation requires binary stdout')
+        payload = prepare(); count = sink.write(payload)
+        if type(count) is not int or count != len(payload): raise Pending('incomplete Sava receipt publication')
+        sink.flush(); return 0
+    except (Pending, OSError, ValueError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: '+str(error), file=sys.stderr); return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/applications/sava_transport.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Bind selected Sava Gateway HTTPS FILE intentions to real nginx intentions.
+
+This checks a narrow explicit Kestrel JSON/PEM profile and repeated protected
+bytes. It neither runs CLR/TLS nor authenticates certificates, loaded listeners,
+service-readable credentials, release ownership or application readiness.
+\"\"\"
+import hashlib
+import importlib.util
+import json
+import math
+from pathlib import Path
+import sys
+
+
+def owned(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SAVA = owned('debian13s4_sava_ingress_transport', Path(__file__).resolve().with_name('sava_transport.py'))
+WEB_PATH = ROOT/'Web/prepare.py'
+if not WEB_PATH.is_file():
+    WEB_PATH = ROOT/'web/prepare.py'
+WEB = owned('debian13s4_sava_ingress_web', WEB_PATH)
+BASE, KERNEL, Pending = SAVA.BASE, SAVA.KERNEL, SAVA.Pending
+MAX_OUTPUT = 8388609
+ATTEMPT_SECONDS = 600
+SAVA_FIELDS = {'schema', 'profile', 'state', 'namespace', 'identities', 'identity_sha256', 'settings'}
+WEB_FIELDS = {'schema', 'profile', 'state', 'namespace', 'configuration', 'materials', 'nginx', 'nginx_sha256'}
+
+
+def finite(text):
+    value = float(text)
+    if not math.isfinite(value):
+        raise Pending('nonfinite ingress correspondence number')
+    return value
+
+
+def prepared(module, end, context):
+    if module is not SAVA and module is not WEB:
+        raise Pending('unsupported owned Sava ingress dependency')
+    BASE.fence(end)
+    try:
+        raw = (SAVA.prepare(deadline=end) if module is SAVA else
+            WEB.prepare(deadline=end, scope=WEB.KERNEL.namespace))
+    except (SAVA.Pending, WEB.Pending) as error:
+        raise Pending('Sava ingress dependency refused') from error
+    if type(raw) is not bytes or len(raw) > module.MAX_OUTPUT:
+        raise Pending('unsupported complete Sava ingress dependency bytes')
+    try:
+        value = json.loads(raw.decode('ascii'), object_pairs_hook=KERNEL.unique_object,
+            parse_float=finite, parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite dependency')))
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid Sava ingress dependency JSON') from error
+    fields, profile, state = ((SAVA_FIELDS, 'sava-paired-transport-policy-files-v1',
+        'sava-split-transport-policy-source-only') if module is SAVA else
+        (WEB_FIELDS, 'nginx-private-https-three-gateway-intention-v1', 'ingress-configuration-intention-only'))
+    KERNEL.known(value, fields, fields)
+    if (type(value['schema']) is not int or value['schema'] != 1 or
+        value['profile'] != profile or value['state'] != state or
+        KERNEL.uint(value['namespace'], 0xffffffffffffffff) != context or raw != BASE.canonical(value)):
+        raise Pending('Sava ingress dependency schema, scope or canonical bytes differ')
+    BASE.fence(end)
+    return raw, value
+
+
+def material_path(value):
+    path = WEB.material_path(value)
+    try:
+        name = str(Path(path).relative_to(SAVA.SETTINGS_ROOT))
+    except ValueError as error:
+        raise Pending('Gateway TLS files must be explicit product settings descendants') from error
+    SAVA.IDENTITIES.RELEASE.relative(name)
+    if not name.endswith('.pem'):
+        raise Pending('Gateway TLS material requires explicit PEM files')
+    return path
+
+
+def listener(gateway, ingress, rpc):
+    \"\"\"Selected file syntax/correspondence, not the native Kestrel validator.\"\"\"
+    port = KERNEL.uint(ingress['upstream_port'], 65535)
+    if port < 1024 or port == 5432:
+        raise Pending('unsupported explicit Gateway ingress port')
+    KERNEL.known(gateway, {'Sava', 'ApplicationTransport', 'Kestrel'},
+        {'Sava', 'ApplicationTransport', 'Kestrel'})
+    kestrel = gateway['Kestrel']
+    KERNEL.known(kestrel, {'Endpoints'}, {'Endpoints'})
+    KERNEL.known(kestrel['Endpoints'], {'Private'}, {'Private'})
+    selected = kestrel['Endpoints']['Private']
+    KERNEL.known(selected, {'Url', 'Protocols', 'Certificate'}, {'Url', 'Protocols', 'Certificate'})
+    certificate = selected['Certificate']
+    KERNEL.known(certificate, {'Path', 'KeyPath', 'Password'}, {'Path', 'KeyPath', 'Password'})
+    if (type(selected['Url']) is not str or
+        selected['Url'] != 'https://127.0.0.1:'+str(port) or
+        type(selected['Protocols']) is not str or selected['Protocols'] != 'Http1' or
+        type(certificate['Password']) is not str or certificate['Password'] != ''):
+        raise Pending('Gateway requires one explicit loopback HTTPS/HTTP1 unencrypted PEM intention')
+    public, private = material_path(certificate['Path']), material_path(certificate['KeyPath'])
+    if public == private or private == ingress['upstream_ca'] or port == KERNEL.uint(rpc['port'], 65535):
+        raise Pending('Gateway TLS material or RPC/listener ports conflict')
+    return {'address': '127.0.0.1', 'port': port, 'scheme': 'https',
+        'protocol': 'Http1', 'certificate': public, 'private_key': private,
+        'server_name_intention': ingress['upstream_name']}
+
+
+def observe(sava, web, end):
+    descriptor_raw, descriptor, descriptor_source = SAVA.document(SAVA.INPUT, SAVA.MAX_INPUT, end)
+    descriptor = SAVA.checked(descriptor)
+    gateway_raw, gateway, gateway_source = SAVA.document(
+        Path(descriptor['gateway_settings']), SAVA.MAX_SETTINGS, end)
+    settings = sava['settings']
+    if (BASE.canonical(descriptor_source) != BASE.canonical(settings['configuration_source']) or
+        BASE.canonical(gateway_source) != BASE.canonical(settings['gateway_source'])):
+        raise Pending('Gateway files differ from the complete owned Sava preparation')
+    rpc = SAVA.settings(gateway, descriptor['access_key'])
+    if (BASE.canonical(rpc) != BASE.canonical(settings['rpc']) or
+        hashlib.sha256(BASE.canonical(gateway['Sava'])).hexdigest() != settings['policy_sha256'] or
+        hashlib.sha256(BASE.canonical(gateway['ApplicationTransport'])).hexdigest() != settings['transport_sha256']):
+        raise Pending('whole Gateway policy/transport differ from owned Sava preparation')
+    try:
+        config = WEB.checked(web['configuration']['value'])
+        nginx = WEB.render(config)
+        ingress = config['applications']['mk8.sava']
+        selected = listener(gateway, ingress, rpc)
+    except (SAVA.Pending, WEB.Pending) as error:
+        raise Pending('Sava listener or real ingress renderer refused') from error
+    if (type(web['nginx']) is not str or web['nginx'] != nginx or
+        web['nginx_sha256'] != hashlib.sha256(nginx.encode('ascii')).hexdigest()):
+        raise Pending('whole ingress intention differs from the real renderer')
+    body = gateway['Sava']['MaximumRequestBodyBytes']
+    if type(body) is not int or ingress['body_bytes'] > body:
+        raise Pending('public ingress body intention exceeds selected Sava policy')
+    key = selected['private_key']
+    public_files = {row[field] for row in config['applications'].values()
+        for field in ('certificate', 'upstream_ca')}
+    if key in public_files or key == descriptor['access_key']:
+        raise Pending('Gateway private key is reused as public or RPC material')
+    certificate_raw, certificate_source = BASE.read_protected(
+        Path(selected['certificate']), WEB.MAX_PEM, False, end)
+    private_raw, private_source = BASE.read_protected(Path(key), WEB.MAX_PEM, True, end)
+    try:
+        certificate_blocks = WEB.pem(certificate_raw, False)
+        private_blocks = WEB.pem(private_raw, True)
+    except WEB.Pending as error:
+        raise Pending('Gateway TLS material grammar refused') from error
+    row = web['materials'][ingress['upstream_ca']]
+    KERNEL.known(row, {'source', 'pem_blocks', 'kind'}, {'source', 'pem_blocks', 'kind'})
+    if row['kind'] != 'certificate':
+        raise Pending('ingress CA must remain reported public material')
+    record = {'configuration_source': descriptor_source, 'gateway_source': gateway_source,
+        'listener': selected, 'certificate_source': certificate_source,
+        'private_key_source': private_source, 'certificate_blocks': certificate_blocks,
+        'private_key_blocks': private_blocks, 'upstream_ca': row,
+        'ingress_body_bytes': ingress['body_bytes'], 'policy_body_bytes': body}
+    # Secret whole-file/key bytes stay private and are compared after encoding.
+    return record, (descriptor_raw, gateway_raw, certificate_raw, private_raw)
+
+
+def prepare(deadline=None):
+    end = KERNEL.now()+ATTEMPT_SECONDS
+    if deadline is not None:
+        if not KERNEL.finite_deadline(deadline):
+            raise Pending('invalid inherited Sava ingress window')
+        end = min(end, deadline)
+    BASE.fence(end)
+    context = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
+    if context == 0:
+        raise Pending('missing Sava ingress namespace')
+    sava_raw, sava = prepared(SAVA, end, context)
+    web_raw, web = prepared(WEB, end, context)
+    observed, private = observe(sava, web, end)
+    payload = BASE.canonical({'schema': 1, 'profile': 'sava-gateway-nginx-file-correspondence-v1',
+        'state': 'protected-sava-gateway-ingress-source-only', 'namespace': context,
+        'sava': sava, 'ingress': web, 'sava_sha256': hashlib.sha256(sava_raw).hexdigest(),
+        'ingress_sha256': hashlib.sha256(web_raw).hexdigest(), 'gateway': observed})
+    if len(payload) > MAX_OUTPUT:
+        raise Pending('whole Sava ingress correspondence exceeds its output bound')
+    if prepared(SAVA, end, context)[0] != sava_raw or prepared(WEB, end, context)[0] != web_raw:
+        raise Pending('complete owned Sava or ingress preparation changed')
+    after, after_private = observe(sava, web, end)
+    if after != observed or after_private != private:
+        raise Pending('whole Gateway settings or TLS material changed')
+    if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != context:
+        raise Pending('Sava ingress namespace changed')
+    BASE.fence(end)
+    return payload
+
+
+def main():
+    try:
+        if len(sys.argv) != 1:
+            raise Pending('Sava ingress correspondence accepts no overrides')
+        sink = sys.stdout.buffer
+        if not callable(getattr(sink, 'write', None)) or not callable(getattr(sink, 'flush', None)):
+            raise Pending('Sava ingress correspondence requires binary stdout')
+        payload = prepare()
+        count = sink.write(payload)
+        if type(count) is not int or count != len(payload):
+            raise Pending('incomplete Sava ingress output')
+        sink.flush()
+        return 0
+    except (Pending, OSError, ValueError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: '+str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/applications/sava_ingress.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Compose known protected application FILE prerequisites, never app readiness.
+
+Four-role release/account files, selected DNS unit and PG role intentions, and
+selected Sava policy/key files are checked. Drava/Email runtime settings, native
+credentials, runnable binaries, health, enrollment and installation stay open.
+\"\"\"
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import sys
+
+
+def owned(name, file):
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).resolve().with_name(file))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+DNS = owned('debian13s4_application_dns_files', 'dns_service.py')
+PG = owned('debian13s4_application_pg_files', 'postgresql_identity.py')
+SAVA = owned('debian13s4_application_sava_files', 'sava_transport.py')
+BASE, KERNEL, Pending = DNS.BASE, DNS.KERNEL, DNS.Pending
+MAX_OUTPUT = 16777217
+ATTEMPT_SECONDS = 1760
+CHILDREN = (
+    ('dns', DNS, {'schema', 'profile', 'state', 'namespace', 'identities', 'dns_service',
+        'unit_bindings', 'identity_sha256', 'dns_service_sha256'},
+     'protected-dns-release-service-intention-v1', 'protected-dns-release-service-intention-only'),
+    ('postgresql', PG, {'schema', 'profile', 'state', 'namespace', 'identities', 'postgresql',
+        'role_bindings', 'identity_sha256', 'postgresql_sha256'},
+     'application-postgresql-peer-role-files-v1', 'protected-application-postgresql-role-intention-only'),
+    ('sava', SAVA, {'schema', 'profile', 'state', 'namespace', 'identities', 'identity_sha256', 'settings'},
+     'sava-paired-transport-policy-files-v1', 'sava-split-transport-policy-source-only'))
+
+
+def prepared_bytes(module, end):
+    BASE.fence(end)
+    try:
+        raw = module.prepare(deadline=end)
+    except module.Pending as error:
+        raise Pending('application file prerequisite refused') from error
+    if type(raw) is not bytes or len(raw) > module.MAX_OUTPUT:
+        raise Pending('unsupported complete application file prerequisite bytes')
+    BASE.fence(end)
+    return raw
+
+
+def prepared(child, end, context):
+    tag, module, fields, profile, state = child
+    raw = prepared_bytes(module, end)
+    try:
+        value = json.loads(raw, object_pairs_hook=KERNEL.unique_object,
+            parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite prerequisite')))
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid application file prerequisite JSON') from error
+    KERNEL.known(value, fields, fields)
+    identity = value['identities']
+    KERNEL.known(identity, DNS.IDENTITY_FIELDS, DNS.IDENTITY_FIELDS)
+    if (type(value['schema']) is not int or value['schema'] != 1 or
+        value['profile'] != profile or value['state'] != state or
+        KERNEL.uint(value['namespace'], 0xffffffffffffffff) != context or
+        type(identity['schema']) is not int or identity['schema'] != 1 or
+        identity['profile'] != 'four-app-release-account-intention-v1' or
+        identity['state'] != 'protected-application-execution-identity-source-only' or
+        KERNEL.uint(identity['namespace'], 0xffffffffffffffff) != context or
+        value['identity_sha256'] != hashlib.sha256(BASE.canonical(identity)).hexdigest() or
+        raw != BASE.canonical(value)):
+        raise Pending('application file prerequisite schema, identity, scope or canonical bytes differ')
+    BASE.fence(end)
+    return raw, value
+
+
+def correspondence(values):
+    \"\"\"Whole reported identity correspondence, not native provenance or access.\"\"\"
+    identity = BASE.canonical(values['dns']['identities'])
+    if any(BASE.canonical(values[tag]['identities']) != identity for tag in ('postgresql', 'sava')):
+        raise Pending('complete application release/account prerequisites differ')
+    dns = values['dns']; pg = values['postgresql']
+    try:
+        dns_roles = DNS.bindings(dns['identities'], dns['dns_service'])
+        pg_roles = PG.bindings(pg['identities'], pg['postgresql'])
+    except (DNS.Pending, PG.Pending, DNS.DNS.Pending) as error:
+        raise Pending('application role prerequisite refused') from error
+    if (BASE.canonical(dns['unit_bindings']) != BASE.canonical(dns_roles) or
+        BASE.canonical(pg['role_bindings']) != BASE.canonical(pg_roles)):
+        raise Pending('whole DNS or PostgreSQL role correspondence differs from its real renderer')
+    unit, peer = dns['unit_bindings'][DNS.DNS.APP_UNIT], pg['role_bindings']['mk8.dns']
+    left = {'user': unit['user'], 'uid': unit['uid'], 'primary_gid': unit['account_primary_gid'], 'entry_point': unit['entry_point']}
+    right = {key: peer[key] for key in left}
+    if BASE.canonical(left) != BASE.canonical(right):
+        raise Pending('DNS application unit identity differs from the reserved PostgreSQL role intention')
+    return {'dns_application_identity': left, 'dns_unit_group': unit['unit_group'],
+        'dns_unit_gid': unit['unit_gid'], 'identity_sha256': hashlib.sha256(identity).hexdigest()}
+
+
+def prepare(deadline=None):
+    end = KERNEL.now()+ATTEMPT_SECONDS
+    if deadline is not None:
+        if not KERNEL.finite_deadline(deadline):
+            raise Pending('invalid inherited application prerequisite window')
+        end = min(end, deadline)
+    BASE.fence(end)
+    context = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
+    if context == 0:
+        raise Pending('missing application prerequisite namespace')
+    original, values = {}, {}
+    for child in CHILDREN:
+        raw, value = prepared(child, end, context)
+        original[child[0]], values[child[0]] = raw, value
+    joined = correspondence(values)
+    payload = BASE.canonical({'schema': 1, 'profile': 'application-file-prerequisites-v1',
+        'state': 'application-file-prerequisites-source-only', 'namespace': context,
+        'components': values, 'component_sha256': {tag: hashlib.sha256(raw).hexdigest() for tag, raw in original.items()},
+        'correspondence': joined})
+    if len(payload) > MAX_OUTPUT:
+        raise Pending('whole application file prerequisites exceed their output bound')
+    for tag, module, _, _, _ in CHILDREN:
+        if prepared_bytes(module, end) != original[tag]:
+            raise Pending('complete application file prerequisite changed')
+    if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != context:
+        raise Pending('application prerequisite namespace changed')
+    BASE.fence(end)
+    return payload
+
+
+def main():
+    try:
+        if len(sys.argv) != 1:
+            raise Pending('application file prerequisites accept no overrides')
+        sink = sys.stdout.buffer
+        if not callable(getattr(sink, 'write', None)) or not callable(getattr(sink, 'flush', None)):
+            raise Pending('application file prerequisites require binary stdout')
+        payload = prepare()
+        count = sink.write(payload)
+        if type(count) is not int or count != len(payload):
+            raise Pending('incomplete application prerequisite output')
+        sink.flush()
+        return 0
+    except (Pending, OSError, ValueError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: '+str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/applications/prepare.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Read protected application inputs and report their source correspondence.
+
+No service is installed or started. The report covers sequential file
+observations, not executable validity, native credentials or application health.
+Run with an isolated interpreter: python3 -I -B applications/preflight.py.
+\"\"\"
+import argparse
+import hashlib
+import importlib.util
+import json
+import math
+from pathlib import Path
+import sys
+import time
+
+
+CHECKS = {
+    'releases': ('releases.py', 'four-app-complete-release-files-v1',
+                 'protected-preinstalled-release-source-only'),
+    'identities': ('identities.py', 'four-app-release-account-intention-v1',
+                   'protected-application-execution-identity-source-only'),
+    'dns': ('dns_service.py', 'protected-dns-release-service-intention-v1',
+            'protected-dns-release-service-intention-only'),
+    'postgresql': ('postgresql_identity.py', 'application-postgresql-peer-role-files-v1',
+                   'protected-application-postgresql-role-intention-only'),
+    'sava': ('sava_transport.py', 'sava-paired-transport-policy-files-v1',
+             'sava-split-transport-policy-source-only'),
+    'ingress': ('sava_ingress.py', 'sava-gateway-nginx-file-correspondence-v1',
+                'protected-sava-gateway-ingress-source-only'),
+    'prerequisites': ('prepare.py', 'application-file-prerequisites-v1',
+                      'application-file-prerequisites-source-only'),
+}
+ATTEMPT_SECONDS = 2400
+MAX_OUTPUT = 65536
+LIMITATIONS = (
+    'Application binaries, framework compatibility and native credentials are unverified.',
+    'Runtime settings, service health and complete four-application integration remain unverified.',
+    'Sequential file observations do not prove continuous identity or reserve network ports.',
+)
+
+
+class Pending(ValueError):
+    \"\"\"A requested input check or its cross-component correspondence refused.\"\"\"
+
+
+def canonical(value):
+    return (json.dumps(value, sort_keys=True, separators=(',', ':'),
+                       ensure_ascii=True, allow_nan=False)+'\\n').encode('ascii')
+
+
+def now():
+    return time.clock_gettime(time.CLOCK_BOOTTIME)
+
+
+def fence(end):
+    if now() >= end:
+        raise Pending('application preflight window expired')
+
+
+def owned(check):
+    spec = importlib.util.spec_from_file_location('debian13s4_preflight_'+check,
+        Path(__file__).resolve().with_name(CHECKS[check][0]))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def unique(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise Pending('duplicate prerequisite property')
+        value[key] = item
+    return value
+
+
+def finite(text):
+    value = float(text)
+    if not math.isfinite(value):
+        raise Pending('nonfinite prerequisite number')
+    return value
+
+
+def observe(check, module, end, namespace):
+    fence(end)
+    try:
+        raw = module.prepare(deadline=end)
+    except (module.Pending, OSError) as error:
+        raise Pending(check+': protected inputs refused: '+str(error)) from error
+    if type(raw) is not bytes or not raw or len(raw) > module.MAX_OUTPUT:
+        raise Pending(check+': unsupported prerequisite bytes')
+    try:
+        value = json.loads(raw, object_pairs_hook=unique, parse_float=finite,
+            parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite prerequisite')))
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending(check+': invalid prerequisite JSON') from error
+    if (type(value) is not dict or type(value.get('schema')) is not int or value['schema'] != 1 or
+        value.get('profile') != CHECKS[check][1] or value.get('state') != CHECKS[check][2] or
+        type(value.get('namespace')) is not int or value['namespace'] != namespace or
+        raw != canonical(value)):
+        raise Pending(check+': prerequisite profile, context or canonical bytes differ')
+    fence(end)
+    return raw, value
+
+
+def listener_plan(prerequisites, ingress):
+    \"\"\"Refuse collisions among the selected TCP listener intentions, not sockets.\"\"\"
+    if canonical(prerequisites['components']['sava']) != canonical(ingress['sava']):
+        raise Pending('Sava release, account or settings observations differ between checks')
+    claims = []
+    web = ingress['ingress']['configuration']['value']['applications']
+    for app, row in sorted(web.items()):
+        claims.append({'owner': app+' HTTPS gateway', 'address': '127.0.0.1',
+                       'port': row['upstream_port'], 'transport': 'tcp'})
+    rpc = ingress['sava']['settings']['rpc']
+    claims.append({'owner': 'mk8.sava Application RPC', 'address': rpc['address'],
+                   'port': rpc['port'], 'transport': 'tcp'})
+    dns = prerequisites['components']['dns']['dns_service']['plan']['listeners']
+    for row in dns:
+        claims.append({'owner': row['unit']+' health', 'address': row['health_address'],
+                       'port': row['health_port'], 'transport': 'tcp'})
+    occupied = {}
+    for row in claims:
+        if (row['address'] not in ('127.0.0.1', '::1') or
+            type(row['port']) is not int or not 1024 <= row['port'] <= 65535 or row['port'] == 5432):
+            raise Pending('unsupported loopback listener intention')
+        key = row['address'], row['port'], row['transport']
+        if key in occupied:
+            raise Pending(f\"listener conflict at {key[0]}:{key[1]}: {occupied[key]} and {row['owner']}\")
+        occupied[key] = row['owner']
+    return claims
+
+
+def prepare(check='all', deadline=None):
+    if type(check) is not str or check not in (*CHECKS, 'all'):
+        raise Pending('unknown application preflight check')
+    start = now()
+    if deadline is not None and (type(deadline) not in (int, float) or
+                                not math.isfinite(deadline) or deadline <= start):
+        raise Pending('invalid inherited preflight deadline')
+    end = min(start+ATTEMPT_SECONDS, deadline) if deadline is not None else start+ATTEMPT_SECONDS
+    selected = ('prerequisites', 'ingress') if check == 'all' else (check,)
+    values, summaries, modules = {}, {}, []
+    namespace = None
+    for tag in selected:
+        fence(end)
+        module = owned(tag)
+        context = module.KERNEL.uint(module.KERNEL.namespace(), 0xffffffffffffffff)
+        if context == 0 or namespace is not None and context != namespace:
+            raise Pending(tag+': namespace unavailable or changed')
+        namespace = context
+        raw, value = observe(tag, module, end, namespace)
+        modules.append(module)
+        values[tag] = value
+        summaries[tag] = {'state': value['state'], 'bytes': len(raw),
+                          'sha256': hashlib.sha256(raw).hexdigest()}
+    listeners = listener_plan(values['prerequisites'], values['ingress']) if check == 'all' else []
+    payload = canonical({'schema': 1, 'state': 'application-preflight-source-only',
+        'requested': check, 'namespace': namespace, 'checks': summaries,
+        'listener_intentions': listeners, 'limitations': list(LIMITATIONS)})
+    if len(payload) > MAX_OUTPUT:
+        raise Pending('preflight report exceeds its bound')
+    for module in modules:
+        if module.KERNEL.uint(module.KERNEL.namespace(), 0xffffffffffffffff) != namespace:
+            raise Pending('preflight namespace changed')
+    fence(end)
+    return payload
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', choices=(*CHECKS, 'all'), default='all')
+    parser.add_argument('--format', choices=('text', 'json'), default='text')
+    args = parser.parse_args(argv)
+    try:
+        raw = prepare(args.check)
+        if args.format == 'text':
+            value = json.loads(raw)
+            lines = ['Protected application file checks completed: '+', '.join(value['checks'])+'.',
+                     'Scope: source inputs only; application readiness remains unverified.']
+            lines.extend(f\"{row['owner']}: {row['address']}:{row['port']} ({row['transport']} intention)\"
+                         for row in value['listener_intentions'])
+            lines.extend(value['limitations'])
+            raw = ('\\n'.join(lines)+'\\n').encode('ascii')
+        sink = sys.stdout.buffer
+        count = sink.write(raw)
+        if type(count) is not int or count != len(raw):
+            raise Pending('incomplete preflight output')
+        sink.flush()
+        return 0
+    except (Pending, OSError, ValueError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: '+str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/applications/preflight.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Describe a protected release tree without copying, installing or executing it.
+
+The resulting declaration proposes its generation directory. The operator must
+publish the same bytes separately before releases.py can admit that directory.
+Public hashes identify bytes; they do not authenticate a publisher or CLR/ABI.
+\"\"\"
+import argparse
+import importlib.util
+from pathlib import Path
+import stat
+import sys
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_manifest_releases',
+    Path(__file__).resolve().with_name('releases.py'))
+RELEASE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(RELEASE)
+BASE, KERNEL, Pending = RELEASE.BASE, RELEASE.KERNEL, RELEASE.Pending
+MAX_OUTPUT = RELEASE.MAX_OUTPUT
+
+
+def prepare(application, directory, application_entry, gateway_entry, deadline=None):
+    if type(application) is not str or application not in RELEASE.APPLICATIONS:
+        raise Pending('select one supported application explicitly')
+    if type(directory) is not type(BASE.TRUST_ROOT):
+        raise Pending('release inventory requires an explicit absolute directory')
+    entries = {'application': RELEASE.relative(application_entry), 'gateway': RELEASE.relative(gateway_entry)}
+    if application_entry == gateway_entry:
+        raise Pending('application and gateway entry points must differ')
+    start = KERNEL.now()
+    if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):
+        raise Pending('invalid release inventory deadline')
+    end = min(start+RELEASE.ATTEMPT_SECONDS, deadline) if deadline is not None else start+RELEASE.ATTEMPT_SECONDS
+    BASE.fence(end)
+    namespace = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
+    if not namespace:
+        raise Pending('missing release inventory namespace')
+    before = RELEASE.tree(directory, end)
+    if not 2 <= len(before['files']) <= RELEASE.MAX_FILES or not set(entries.values()) <= set(before['files']):
+        raise Pending('both entry points must occur in the complete release inventory')
+    expected_directories = {'.'}
+    facts, total = {}, 0
+    for name in before['files']:
+        BASE.fence(end)
+        expected_directories.update(str(p) for p in Path(name).parents if str(p) != '.')
+        info = (directory/name).lstat()
+        if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_uid != BASE.TRUSTED_UID or
+            info.st_dev != before['directories']['.'][0] or stat.S_IMODE(info.st_mode) not in (0o644, 0o755) or
+            not 0 <= info.st_size <= RELEASE.MAX_FILE_BYTES):
+            raise Pending('unsupported release file owner, type, link, mode, device or size')
+        total += info.st_size
+        if total > RELEASE.MAX_TOTAL_BYTES:
+            raise Pending('release inventory exceeds its total byte bound')
+        facts[name] = info
+    if set(before['directories']) != expected_directories:
+        raise Pending('release tree contains undeclared empty directories')
+    for entry in entries.values():
+        if stat.S_IMODE(facts[entry].st_mode) != 0o755 or facts[entry].st_size == 0:
+            raise Pending('release entry points require nonempty executable files')
+    files, sources = {}, {}
+    for name, info in facts.items():
+        raw, source = BASE.read_protected(directory/name, info.st_size, False, end)
+        if source['identity'] != list(KERNEL.signature(info)):
+            raise Pending('release file changed after inventory')
+        files[name] = {'bytes': len(raw), 'mode': format(stat.S_IMODE(info.st_mode), '04o'), 'sha256': source['sha256']}
+        sources[name] = source
+    if RELEASE.tree(directory, end) != before:
+        raise Pending('release inventory changed during file reads')
+    generation = RELEASE.generation(entries, files)
+    declaration = {'generation': generation, 'directory': str(RELEASE.RELEASE_ROOT/application/generation),
+                   'entry_points': entries, 'files': files}
+    payload = BASE.canonical({'schema': 1, 'state': 'release-manifest-proposal-only',
+        'application': application, 'namespace': namespace, 'source_directory': str(directory),
+        'declaration': declaration, 'observed_sources': sources, 'observed_directories': before['directories']})
+    if len(payload) > MAX_OUTPUT:
+        raise Pending('release inventory proposal exceeds its output bound')
+    # Reuse the complete production admission reader for the final observation.
+    # Its directory is the actual staging tree, not the proposed destination.
+    actual = dict(declaration, directory=str(directory))
+    after = RELEASE.observe(actual, end)
+    if after['files'] != sources or after['directories'] != before['directories']:
+        raise Pending('release inventory changed after proposal encoding')
+    if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != namespace:
+        raise Pending('release inventory namespace changed')
+    BASE.fence(end)
+    return payload
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--application', choices=RELEASE.APPLICATIONS, required=True)
+    parser.add_argument('--directory', type=Path, required=True)
+    parser.add_argument('--application-entry', required=True)
+    parser.add_argument('--gateway-entry', required=True)
+    args = parser.parse_args(argv)
+    try:
+        raw = prepare(args.application, args.directory, args.application_entry, args.gateway_entry)
+        sink = sys.stdout.buffer
+        count = sink.write(raw)
+        if type(count) is not int or count != len(raw):
+            raise Pending('incomplete release proposal output')
+        sink.flush()
+        return 0
+    except (Pending, OSError, ValueError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: '+str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/applications/release_manifest.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Prepare PARTIAL preprovisioned mk8.dns replica service intentions only.
+
+No binaries, accounts, snapshots, directories, units or network are installed,
+published, started or queried. Binary paths and zone IDs are explicit caller
+intentions, not checked releases or usable signed catalogs. The existing
+application must have provisioned active signed snapshots; this profile has
+no controller, publication, TSIG, transfer, signing or renewal authority.
+\"\"\"
+
+import hashlib
+import importlib.util
+import ipaddress
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_dns_inputs',
+    Path(__file__).resolve().parents[1] / 'PostgreSQL/prepare.py')
+if not Path(SPEC.origin).is_file():
+    SPEC = importlib.util.spec_from_file_location('debian13s4_dns_inputs',
+        Path(__file__).resolve().parents[1] / 'postgresql/prepare.py')
+BASE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(BASE)
+KERNEL = BASE.KERNEL
+Pending = BASE.Pending
+INPUT = Path('/etc/debian13s4/dns.json')
+PASSWD = Path('/etc/passwd')
+GROUP = Path('/etc/group')
+MAX_INPUT = 8192
+MAX_INVENTORY = 262144
+MAX_OUTPUT = 65537
+ATTEMPT_SECONDS = 10
+SOCKET = '/run/debian13s4-dns/query.sock'
+STATE = '/var/lib/debian13s4-dns'
+APP_UNIT = 'debian13s4-dns-application.service'
+# Product CLI fields and supported capacity bounds, not deployment defaults.
+BUDGETS = {'udp-response-rate': (1, 1000000), 'udp-response-burst': (1, 1000000),
+    'udp-byte-rate': (1, 1000000000), 'udp-byte-burst': (512, 1000000000),
+    'udp-global-response-rate': (1, 1000000), 'udp-global-response-burst': (1, 1000000),
+    'udp-global-byte-rate': (1, 1000000000), 'udp-global-byte-burst': (512, 1000000000),
+    'udp-prefix-limit': (1, 65536)}
+NAME = re.compile(r'[a-z][a-z0-9_]{0,30}\\Z')
+
+
+def name(value):
+    if type(value) is not str or NAME.fullmatch(value) is None or value == 'root':
+        raise Pending('unsupported explicit DNS service identity')
+    return value
+
+
+def binary_path(value):
+    if (type(value) is not str or not 6 <= len(value) <= 240 or
+        re.fullmatch(r'/opt/[A-Za-z0-9_./-]+', value) is None or
+        any(part in ('', '.', '..') for part in value.split('/')[1:]) or
+        os.path.normpath(value) != value):
+        raise Pending('unsupported explicit DNS binary path')
+    return value
+
+
+def address(value):
+    if type(value) is not str or '%' in value:
+        raise Pending('DNS bind address requires a literal without a scope alias')
+    try:
+        parsed = ipaddress.ip_address(value)
+    except ValueError as error:
+        raise Pending('invalid DNS bind address') from error
+    if (str(parsed) != value or parsed.is_unspecified or parsed.is_multicast or
+        parsed.is_loopback or parsed.is_link_local or parsed.is_reserved or
+        parsed.version == 4 and int(parsed) < 0x01000000 or
+        parsed.version == 6 and (parsed.ipv4_mapped is not None or parsed.is_site_local)):
+        raise Pending('unsupported explicit unicast DNS bind address')
+    return parsed.version
+
+
+def checked(value):
+    fields = {'schema', 'application_user', 'gateway_user', 'ipc_group',
+        'application_binary', 'gateway_binary', 'node', 'zones', 'listeners', 'budgets'}
+    KERNEL.known(value, fields, fields)
+    if type(value['schema']) is not int or value['schema'] != 1:
+        raise Pending('unsupported DNS intention schema')
+    identities = [name(value[k]) for k in ('application_user', 'gateway_user', 'ipc_group')]
+    if len(set(identities)) != 3:
+        raise Pending('DNS service accounts and IPC group must be distinct')
+    binaries = [binary_path(value[k]) for k in ('application_binary', 'gateway_binary')]
+    if binaries[0] == binaries[1]:
+        raise Pending('DNS application and gateway binaries must be distinct')
+    if (type(value['node']) is not str or
+        re.fullmatch(r'[A-Za-z0-9_-]{1,128}', value['node']) is None):
+        raise Pending('unsupported explicit DNS node')
+    zones = value['zones']
+    if (type(zones) is not list or not 1 <= len(zones) <= 64 or
+        any(type(z) is not str or re.fullmatch(r'[0-9a-f]{32}', z) is None or
+            z == '0'*32 for z in zones) or len(set(zones)) != len(zones)):
+        raise Pending('DNS requires distinct nonempty canonical zone IDs')
+    listeners = value['listeners']
+    if type(listeners) is not list or not 1 <= len(listeners) <= 2:
+        raise Pending('DNS requires one or two explicit family listeners')
+    families, health = set(), set()
+    for row in listeners:
+        KERNEL.known(row, {'address', 'health_port'}, {'address', 'health_port'})
+        family = address(row['address']); port = row['health_port']
+        if type(port) is not int or not 1024 <= port <= 65535 or port == 5432:
+            raise Pending('unsupported explicit DNS loopback health port')
+        if family in families or port in health:
+            raise Pending('DNS listeners share a family or health port')
+        families.add(family); health.add(port)
+    KERNEL.known(value['budgets'], set(BUDGETS), set(BUDGETS))
+    for field, (minimum, maximum) in BUDGETS.items():
+        number = value['budgets'][field]
+        if type(number) is not int or not minimum <= number <= maximum:
+            raise Pending('unsupported explicit DNS response budget')
+    return json.loads(BASE.canonical(value))
+
+
+def configuration(end):
+    raw, source = BASE.read_protected(INPUT, MAX_INPUT, True, end)
+    try:
+        value = json.loads(raw.decode('ascii'), object_pairs_hook=KERNEL.unique_object,
+            parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite DNS input')))
+        value = checked(value)
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid DNS JSON input') from error
+    if raw != BASE.canonical(value):
+        raise Pending('DNS input requires canonical ASCII JSON plus LF')
+    return {'value': value, 'source': source}
+
+
+def records(raw, columns):
+    if type(raw) is not bytes or len(raw) > MAX_INVENTORY:
+        raise Pending('unsupported DNS account inventory bytes')
+    if (not raw.endswith(b'\\n') or
+        any(c != 10 and not 32 <= c <= 126 for c in raw)):
+        raise Pending('DNS inventory requires printable ASCII and exact LF records')
+    lines = raw[:-1].decode('ascii').split('\\n')
+    if len(lines) > 4096:
+        raise Pending('DNS account inventory exceeds its row bound')
+    rows = {}
+    for line in lines:
+        fields = line.split(':')
+        if (len(fields) != columns or
+            re.fullmatch(r'[A-Za-z_][A-Za-z0-9_.-]{0,31}', fields[0]) is None or
+            fields[0] in rows):
+            raise Pending('malformed or duplicate DNS account inventory')
+        rows[fields[0]] = fields
+    return rows
+
+
+def numeric(text):
+    if re.fullmatch(r'0|[1-9][0-9]{0,9}', text) is None:
+        raise Pending('noncanonical DNS inventory numeric identity')
+    return KERNEL.uint(int(text), 0x7fffffff)
+
+
+def accounts(passwd, group, settings):
+    settings = checked(settings)
+    users = records(passwd, 7); groups = records(group, 4)
+    primary, uids, gids, membership = {}, set(), set(), {}
+    for account, row in users.items():
+        uid, gid = numeric(row[2]), numeric(row[3])
+        if uid in uids:
+            raise Pending('ambiguous DNS account UID')
+        uids.add(uid); primary[account] = (uid, gid)
+    for group_name, row in groups.items():
+        gid = numeric(row[2]); members = row[3].split(',') if row[3] else []
+        if (gid in gids or len(members) != len(set(members)) or
+            any(member not in users for member in members)):
+            raise Pending('ambiguous DNS group identity or membership')
+        gids.add(gid); membership[group_name] = (gid, set(members))
+    selected = [settings['application_user'], settings['gateway_user']]
+    result = {}
+    for account in selected:
+        if account not in users or account not in groups:
+            raise Pending('DNS service account or dedicated primary group is missing')
+        row = users[account]; uid, gid = primary[account]
+        if (not 100 <= uid <= 999 or gid == 0 or row[1] not in ('x', '!', '*') or
+            row[6] not in ('/usr/sbin/nologin', '/sbin/nologin', '/bin/false') or
+            membership[account][0] != gid or membership[account][1] - {account} or
+            any(other != account and other_gid == gid for other, (_, other_gid) in primary.items())):
+            raise Pending('DNS requires dedicated nonlogin system accounts')
+        result[account] = {'uid': uid, 'primary_gid': gid, 'shell': row[6]}
+    ipc = settings['ipc_group']
+    if (ipc not in membership or membership[ipc][0] == 0 or
+        membership[ipc][1] != set(selected) or
+        any(gid == membership[ipc][0] for _, gid in primary.values())):
+        raise Pending('DNS IPC group must contain only the two explicit supplementary members')
+    for group_name, (_, members) in membership.items():
+        for account in selected:
+            if account in members and group_name not in (account, ipc):
+                raise Pending('DNS service account has unsupported supplementary membership')
+    return {'users': result, 'ipc_group': {'name': ipc, 'gid': membership[ipc][0]}}
+
+
+def render(settings):
+    settings = checked(settings)
+    shared = ('Type=exec\\nRestart=no\\nUMask=0077\\nNoNewPrivileges=yes\\n'
+        'ProtectSystem=strict\\nProtectHome=yes\\nPrivateTmp=yes\\n'
+        'RestrictSUIDSGID=yes\\nLockPersonality=yes\\n'
+        'KillMode=control-group\\nTimeoutStartSec=30\\nTimeoutStopSec=30\\n'
+        'StandardOutput=journal\\nStandardError=journal\\n')
+    app_argv = [settings['application_binary'], '--socket', SOCKET, '--state', STATE,
+        '--node', settings['node'], '--role', 'authoritative-replica',
+        '--zones', ','.join(settings['zones'])]
+    for field in BUDGETS:
+        app_argv.extend(('--'+field, str(settings['budgets'][field])))
+    application = ('[Unit]\\nDescription=Private mk8.dns preprovisioned replica\\n'
+        '[Service]\\n' + shared + f\"User={settings['application_user']}\\n\"
+        f\"Group={settings['ipc_group']}\\nWorkingDirectory={Path(settings['application_binary']).parent}\\n\"
+        'RuntimeDirectory=debian13s4-dns\\nRuntimeDirectoryMode=0710\\n'
+        'RuntimeDirectoryPreserve=yes\\n'
+        f'ReadWritePaths={STATE} /run/debian13s4-dns\\n'
+        'RestrictAddressFamilies=AF_UNIX\\nCapabilityBoundingSet=\\nAmbientCapabilities=\\n'
+        'ExecStart='+' '.join(app_argv)+'\\n[Install]\\nWantedBy=multi-user.target\\n')
+    units = {APP_UNIT: application}; argv = {APP_UNIT: app_argv}; listeners = []
+    for row in settings['listeners']:
+        family = address(row['address'])
+        unit = f'debian13s4-dns-gateway{family}.service'
+        command = [settings['gateway_binary'], '--socket', SOCKET, '--role', 'query',
+            '--health-port', str(row['health_port']), '--dns-address', row['address'], '--dns-port', '53']
+        units[unit] = ('[Unit]\\nDescription=Public mk8.dns query gateway\\n'
+            f'Requires={APP_UNIT}\\nAfter={APP_UNIT} network-online.target\\n'
+            'Wants=network-online.target\\n[Service]\\n'+shared+
+            f\"User={settings['gateway_user']}\\nGroup={settings['ipc_group']}\\n\"
+            f\"WorkingDirectory={Path(settings['gateway_binary']).parent}\\n\"
+            f'InaccessiblePaths={STATE}\\n'
+            'RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6\\n'
+            'CapabilityBoundingSet=CAP_NET_BIND_SERVICE\\nAmbientCapabilities=CAP_NET_BIND_SERVICE\\n'
+            'ExecStart='+' '.join(command)+'\\n[Install]\\nWantedBy=multi-user.target\\n')
+        argv[unit] = command
+        listeners.append({'unit': unit, 'address': row['address'], 'port': 53,
+            'transports': ['udp', 'tcp'], 'health_address': '127.0.0.1',
+            'health_port': row['health_port']})
+    return {'units': units, 'argv': argv, 'listeners': listeners,
+        'ipc': {'socket': SOCKET, 'directory_mode': '0710', 'socket_mode': '0660'},
+        'state_directory': STATE}
+
+
+def prepare(deadline=None, scope=KERNEL.namespace):
+    end = KERNEL.now() + ATTEMPT_SECONDS
+    if deadline is not None:
+        if not KERNEL.finite_deadline(deadline):
+            raise Pending('invalid inherited DNS deadline')
+        end = min(end, deadline)
+    BASE.fence(end)
+    context = KERNEL.uint(scope(), 0xffffffffffffffff)
+    if context == 0:
+        raise Pending('missing DNS caller namespace')
+    settings = configuration(end)
+    passwd, user_source = BASE.read_protected(PASSWD, MAX_INVENTORY, False, end)
+    group, group_source = BASE.read_protected(GROUP, MAX_INVENTORY, False, end)
+    selected = accounts(passwd, group, settings['value'])
+    plan = render(settings['value'])
+    record = {'schema': 1, 'profile': 'mk8-dns-preprovisioned-static-replica-intention-v1',
+        'state': 'dns-service-intention-only', 'namespace': context, 'configuration': settings,
+        'user_source': user_source, 'group_source': group_source, 'accounts': selected,
+        'plan': plan, 'unit_sha256': {k: hashlib.sha256(v.encode('ascii')).hexdigest()
+            for k, v in plan['units'].items()}}
+    payload = BASE.canonical(record)
+    if len(payload) > MAX_OUTPUT:
+        raise Pending('DNS service intention exceeds its complete output bound')
+    if configuration(end) != settings:
+        raise Pending('DNS input changed during preparation')
+    for path, raw, source in ((PASSWD, passwd, user_source), (GROUP, group, group_source)):
+        after, after_source = BASE.read_protected(path, MAX_INVENTORY, False, end)
+        if after != raw or after_source != source:
+            raise Pending('DNS account or group inventory changed')
+    if KERNEL.uint(scope(), 0xffffffffffffffff) != context:
+        raise Pending('DNS caller namespace changed')
+    BASE.fence(end)
+    return payload
+
+
+def main():
+    try:
+        if len(sys.argv) != 1:
+            raise Pending('DNS preparation accepts no overrides')
+        sink = sys.stdout.buffer
+        if not callable(getattr(sink, 'write', None)) or not callable(getattr(sink, 'flush', None)):
+            raise Pending('DNS preparation requires binary stdout')
+        payload = prepare()
+        count = sink.write(payload)
+        if type(count) is not int or count != len(payload):
+            raise Pending('incomplete DNS intention publication')
+        sink.flush()
+    except (Pending, OSError, ValueError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: '+str(error), file=sys.stderr)
+        return 75
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/dns/prepare.py || return 1
     printf '%s' "5e8f9686488c77aa03d05b36c874090e7cc6ed9795c70e28944e8b8f7fe41936  lib/repair.sh
 0532281d04de4d830a60f3490467f5feff9f0ec018dce6974114da2d76b583ba  lib/tasks.list
 f00b984fac21636c60e8a4dd9d1ade6cdf58bcd0123d669e7fba51c756346934  lib/tasks/prerequisites/apply.sh
@@ -7769,6 +9754,16 @@ ffa012329dc6b82cccec126e69037be879261e231bab9872d50f3767b1120de2  lib/web/debian
 fc7dcf7ec6f4650b2cb178e4a9f9954b863f68f12b84c2d88846b3f7a0229e87  lib/web/debian13s4-web.timer
 20c8c90e83399178ba14f7cdef4f8cd22cc3f8aa0529482b03909dd1ae011cd4  lib/tasks/web/apply.sh
 051d3643b9f3d3c54109344adf1003a602bbd28d3b14c0c9b2c1afa01907dc88  lib/tasks/web/verify.sh
+2d395f1e7d369127f638749148ea5325b1d5e046ad55ca5cba3372b37c76e30e  lib/applications/releases.py
+ba5b74a1977287ea168574c2021e638966f400a5bc3f47e255c144a4e59d4073  lib/applications/identities.py
+89137179e6c4353bfd2d1bdc6f05bd74163a4549aa4ca500c2467e396a9bc2ab  lib/applications/dns_service.py
+f5e10597f7bb35cb04ca76ee75c0ec2aed5910698fe256e523f6e2e91f23d561  lib/applications/postgresql_identity.py
+adead23bd4503d3525e3a5cce0bf46de28f7c46b7e3dba9c362f53a1a46042fc  lib/applications/sava_transport.py
+d3a9632c7e3e3bb8e42a060d2c9c0ccbc01deade8d9d4f2a1b7d80754217e226  lib/applications/sava_ingress.py
+4668dcff64153729aa7dd09cdba6583adb9044f22e42bb8f230894339955d2b4  lib/applications/prepare.py
+fe5c7f8e9bdf990699c7f269d83053756950aca5fa39728e918d1ff2163526d7  lib/applications/preflight.py
+1de119181721839e120647eaf34023d5879602ab1b7b9793e32750c0f65a43e7  lib/applications/release_manifest.py
+472655d786dcbce62247771243c6c856a49ea7dbed9abcad80d7aee3c7915093  lib/dns/prepare.py
 " > "$S4B_STAGE/files.sha256" || return 1
 }
 

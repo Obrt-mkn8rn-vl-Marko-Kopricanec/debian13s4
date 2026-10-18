@@ -21,8 +21,11 @@ def owned(name, path):
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SAVA = owned('debian13s4_sava_ingress_transport', ROOT/'Applications/sava_transport.py')
-WEB = owned('debian13s4_sava_ingress_web', ROOT/'Web/prepare.py')
+SAVA = owned('debian13s4_sava_ingress_transport', Path(__file__).resolve().with_name('sava_transport.py'))
+WEB_PATH = ROOT/'Web/prepare.py'
+if not WEB_PATH.is_file():
+    WEB_PATH = ROOT/'web/prepare.py'
+WEB = owned('debian13s4_sava_ingress_web', WEB_PATH)
 BASE, KERNEL, Pending = SAVA.BASE, SAVA.KERNEL, SAVA.Pending
 MAX_OUTPUT = 8388609
 ATTEMPT_SECONDS = 600

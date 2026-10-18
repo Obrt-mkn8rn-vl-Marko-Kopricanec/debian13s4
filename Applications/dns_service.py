@@ -17,6 +17,9 @@ IDENTITIES = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(IDENTITIES)
 SPEC = importlib.util.spec_from_file_location('debian13s4_dns_service_profile',
     Path(__file__).resolve().parents[1]/'DNS/prepare.py')
+if not Path(SPEC.origin).is_file():
+    SPEC = importlib.util.spec_from_file_location('debian13s4_dns_service_profile',
+        Path(__file__).resolve().parents[1]/'dns/prepare.py')
 DNS = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(DNS)
 BASE, KERNEL, Pending = IDENTITIES.BASE, IDENTITIES.KERNEL, IDENTITIES.Pending

@@ -16,6 +16,9 @@ import sys
 
 SPEC = importlib.util.spec_from_file_location('debian13s4_release_reader',
     Path(__file__).resolve().parents[1] / 'PostgreSQL/prepare.py')
+if not Path(SPEC.origin).is_file():
+    SPEC = importlib.util.spec_from_file_location('debian13s4_release_reader',
+        Path(__file__).resolve().parents[1] / 'postgresql/prepare.py')
 BASE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(BASE)
 KERNEL, Pending = BASE.KERNEL, BASE.Pending
