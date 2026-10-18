@@ -405,7 +405,7 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=58e9a46ef29be119aae5b80336cb976e05ae997c3791391ea81d9987619eefd5
+S4B_BUNDLE_ID=6d0cb793d0bacddfed5301041d708c8e96aefd4f0aa23e80e5d91d69bff5a145
 S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/backup_run.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/linux_linkage.py lib/applications/managed_runtime.py lib/applications/cli_image.py lib/applications/managed_images.py lib/applications/managed_assets.py lib/dns/prepare.py)
 S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
@@ -5732,6 +5732,43 @@ def data_read(path, end):
                         'sha256': hashlib.sha256(raw).hexdigest()}
 
 
+class CleanupFailure(Pending):
+    \"\"\"Keep a capture refusal and its separate owned cleanup failures.\"\"\"
+    def __init__(self, cause, cleanup):
+        super().__init__('PostgreSQL native capture cleanup incomplete')
+        self.cause, self.cleanup = cause, cleanup
+
+
+def close_child(child, selector):
+    \"\"\"Retire known channels before one close each; attempt every cleanup step.\"\"\"
+    streams = child.stdout, child.stderr
+    child.stdout = child.stderr = None
+    errors = []
+    if child.returncode is None:
+        try:
+            os.killpg(child.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        except BaseException as error:
+            errors.append(error)
+        try:
+            child.wait(timeout=KERNEL.CLEANUP_SECONDS)
+        except BaseException as error:
+            errors.append(error)
+    if selector is not None:
+        try:
+            selector.close()
+        except BaseException as error:
+            errors.append(error)
+    for stream in streams:
+        if stream is not None:
+            try:
+                stream.close()
+            except BaseException as error:
+                errors.append(error)
+    return tuple(errors)
+
+
 def native(kind, end):
     user = 'postgres'
     if kind == 'control': binary, arguments = CONTROL, ('--pgdata', str(DATA))
@@ -5751,40 +5788,42 @@ def native(kind, end):
     else: raise Pending('unapproved PostgreSQL native read')
     PREP.fence(end); before = (KERNEL.trusted_binary(RUNUSER), KERNEL.trusted_binary(binary))
     until = min(end, KERNEL.now()+KERNEL.QUERY_SECONDS); PREP.fence(until)
+    cause, selector = None, None
     child = subprocess.Popen([str(RUNUSER), '-u', user, '--', str(binary), *arguments],
         stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         env={'PATH':'/usr/bin:/usr/sbin','LC_ALL':'C'}, close_fds=True, start_new_session=True)
-    buffers = {'stdout':bytearray(), 'stderr':bytearray()}
     try:
-        with selectors.DefaultSelector() as selector:
-            for name, stream in (('stdout',child.stdout),('stderr',child.stderr)):
-                os.set_blocking(stream.fileno(),False); selector.register(stream,selectors.EVENT_READ,name)
-            while selector.get_map():
-                PREP.fence(until)
-                remaining=until-KERNEL.now()
-                if remaining<=0:raise Pending('PostgreSQL native read window expired')
-                for key,_ in selector.select(remaining):
-                    part=os.read(key.fileobj.fileno(),65536)
-                    if not part: selector.unregister(key.fileobj); continue
-                    buffer=buffers[key.data]
-                    if len(buffer)+len(part)>MAX_BYTES: raise Pending('PostgreSQL native channel bound')
-                    buffer.extend(part)
-            PREP.fence(until); remaining=until-KERNEL.now()
-            if remaining<=0:raise Pending('PostgreSQL native wait window expired')
-            code=child.wait(timeout=remaining)
-            if type(code) is not int or code!=0 or buffers['stderr']: raise Pending('PostgreSQL native read failed/warned')
+        buffers = {'stdout':bytearray(), 'stderr':bytearray()}
+        selector = selectors.DefaultSelector()
+        for name, stream in (('stdout',child.stdout),('stderr',child.stderr)):
+            os.set_blocking(stream.fileno(),False); selector.register(stream,selectors.EVENT_READ,name)
+        while selector.get_map():
+            PREP.fence(until)
+            remaining=until-KERNEL.now()
+            if remaining<=0:raise Pending('PostgreSQL native read window expired')
+            for key,_ in selector.select(remaining):
+                part=os.read(key.fileobj.fileno(),65536)
+                if not part: selector.unregister(key.fileobj); continue
+                buffer=buffers[key.data]
+                if len(buffer)+len(part)>MAX_BYTES: raise Pending('PostgreSQL native channel bound')
+                buffer.extend(part)
+        PREP.fence(until); remaining=until-KERNEL.now()
+        if remaining<=0:raise Pending('PostgreSQL native wait window expired')
+        code=child.wait(timeout=remaining)
+        if type(code) is not int or code!=0 or buffers['stderr']: raise Pending('PostgreSQL native read failed/warned')
         if (KERNEL.trusted_binary(RUNUSER),KERNEL.trusted_binary(binary))!=before:
             raise Pending('PostgreSQL native executable changed')
         PREP.fence(until); return bytes(buffers['stdout'])
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        try:
-            if child.returncode is None:
-                try: os.killpg(child.pid,signal.SIGKILL)
-                except ProcessLookupError: pass
-                child.wait(timeout=KERNEL.CLEANUP_SECONDS)
-        finally:
-            try: child.stdout.close()
-            finally: child.stderr.close()
+        closing, selector = selector, None
+        cleanup = close_child(child, closing)
+        if cleanup:
+            if cause is None and len(cleanup) == 1:
+                raise cleanup[0]
+            raise CleanupFailure(cause, cleanup) from cause
 
 
 def intention(end):
@@ -14284,7 +14323,7 @@ c695a6f939cef5eb0dec883b04722c71095877f7e0c06f9a76161b6672f35bdf  lib/ssh/repair
 22ebcfa9fc38e455077130d400e76433948740c8e80c1475bf8224891813a1b9  lib/tasks/ssh/apply.sh
 3e0d51509cf31af2188db77617d6e06ace86350c51b57425b5c066e76059f19e  lib/tasks/ssh/verify.sh
 61fb86d5519905de336e86aed17b86a5ebe241890f044fb6a288f2587142cf31  lib/postgresql/prepare.py
-7478f5c253c56f1079cddbf7282a187cc22f423335de6f9be62156aada1862e3  lib/postgresql/live.py
+7025ded987cb7d78cc3459e11b22eb05b7539d02aacdfac5aa16a83286dca648  lib/postgresql/live.py
 e73ce455f1cb8c5aeb8cc73b77dce4cffe6bdd95d30bd2480bf44da16ca5f944  lib/postgresql/access.py
 075d1757636bc1a2d75809c8bc999be8e8907b02043fa38f1150eb916eef801f  lib/postgresql/backup.py
 59e81c10f8f8b05a096bd97b582fd7daabb6335ce9e3e517cc5733b6e0f911bd  lib/postgresql/archive_stage.py

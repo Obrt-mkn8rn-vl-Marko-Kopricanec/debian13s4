@@ -166,6 +166,43 @@ def data_read(path, end):
                         'sha256': hashlib.sha256(raw).hexdigest()}
 
 
+class CleanupFailure(Pending):
+    """Keep a capture refusal and its separate owned cleanup failures."""
+    def __init__(self, cause, cleanup):
+        super().__init__('PostgreSQL native capture cleanup incomplete')
+        self.cause, self.cleanup = cause, cleanup
+
+
+def close_child(child, selector):
+    """Retire known channels before one close each; attempt every cleanup step."""
+    streams = child.stdout, child.stderr
+    child.stdout = child.stderr = None
+    errors = []
+    if child.returncode is None:
+        try:
+            os.killpg(child.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        except BaseException as error:
+            errors.append(error)
+        try:
+            child.wait(timeout=KERNEL.CLEANUP_SECONDS)
+        except BaseException as error:
+            errors.append(error)
+    if selector is not None:
+        try:
+            selector.close()
+        except BaseException as error:
+            errors.append(error)
+    for stream in streams:
+        if stream is not None:
+            try:
+                stream.close()
+            except BaseException as error:
+                errors.append(error)
+    return tuple(errors)
+
+
 def native(kind, end):
     user = 'postgres'
     if kind == 'control': binary, arguments = CONTROL, ('--pgdata', str(DATA))
@@ -185,40 +222,42 @@ def native(kind, end):
     else: raise Pending('unapproved PostgreSQL native read')
     PREP.fence(end); before = (KERNEL.trusted_binary(RUNUSER), KERNEL.trusted_binary(binary))
     until = min(end, KERNEL.now()+KERNEL.QUERY_SECONDS); PREP.fence(until)
+    cause, selector = None, None
     child = subprocess.Popen([str(RUNUSER), '-u', user, '--', str(binary), *arguments],
         stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         env={'PATH':'/usr/bin:/usr/sbin','LC_ALL':'C'}, close_fds=True, start_new_session=True)
-    buffers = {'stdout':bytearray(), 'stderr':bytearray()}
     try:
-        with selectors.DefaultSelector() as selector:
-            for name, stream in (('stdout',child.stdout),('stderr',child.stderr)):
-                os.set_blocking(stream.fileno(),False); selector.register(stream,selectors.EVENT_READ,name)
-            while selector.get_map():
-                PREP.fence(until)
-                remaining=until-KERNEL.now()
-                if remaining<=0:raise Pending('PostgreSQL native read window expired')
-                for key,_ in selector.select(remaining):
-                    part=os.read(key.fileobj.fileno(),65536)
-                    if not part: selector.unregister(key.fileobj); continue
-                    buffer=buffers[key.data]
-                    if len(buffer)+len(part)>MAX_BYTES: raise Pending('PostgreSQL native channel bound')
-                    buffer.extend(part)
-            PREP.fence(until); remaining=until-KERNEL.now()
-            if remaining<=0:raise Pending('PostgreSQL native wait window expired')
-            code=child.wait(timeout=remaining)
-            if type(code) is not int or code!=0 or buffers['stderr']: raise Pending('PostgreSQL native read failed/warned')
+        buffers = {'stdout':bytearray(), 'stderr':bytearray()}
+        selector = selectors.DefaultSelector()
+        for name, stream in (('stdout',child.stdout),('stderr',child.stderr)):
+            os.set_blocking(stream.fileno(),False); selector.register(stream,selectors.EVENT_READ,name)
+        while selector.get_map():
+            PREP.fence(until)
+            remaining=until-KERNEL.now()
+            if remaining<=0:raise Pending('PostgreSQL native read window expired')
+            for key,_ in selector.select(remaining):
+                part=os.read(key.fileobj.fileno(),65536)
+                if not part: selector.unregister(key.fileobj); continue
+                buffer=buffers[key.data]
+                if len(buffer)+len(part)>MAX_BYTES: raise Pending('PostgreSQL native channel bound')
+                buffer.extend(part)
+        PREP.fence(until); remaining=until-KERNEL.now()
+        if remaining<=0:raise Pending('PostgreSQL native wait window expired')
+        code=child.wait(timeout=remaining)
+        if type(code) is not int or code!=0 or buffers['stderr']: raise Pending('PostgreSQL native read failed/warned')
         if (KERNEL.trusted_binary(RUNUSER),KERNEL.trusted_binary(binary))!=before:
             raise Pending('PostgreSQL native executable changed')
         PREP.fence(until); return bytes(buffers['stdout'])
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        try:
-            if child.returncode is None:
-                try: os.killpg(child.pid,signal.SIGKILL)
-                except ProcessLookupError: pass
-                child.wait(timeout=KERNEL.CLEANUP_SECONDS)
-        finally:
-            try: child.stdout.close()
-            finally: child.stderr.close()
+        closing, selector = selector, None
+        cleanup = close_child(child, closing)
+        if cleanup:
+            if cause is None and len(cleanup) == 1:
+                raise cleanup[0]
+            raise CleanupFailure(cause, cleanup) from cause
 
 
 def intention(end):
