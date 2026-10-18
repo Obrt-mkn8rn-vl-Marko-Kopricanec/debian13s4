@@ -247,4 +247,28 @@ class DumpStreamTests(unittest.TestCase):
         self.assertEqual(len(channels),2);self.assertTrue(all(channel.closed for channel in channels))
 
 
+    def test_signal_failure_does_not_skip_owned_wait_or_repeat_retired_cleanup(self):
+        self.program('time.sleep(10)');s=self.stream();s.start()
+        channels=tuple(s.streams.values());original=OSError('original delivery failure')
+        signal_error,wait_error=OSError('signal reported failure'),OSError('wait reported failure')
+        kill,wait=os.killpg,s.child.wait;events=[]
+        def signalled(pid,value):
+            self.assertTrue(s.closed);self.assertEqual(pid,s.child.pid)
+            events.append('signal');kill(pid,value);raise signal_error
+        def waited(*args,**kwargs):
+            self.assertTrue(s.closed);self.assertEqual(kwargs['timeout'],self.m.KERNEL.CLEANUP_SECONDS)
+            events.append('wait');wait(*args,**kwargs);raise wait_error
+        with patch.object(self.m.os,'killpg',side_effect=signalled),patch.object(s.child,'wait',side_effect=waited),self.assertRaises(self.m.Uncertain) as caught:
+            s.fail(original)
+        self.assertIs(caught.exception.cause,original);self.assertIs(caught.exception.__cause__,original)
+        self.assertEqual(caught.exception.cleanup,(signal_error,wait_error))
+        self.assertEqual(events,['signal','wait']);self.assertIsNotNone(s.child.returncode)
+        self.assertTrue(all(channel.closed for channel in channels))
+        self.assertEqual(s.streams,{});self.assertIsNone(s.child.stdout);self.assertIsNone(s.child.stderr)
+        with patch.object(self.m.os,'killpg',side_effect=AssertionError('second signal')),patch.object(s.child,'wait',side_effect=AssertionError('second wait')):
+            self.assertEqual(s.close(),())
+            with self.assertRaises(self.m.Uncertain) as repeated:s.read(1)
+        self.assertIs(repeated.exception,caught.exception)
+
+
 if __name__=='__main__':unittest.main()

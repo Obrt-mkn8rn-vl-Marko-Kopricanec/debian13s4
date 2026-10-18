@@ -405,7 +405,7 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=f3a3adeb7508e43b0e5ed482d73bb4b842126d83aa254f849dff54724ecf2b7c
+S4B_BUNDLE_ID=75c9d88c6a76654f6691e832c97590d021d8b798a705e7f498e10520ec3b88e8
 S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/backup_run.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/managed_runtime.py lib/dns/prepare.py)
 S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
@@ -6568,6 +6568,37 @@ def checked(raw):
     return value
 
 
+def close_child(child, selector):
+    \"\"\"Retire known channels before cleanup; retain each independent failure.\"\"\"
+    streams = child.stdout, child.stderr
+    child.stdout = child.stderr = None
+    errors = []
+    if child.returncode is None:
+        try:
+            os.killpg(child.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        except BaseException as error:
+            errors.append(error)
+        # A signal error must not skip the separate bounded root-wait attempt.
+        try:
+            child.wait(timeout=KERNEL.CLEANUP_SECONDS)
+        except BaseException as error:
+            errors.append(error)
+    if selector is not None:
+        try:
+            selector.close()
+        except BaseException as error:
+            errors.append(error)
+    for stream in streams:
+        if stream is not None:
+            try:
+                stream.close()
+            except BaseException as error:
+                errors.append(error)
+    return tuple(errors)
+
+
 def native(path, maximum, end):
     \"\"\"Fixed read-only listing primitive; calling real host tools needs authority.\"\"\"
     STAGE.admission(end)
@@ -6585,53 +6616,49 @@ def native(path, maximum, end):
         raise Pending('invalid archive listing namespace')
     until = min(end, KERNEL.now() + KERNEL.QUERY_SECONDS)
     STAGE.admission(until)
+    cause, selector = None, None
     child = subprocess.Popen([str(RESTORE), '--list', str(path)], stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         env={'PATH': '/usr/bin:/usr/sbin', 'LC_ALL': 'C'}, close_fds=True, start_new_session=True)
-    buffers = {'stdout': bytearray(), 'stderr': bytearray()}
     try:
-        with selectors.DefaultSelector() as selector:
-            for name, stream in (('stdout', child.stdout), ('stderr', child.stderr)):
-                os.set_blocking(stream.fileno(), False)
-                selector.register(stream, selectors.EVENT_READ, name)
-            while selector.get_map():
-                STAGE.admission(until)
-                remaining = until - KERNEL.now()
-                if remaining <= 0:
-                    raise Pending('archive listing capture window expired')
-                for key, _ in selector.select(remaining):
-                    part = os.read(key.fileobj.fileno(), min(65536, maximum + 1 - len(buffers[key.data])))
-                    if not part:
-                        selector.unregister(key.fileobj)
-                        continue
-                    buffer = buffers[key.data]
-                    if len(buffer) + len(part) > maximum:
-                        raise Pending('archive listing channel exceeds bound')
-                    buffer.extend(part)
+        buffers = {'stdout': bytearray(), 'stderr': bytearray()}
+        selector = selectors.DefaultSelector()
+        for name, stream in (('stdout', child.stdout), ('stderr', child.stderr)):
+            os.set_blocking(stream.fileno(), False)
+            selector.register(stream, selectors.EVENT_READ, name)
+        while selector.get_map():
             STAGE.admission(until)
             remaining = until - KERNEL.now()
             if remaining <= 0:
-                raise Pending('archive listing completion window expired')
-            code = child.wait(timeout=remaining)
-            if type(code) is not int or code != 0 or buffers['stderr']:
-                raise Pending('archive listing failed or warned')
+                raise Pending('archive listing capture window expired')
+            for key, _ in selector.select(remaining):
+                part = os.read(key.fileobj.fileno(), min(65536, maximum + 1 - len(buffers[key.data])))
+                if not part:
+                    selector.unregister(key.fileobj)
+                    continue
+                buffer = buffers[key.data]
+                if len(buffer) + len(part) > maximum:
+                    raise Pending('archive listing channel exceeds bound')
+                buffer.extend(part)
+        STAGE.admission(until)
+        remaining = until - KERNEL.now()
+        if remaining <= 0:
+            raise Pending('archive listing completion window expired')
+        code = child.wait(timeout=remaining)
+        if type(code) is not int or code != 0 or buffers['stderr']:
+            raise Pending('archive listing failed or warned')
         if KERNEL.trusted_binary(RESTORE) != before or KERNEL.uint(KERNEL.namespace(), 2**64 - 1) != context:
             raise Pending('archive listing executable or context changed')
         STAGE.admission(until)
         return bytes(buffers['stdout'])
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        try:
-            if child.returncode is None:
-                try:
-                    os.killpg(child.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                child.wait(timeout=KERNEL.CLEANUP_SECONDS)
-        finally:
-            try:
-                child.stdout.close()
-            finally:
-                child.stderr.close()
+        closing, selector = selector, None
+        cleanup = close_child(child, closing)
+        if cleanup:
+            raise STAGE.CleanupFailure(cause, cleanup) from cause
 
 
 def inspect_stage(raw, maximum, read=None, deadline=None):
@@ -6782,8 +6809,10 @@ class DumpStream:
         errors = []
         if self.child is not None and self.child.returncode is None:
             try:
-                try: os.killpg(self.child.pid,signal.SIGKILL)
-                except ProcessLookupError: pass
+                os.killpg(self.child.pid,signal.SIGKILL)
+            except ProcessLookupError: pass
+            except BaseException as error: errors.append(error)
+            try:
                 self.child.wait(timeout=KERNEL.CLEANUP_SECONDS)
             except BaseException as error: errors.append(error)
         selector,self.selector = self.selector,None
@@ -13381,8 +13410,8 @@ c695a6f939cef5eb0dec883b04722c71095877f7e0c06f9a76161b6672f35bdf  lib/ssh/repair
 e73ce455f1cb8c5aeb8cc73b77dce4cffe6bdd95d30bd2480bf44da16ca5f944  lib/postgresql/access.py
 075d1757636bc1a2d75809c8bc999be8e8907b02043fa38f1150eb916eef801f  lib/postgresql/backup.py
 59e81c10f8f8b05a096bd97b582fd7daabb6335ce9e3e517cc5733b6e0f911bd  lib/postgresql/archive_stage.py
-e478ae4588092c4a7ad5a8fc910dae22bec8dfa16ccd9463c737e7bcbce6bdd1  lib/postgresql/archive_inspection.py
-2d3e55215a3fa91159fd5baacaf5e6bfe4ea7b4bdd79f709fc94ea26b0a15a1a  lib/postgresql/dump_stream.py
+256db3afefc72bb7d2adf3def8b48e451e4198c47a4657fa97daa0a266bf25d6  lib/postgresql/archive_inspection.py
+23d8a0698e34fb967fbfba28df2a7ef2cbcd363d2bb02b5631cf8072d870cf01  lib/postgresql/dump_stream.py
 cbf37f48fee0adada2758944e1fd03a437f363989895fbb96e5ada49dcfce28c  lib/postgresql/selected_stage.py
 e4c34d38e289799664836e4c7697b5ad19d115b14d3d76ca30f3d94daa33b49f  lib/postgresql/selected_inspection.py
 8ee33451c466e42e7509008d5181098f78bf462c18011a64ab7d5cf29af6083e  lib/postgresql/selected_uncertainty.py

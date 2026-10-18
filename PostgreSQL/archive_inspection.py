@@ -68,6 +68,37 @@ def checked(raw):
     return value
 
 
+def close_child(child, selector):
+    """Retire known channels before cleanup; retain each independent failure."""
+    streams = child.stdout, child.stderr
+    child.stdout = child.stderr = None
+    errors = []
+    if child.returncode is None:
+        try:
+            os.killpg(child.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        except BaseException as error:
+            errors.append(error)
+        # A signal error must not skip the separate bounded root-wait attempt.
+        try:
+            child.wait(timeout=KERNEL.CLEANUP_SECONDS)
+        except BaseException as error:
+            errors.append(error)
+    if selector is not None:
+        try:
+            selector.close()
+        except BaseException as error:
+            errors.append(error)
+    for stream in streams:
+        if stream is not None:
+            try:
+                stream.close()
+            except BaseException as error:
+                errors.append(error)
+    return tuple(errors)
+
+
 def native(path, maximum, end):
     """Fixed read-only listing primitive; calling real host tools needs authority."""
     STAGE.admission(end)
@@ -85,53 +116,49 @@ def native(path, maximum, end):
         raise Pending('invalid archive listing namespace')
     until = min(end, KERNEL.now() + KERNEL.QUERY_SECONDS)
     STAGE.admission(until)
+    cause, selector = None, None
     child = subprocess.Popen([str(RESTORE), '--list', str(path)], stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         env={'PATH': '/usr/bin:/usr/sbin', 'LC_ALL': 'C'}, close_fds=True, start_new_session=True)
-    buffers = {'stdout': bytearray(), 'stderr': bytearray()}
     try:
-        with selectors.DefaultSelector() as selector:
-            for name, stream in (('stdout', child.stdout), ('stderr', child.stderr)):
-                os.set_blocking(stream.fileno(), False)
-                selector.register(stream, selectors.EVENT_READ, name)
-            while selector.get_map():
-                STAGE.admission(until)
-                remaining = until - KERNEL.now()
-                if remaining <= 0:
-                    raise Pending('archive listing capture window expired')
-                for key, _ in selector.select(remaining):
-                    part = os.read(key.fileobj.fileno(), min(65536, maximum + 1 - len(buffers[key.data])))
-                    if not part:
-                        selector.unregister(key.fileobj)
-                        continue
-                    buffer = buffers[key.data]
-                    if len(buffer) + len(part) > maximum:
-                        raise Pending('archive listing channel exceeds bound')
-                    buffer.extend(part)
+        buffers = {'stdout': bytearray(), 'stderr': bytearray()}
+        selector = selectors.DefaultSelector()
+        for name, stream in (('stdout', child.stdout), ('stderr', child.stderr)):
+            os.set_blocking(stream.fileno(), False)
+            selector.register(stream, selectors.EVENT_READ, name)
+        while selector.get_map():
             STAGE.admission(until)
             remaining = until - KERNEL.now()
             if remaining <= 0:
-                raise Pending('archive listing completion window expired')
-            code = child.wait(timeout=remaining)
-            if type(code) is not int or code != 0 or buffers['stderr']:
-                raise Pending('archive listing failed or warned')
+                raise Pending('archive listing capture window expired')
+            for key, _ in selector.select(remaining):
+                part = os.read(key.fileobj.fileno(), min(65536, maximum + 1 - len(buffers[key.data])))
+                if not part:
+                    selector.unregister(key.fileobj)
+                    continue
+                buffer = buffers[key.data]
+                if len(buffer) + len(part) > maximum:
+                    raise Pending('archive listing channel exceeds bound')
+                buffer.extend(part)
+        STAGE.admission(until)
+        remaining = until - KERNEL.now()
+        if remaining <= 0:
+            raise Pending('archive listing completion window expired')
+        code = child.wait(timeout=remaining)
+        if type(code) is not int or code != 0 or buffers['stderr']:
+            raise Pending('archive listing failed or warned')
         if KERNEL.trusted_binary(RESTORE) != before or KERNEL.uint(KERNEL.namespace(), 2**64 - 1) != context:
             raise Pending('archive listing executable or context changed')
         STAGE.admission(until)
         return bytes(buffers['stdout'])
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        try:
-            if child.returncode is None:
-                try:
-                    os.killpg(child.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                child.wait(timeout=KERNEL.CLEANUP_SECONDS)
-        finally:
-            try:
-                child.stdout.close()
-            finally:
-                child.stderr.close()
+        closing, selector = selector, None
+        cleanup = close_child(child, closing)
+        if cleanup:
+            raise STAGE.CleanupFailure(cause, cleanup) from cause
 
 
 def inspect_stage(raw, maximum, read=None, deadline=None):

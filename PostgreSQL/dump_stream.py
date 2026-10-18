@@ -93,8 +93,10 @@ class DumpStream:
         errors = []
         if self.child is not None and self.child.returncode is None:
             try:
-                try: os.killpg(self.child.pid,signal.SIGKILL)
-                except ProcessLookupError: pass
+                os.killpg(self.child.pid,signal.SIGKILL)
+            except ProcessLookupError: pass
+            except BaseException as error: errors.append(error)
+            try:
                 self.child.wait(timeout=KERNEL.CLEANUP_SECONDS)
             except BaseException as error: errors.append(error)
         selector,self.selector = self.selector,None

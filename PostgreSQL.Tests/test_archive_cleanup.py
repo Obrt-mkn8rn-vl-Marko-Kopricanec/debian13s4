@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 
 import test_archive_stage as stage_fixture
+import test_archive_inspection as native_fixture
 import test_backup_lifecycle as lifecycle_fixture
 import test_selected_inspection as listing_fixture
 
@@ -155,6 +156,94 @@ class ArchiveCleanupTests(unittest.TestCase):
         self.assertEqual(len(h.h.h.ledger.read_text().splitlines()), 1)
         with patch.object(h.m.SELECTED, 'stage_selected', side_effect=AssertionError('no retry')), \
              self.assertRaises(h.m.Pending): h.run_once()
+
+
+class ListingCleanupTests(unittest.TestCase):
+    def setUp(self):
+        self.h = native_fixture.ArchiveInspectionTests('runTest')
+        self.addCleanup(self.h.doCleanups); self.h.setUp()
+
+    def test_real_owned_child_retains_primary_and_all_separate_cleanup_faults(self):
+        h = self.h; h.program('time.sleep(10)')
+        original = OSError('listing channel setup')
+        faults = tuple(OSError(name) for name in ('signal', 'wait', 'selector', 'stdout', 'stderr'))
+        popen, kill, selector_factory = h.m.subprocess.Popen, os.killpg, h.m.selectors.DefaultSelector
+        realclose, realopen = os.close, os.open
+        events, streams, reused = [], [], []
+        other = h.root/'replacement'; other.write_bytes(b'keep')
+        def retired():
+            self.assertIsNone(h.children[0].stdout); self.assertIsNone(h.children[0].stderr)
+        class Pipe:
+            def __init__(self, stream, index): self.stream, self.index = stream, index
+            def fileno(self): return self.stream.fileno()
+            def close(self):
+                retired(); events.append(('close', self.index))
+                fd = self.stream.fileno(); self.stream.close()
+                replacement = realopen(other, os.O_RDONLY)
+                if replacement != fd:
+                    os.dup2(replacement, fd); realclose(replacement)
+                reused.append(fd)
+                raise faults[3+self.index]
+        def entered(*args, **kwargs):
+            child = popen(*args, **kwargs); h.children.append(child)
+            streams.extend((child.stdout, child.stderr))
+            child.stdout, child.stderr = Pipe(child.stdout, 0), Pipe(child.stderr, 1)
+            realwait = child.wait
+            def wait(*args, **kwargs):
+                retired(); events.append(('wait', kwargs.get('timeout')))
+                realwait(*args, **kwargs)
+                raise faults[1]
+            child.wait = wait
+            return child
+        def signal(pid, value):
+            retired(); self.assertEqual(pid, h.children[0].pid)
+            events.append(('signal', value)); kill(pid, value); raise faults[0]
+        def selector():
+            value = selector_factory(); close = value.close
+            def closing():
+                retired(); events.append(('selector',)); close(); raise faults[2]
+            value.close = closing
+            return value
+        try:
+            with patch.object(h.m.subprocess, 'Popen', side_effect=entered), \
+                 patch.object(h.m.os, 'set_blocking', side_effect=original), \
+                 patch.object(h.m.os, 'killpg', side_effect=signal), \
+                 patch.object(h.m.selectors, 'DefaultSelector', side_effect=selector), \
+                 self.assertRaises(h.m.STAGE.CleanupFailure) as caught:
+                h.m.native(h.leaf, 4096, h.m.KERNEL.now()+2)
+            self.assertIs(caught.exception.cause, original)
+            self.assertIs(caught.exception.__cause__, original)
+            self.assertEqual(caught.exception.cleanup, faults)
+            self.assertEqual(h.m.STAGE.cleanup_errors(caught.exception), faults)
+            self.assertEqual([event[0] for event in events], ['signal', 'wait', 'selector', 'close', 'close'])
+            self.assertEqual(events[1][1], h.m.KERNEL.CLEANUP_SECONDS)
+            self.assertEqual(len(h.children), 1); self.assertIsNotNone(h.children[0].returncode)
+            self.assertTrue(all(stream.closed for stream in streams))
+            self.assertEqual(len(set(reused)), 2)
+            for fd in reused: self.assertEqual(os.read(fd, 4), b'keep')
+            self.assertEqual(h.leaf.read_bytes(), h.data)
+        finally:
+            for fd in reused: realclose(fd)
+
+    def test_successful_capture_is_not_returned_when_channel_close_fails(self):
+        h = self.h; popen = h.m.subprocess.Popen
+        fault = OSError('postcapture stdout close'); streams, closes = [], []
+        def entered(*args, **kwargs):
+            child = popen(*args, **kwargs); h.children.append(child)
+            streams.extend((child.stdout, child.stderr)); original = child.stdout.close
+            def close():
+                self.assertIsNone(child.stdout); self.assertIsNone(child.stderr)
+                closes.append(child.returncode); original(); raise fault
+            child.stdout.close = close
+            return child
+        with patch.object(h.m.subprocess, 'Popen', side_effect=entered), \
+             self.assertRaises(h.m.STAGE.CleanupFailure) as caught:
+            h.m.native(h.leaf, 4096, h.m.KERNEL.now()+2)
+        self.assertIsNone(caught.exception.cause); self.assertIsNone(caught.exception.__cause__)
+        self.assertEqual(caught.exception.cleanup, (fault,))
+        self.assertEqual(closes, [0]); self.assertIs(type(closes[0]), int)
+        self.assertTrue(all(stream.closed for stream in streams))
+        self.assertEqual(len(h.children), 1); self.assertEqual(h.leaf.read_bytes(), h.data)
 
 
 if __name__ == '__main__':

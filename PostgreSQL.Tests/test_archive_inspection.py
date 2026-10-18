@@ -170,23 +170,25 @@ class ArchiveInspectionTests(unittest.TestCase):
             with self.subTest(kind=type(value).__name__),self.assertRaises(ValueError):self.inspect(read=lambda *args:value)
 
     def test_private_capture_timeout_reaps_its_owned_child_and_closes_channels(self):
-        original=self.m.subprocess.Popen
+        original=self.m.subprocess.Popen;channels=[]
         def entered(*args,**kwargs):
-            child=original(*args,**kwargs);self.children.append(child);return child
+            child=original(*args,**kwargs);channels.append((child.stdout,child.stderr));self.children.append(child);return child
         self.program('time.sleep(10)')
         with patch.object(self.m.KERNEL,'QUERY_SECONDS',0.2),patch.object(self.m.subprocess,'Popen',side_effect=entered),self.assertRaises(ValueError):self.inspect()
         self.assertEqual(len(self.children),1);self.assertIsNotNone(self.children[0].poll())
-        self.assertTrue(self.children[0].stdout.closed);self.assertTrue(self.children[0].stderr.closed)
+        self.assertTrue(channels[0][0].closed);self.assertTrue(channels[0][1].closed)
+        self.assertIsNone(self.children[0].stdout);self.assertIsNone(self.children[0].stderr)
 
     def test_closed_capture_pipes_do_not_waive_child_completion_timeout(self):
-        original=self.m.subprocess.Popen
+        original=self.m.subprocess.Popen;channels=[]
         def entered(*args,**kwargs):
-            child=original(*args,**kwargs);self.children.append(child);return child
+            child=original(*args,**kwargs);channels.append((child.stdout,child.stderr));self.children.append(child);return child
         self.program('os.close(1);os.close(2);time.sleep(10)')
         now=self.m.KERNEL.now()
         with patch.object(self.m.KERNEL,'now',return_value=now),patch.object(self.m.KERNEL,'QUERY_SECONDS',0.2),patch.object(self.m.subprocess,'Popen',side_effect=entered),self.assertRaises(subprocess.TimeoutExpired):self.inspect()
         self.assertEqual(len(self.children),1);self.assertIsNotNone(self.children[0].poll())
-        self.assertTrue(self.children[0].stdout.closed);self.assertTrue(self.children[0].stderr.closed)
+        self.assertTrue(channels[0][0].closed);self.assertTrue(channels[0][1].closed)
+        self.assertIsNone(self.children[0].stdout);self.assertIsNone(self.children[0].stderr)
 
     def test_listing_callback_expiry_refuses_before_encoding_and_readback(self):
         now=self.m.KERNEL.now();clock=[now]
