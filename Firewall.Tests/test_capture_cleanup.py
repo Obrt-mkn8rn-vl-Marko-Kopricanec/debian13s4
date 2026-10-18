@@ -1,6 +1,7 @@
 """Actual private capture children with explicitly delivered cleanup faults."""
 import os
 import signal
+import subprocess
 import unittest
 from unittest.mock import patch
 
@@ -109,6 +110,39 @@ class KernelCaptureCleanupTests(unittest.TestCase):
             for fd in reused: self.assertEqual(os.read(fd, 4), b'keep')
         finally:
             for fd in reused: realclose(fd)
+
+    def test_normalized_wait_timeout_keeps_original_cause_through_close_failure(self):
+        timeout = subprocess.TimeoutExpired(['private-ip'], 3)
+        close_error = OSError('stdout close after reported wait timeout')
+        waits, closes = [], []
+        def entered(*args, **kwargs):
+            child = self.entered(*args, **kwargs)
+            realwait, realclose = child.wait, child.stdout.close
+            def wait(*args, **kwargs):
+                # This reports a fault after an actual completed private child;
+                # it is not a reproduced native timeout or an unknown root exit.
+                code = realwait(*args, **kwargs)
+                waits.append(code)
+                raise timeout
+            def close():
+                closes.append((child.returncode, child.stdout, child.stderr))
+                realclose()
+                raise close_error
+            child.wait, child.stdout.close = wait, close
+            return child
+        with patch.object(self.m.subprocess, 'Popen', side_effect=entered), \
+             patch.object(self.m.os, 'killpg', side_effect=AssertionError('completed root must not be signaled')), \
+             self.assertRaises(self.m.CaptureCleanupFailure) as caught:
+            self.m.native_query('links', self.m.now()+3)
+        failure = caught.exception
+        self.assertIs(type(failure.cause), self.m.Pending)
+        self.assertIs(failure.__cause__, failure.cause)
+        self.assertIs(failure.cause.__cause__, timeout)
+        self.assertEqual(failure.cleanup, (close_error,))
+        self.assertEqual(waits, [0]); self.assertIs(type(waits[0]), int)
+        self.assertEqual(closes, [(0, None, None)])
+        self.assertEqual(len(self.children), 1)
+        self.assertTrue(all(stream.closed for stream in self.children[0][1]))
 
 
 if __name__ == '__main__':
