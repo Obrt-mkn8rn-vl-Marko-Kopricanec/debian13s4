@@ -20,7 +20,7 @@ def module(name,path):
 
 
 LISTING=module('debian13s4_stage_manifest_listing',Path(__file__).with_name('selected_inspection.py'))
-_STORAGE=module('debian13s4_stage_manifest_storage',Path(__file__).parent.parent/'Firewall/proposal_store.py')
+_STORAGE=module('debian13s4_stage_manifest_storage',Path(__file__).with_name('private_storage.py'))
 HISTORY, PREP, KERNEL, Pending=LISTING.HISTORY,LISTING.PREP,LISTING.KERNEL,LISTING.Pending
 LEAF='selected-stage-manifest.json'
 STATE='historical-selected-listing-manifest-only'

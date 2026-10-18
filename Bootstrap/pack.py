@@ -71,7 +71,11 @@ def assets():
             (ROOT / 'SSH' / name).read_bytes(), '0755' if name == 'repair.sh' else '0644')
     for name in ('apply.sh', 'verify.sh'):
         result[f'lib/tasks/ssh/{name}'] = ((ROOT / 'Tasks/ssh' / name).read_bytes(), '0644')
-    for name in ('prepare.py', 'live.py', 'access.py', 'common.sh', 'repair.sh',
+    for name in ('prepare.py', 'live.py', 'access.py', 'backup.py', 'archive_stage.py',
+                 'archive_inspection.py', 'dump_stream.py', 'selected_stage.py',
+                 'selected_inspection.py', 'selected_uncertainty.py', 'stage_manifest.py',
+                 'backup_attempt.py', 'backup_lifecycle.py', 'private_storage.py', 'backup_status.py',
+                 'common.sh', 'repair.sh',
                  'debian13s4-postgresql-server.service', 'debian13s4-postgresql.service',
                  'debian13s4-postgresql.timer'):
         result[f'lib/postgresql/{name}'] = (

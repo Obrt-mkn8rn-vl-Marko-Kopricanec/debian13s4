@@ -22,7 +22,7 @@ def module(name, path):
 
 
 SELECTED = module('debian13s4_selected_history_source', Path(__file__).with_name('selected_stage.py'))
-_STORAGE = module('debian13s4_selected_history_storage', Path(__file__).parent.parent/'Firewall/proposal_store.py')
+_STORAGE = module('debian13s4_selected_history_storage', Path(__file__).with_name('private_storage.py'))
 BACKUP, DUMP, PREP, KERNEL, Pending = SELECTED.BACKUP, SELECTED.DUMP, SELECTED.PREP, SELECTED.KERNEL, SELECTED.Pending
 LEAF = 'selected-stage-incomplete.json'
 STATE = 'historical-selected-stage-incomplete-no-retry'

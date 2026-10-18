@@ -7,12 +7,13 @@ registration/globaldedup/ownership/native completion or physical persistence.
 Honest modules/private ancestry/cooperating locks/finite IO are required.
 """
 import importlib.util
+import json
 import os
 from pathlib import Path
 import re
 import secrets
 
-SPEC=importlib.util.spec_from_file_location('debian13s4_backup_attempt_storage',Path(__file__).parent.parent/'Firewall/proposal_store.py')
+SPEC=importlib.util.spec_from_file_location('debian13s4_backup_attempt_storage',Path(__file__).with_name('private_storage.py'))
 _STORAGE=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(_STORAGE)
 KERNEL,Pending=_STORAGE.KERNEL,_STORAGE.Pending
 LEAF='selected-backup-attempt.json'
@@ -24,7 +25,8 @@ class Blocked(RuntimeError):
     """The attempt slot remains closed even if acquisition or sync failed."""
 
 
-def encoded(value):return _STORAGE.MANIFEST.STATE.encoded(value)+b'\n'
+def encoded(value):
+    return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False,allow_nan=False).encode('utf-8')+b'\n'
 
 
 def checked(raw):

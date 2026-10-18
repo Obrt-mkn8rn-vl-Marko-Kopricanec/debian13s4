@@ -405,9 +405,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=f0a2e847a7fe61df416c931b9519117afd5de72450d85cb3e14264a5d949ee59
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/dns/prepare.py)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=063a37e976b8353f0e039007b16224bd8eaf41a123591d76efb1406e53dff5f1
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/dns/prepare.py)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     mkdir -p -- "$S4B_STAGE/"lib "$S4B_STAGE/"lib/tasks/prerequisites "$S4B_STAGE/"units "$S4B_STAGE/"lib/maintenance "$S4B_STAGE/"lib/tasks/maintenance "$S4B_STAGE/"lib/dotnet "$S4B_STAGE/"lib/tasks/dotnet "$S4B_STAGE/"lib/network "$S4B_STAGE/"lib/tasks/network "$S4B_STAGE/"lib/retention "$S4B_STAGE/"lib/tasks/retention "$S4B_STAGE/"lib/hardening "$S4B_STAGE/"lib/tasks/hardening "$S4B_STAGE/"lib/firewall "$S4B_STAGE/"lib/ssh "$S4B_STAGE/"lib/tasks/ssh "$S4B_STAGE/"lib/postgresql "$S4B_STAGE/"lib/tasks/postgresql "$S4B_STAGE/"lib/web "$S4B_STAGE/"lib/tasks/web "$S4B_STAGE/"lib/applications "$S4B_STAGE/"lib/dns || return 1
@@ -6099,6 +6099,1863 @@ def main():
 if __name__ == '__main__':
     sys.exit(main())
 " > "$S4B_STAGE/"lib/postgresql/access.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Protected logical-backup intentions for the two configured local databases.
+
+This does not dump, open/create an archive, inspect one, restore, publish, delete
+or schedule anything. Default preparation WOULD connect through the accepted
+read-only access checker; real-host calling is unauthorized here. Selected
+access is not complete object/RLS/extension safety or restore compatibility.
+\"\"\"
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_backup_access',
+    Path(__file__).with_name('access.py'))
+ACCESS = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(ACCESS)
+PREP, KERNEL, Pending = ACCESS.PREP, ACCESS.KERNEL, ACCESS.Pending
+INPUT = Path('/etc/debian13s4/postgresql-backup.json')
+DUMP = '/usr/lib/postgresql/17/bin/pg_dump'
+RESTORE = '/usr/lib/postgresql/17/bin/pg_restore'
+RUNUSER = '/usr/sbin/runuser'
+MAX_INPUT = 4096
+MAX_OUTPUT = ACCESS.MAX_OUTPUT + PREP.MAX_OUTPUT + 16384
+ATTEMPT_SECONDS = 60
+
+
+def checked(value):
+    fields = {'schema', 'directory', 'generation', 'archive_limit_bytes',
+              'inventory_limit_bytes', 'dump_timeout_seconds', 'lock_wait_ms'}
+    KERNEL.known(value, fields, fields)
+    if type(value['schema']) is not int or value['schema'] != 1:
+        raise Pending('unsupported PostgreSQL backup intention schema')
+    path = value['directory']
+    if (type(path) is not str or not 6 <= len(path) <= 240 or
+        re.fullmatch(r'/[A-Za-z0-9_./-]+', path) is None or
+        os.path.normpath(path) != path or
+        any(part in ('', '.', '..') for part in path.split('/')[1:]) or
+        not any(path.startswith(root + '/') for root in ('/srv', '/var/backups'))):
+        raise Pending('unsupported explicit PostgreSQL backup directory intention')
+    generation = value['generation']
+    if (type(generation) is not str or re.fullmatch(r'[0-9a-f]{64}', generation) is None or
+        generation == '0' * 64):
+        raise Pending('unsupported explicit PostgreSQL backup generation')
+    for field, minimum, maximum in (
+        ('archive_limit_bytes', 1024, 1 << 40),
+        ('inventory_limit_bytes', 1024, 1 << 26),
+        ('dump_timeout_seconds', 1, 3600), ('lock_wait_ms', 1, 60000)):
+        number = value[field]
+        if type(number) is not int or not minimum <= number <= maximum:
+            raise Pending('unsupported explicit PostgreSQL backup bound')
+    return json.loads(PREP.canonical(value))
+
+
+def configuration(end):
+    raw, source = PREP.read_protected(INPUT, MAX_INPUT, True, end)
+    try:
+        value = json.loads(raw.decode('ascii'), object_pairs_hook=KERNEL.unique_object,
+            parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite backup input')))
+        value = checked(value)
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid PostgreSQL backup input') from error
+    if raw != PREP.canonical(value):
+        raise Pending('backup input requires canonical ASCII JSON plus LF')
+    return {'value': value, 'source': source}
+
+
+def render(settings, record):
+    settings = checked(settings)
+    deployment = PREP.checked(record['configuration']['value'])
+    jobs = {}
+    for app in PREP.APPLICATIONS:
+        item = deployment['applications'][app]
+        archive = settings['directory'] + '/' + settings['generation'] + '-' + app + '.dump'
+        jobs[app] = {
+            'role': item['role'], 'database': item['database'], 'archive': archive,
+            # Binary stdout goes to a future independently protected writer;
+            # runuser's application identity does not own the archive directory.
+            'dump_argv': [RUNUSER, '-u', item['role'], '--', DUMP,
+                '--format=custom', '--no-password', '--host', PREP.SOCKET_DIRECTORY,
+                '--port', '5432', '--username', item['role'], '--dbname', item['database'],
+                '--lock-wait-timeout=' + str(settings['lock_wait_ms'])],
+            'dump_environment': {'PATH': '/usr/bin:/usr/sbin', 'LC_ALL': 'C'},
+            'dump_stdout': 'custom-archive-bytes-for-protected-writer',
+            'archive_limit_bytes': settings['archive_limit_bytes'],
+            'dump_timeout_seconds': settings['dump_timeout_seconds'],
+            'inspection_argv': [RESTORE, '--list', archive],
+            'inspection_environment': {'PATH': '/usr/bin:/usr/sbin', 'LC_ALL': 'C'},
+            'inventory_limit_bytes': settings['inventory_limit_bytes']}
+    return jobs
+
+
+def prepare(read=None, deadline=None):
+    if read is None:
+        read = ACCESS.LIVE.native
+    if not callable(read):
+        raise Pending('unsupported PostgreSQL backup access delivery')
+    start = KERNEL.now()
+    if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):
+        raise Pending('invalid inherited PostgreSQL backup window')
+    end = min(start + ATTEMPT_SECONDS, deadline) if deadline is not None else start + ATTEMPT_SECONDS
+    PREP.fence(end)
+    namespace = KERNEL.uint(KERNEL.namespace(), (1 << 64) - 1)
+    if not namespace:
+        raise Pending('missing PostgreSQL backup context')
+    def capture(kind, window):
+        if not KERNEL.finite_deadline(window) or window > end:
+            raise Pending('PostgreSQL backup query exceeds inherited window')
+        PREP.fence(end)
+        PREP.fence(window)
+        raw = read(kind, window)
+        PREP.fence(window)
+        PREP.fence(end)
+        return raw
+
+    settings = configuration(end)
+    record, enrolled = ACCESS.LIVE.intention(end)
+    before = ACCESS.check(read=capture, deadline=end)
+    access = ACCESS.decoded(before, ACCESS.MAX_OUTPUT)
+    if (access['namespace'] != namespace or record['namespace'] != namespace or
+        access['admin']['enrollment'] != enrolled or access['admin']['accounts'] != record['accounts']):
+        raise Pending('PostgreSQL backup and access source identities differ')
+    for app in PREP.APPLICATIONS:
+        item = record['configuration']['value']['applications'][app]
+        if (access['applications'][app]['user'] != item['role'] or
+            access['applications'][app]['database'] != item['database']):
+            raise Pending('PostgreSQL backup application source differs')
+    payload = PREP.canonical({'schema': 1, 'profile': 'postgresql17-selected-logical-backup-intention-v1',
+        'state': 'postgresql-logical-backup-intention-only', 'namespace': namespace,
+        'configuration': settings, 'source_intention': record, 'enrollment': enrolled,
+        'access': access, 'jobs': render(settings['value'], record)})
+    if len(payload) > MAX_OUTPUT:
+        raise Pending('complete PostgreSQL backup intention exceeds bound')
+    # Complete immutable encoding precedes every final real input/access read.
+    if configuration(end) != settings:
+        raise Pending('PostgreSQL backup configuration changed')
+    if ACCESS.check(read=capture, deadline=end) != before:
+        raise Pending('PostgreSQL backup access source changed')
+    final_record, final_enrolled = ACCESS.LIVE.intention(end)
+    if final_record != record or final_enrolled != enrolled:
+        raise Pending('PostgreSQL backup protected source changed')
+    final = KERNEL.namespace()
+    if type(final) is not int or final != namespace:
+        raise Pending('PostgreSQL backup context changed')
+    PREP.fence(end)
+    return payload
+
+
+def main():
+    try:
+        if sys.argv[1:] != ['--prepare']:
+            raise Pending('unsupported PostgreSQL backup action')
+        sink = getattr(sys.stdout, 'buffer', None)
+        if not callable(getattr(sink, 'write', None)) or not callable(getattr(sink, 'flush', None)):
+            raise Pending('PostgreSQL backup preparation requires binary stdout')
+        payload = prepare()
+        count = sink.write(payload)
+        if type(count) is not int or count != len(payload):
+            raise Pending('incomplete PostgreSQL backup intention output')
+        sink.flush()
+        return 0
+    except (Pending, OSError, ValueError, TypeError, AttributeError, UnicodeError,
+            RecursionError, subprocess.TimeoutExpired) as error:
+        print('Pending: ' + str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/postgresql/backup.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Create-only OPAQUE private .partial bytes, never a valid or published backup.
+
+No pg_dump/pg_restore/process/connection/CLI/auto-directory/reset/adoption/retry
+is provided. Any existing target blocks; failed acquired targets remain closed.
+Caller streams/receipts are not native archive attestation. Honest ancestry,
+cooperating locks and finite IO are required; fsync is not power-loss proof.
+\"\"\"
+import fcntl
+import hashlib
+import importlib.util
+import os
+from pathlib import Path
+import re
+import stat
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_archive_inputs',
+    Path(__file__).with_name('prepare.py'))
+PREP = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(PREP)
+KERNEL, Pending = PREP.KERNEL, PREP.Pending
+TRUST_ROOT = Path('/')
+TRUSTED_UID = 0
+MAX_BYTES = 1 << 40
+CHUNK = 65536
+MAX_RECEIPT = 4096
+ATTEMPT_SECONDS = 3600
+
+
+class Blocked(RuntimeError):
+    \"\"\"An existing or acquired .partial target is not automatically retryable.\"\"\"
+
+
+def admission(end):
+    if not KERNEL.finite_deadline(end) or KERNEL.now() >= end:
+        raise Pending('private archive staging window expired')
+
+
+def window(deadline):
+    start = KERNEL.now()
+    if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):
+        raise Pending('invalid archive staging inherited deadline')
+    return min(start + ATTEMPT_SECONDS, deadline) if deadline is not None else start + ATTEMPT_SECONDS
+
+
+def directory_identity(path):
+    if (type(path) is not type(TRUST_ROOT) or not path.is_absolute() or
+        len(str(path)) > 512 or os.path.normpath(str(path)) != str(path)):
+        raise Pending('noncanonical private archive directory')
+    path.relative_to(TRUST_ROOT)
+    current = path; leaf = None
+    while True:
+        info = current.lstat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid != TRUSTED_UID or info.st_mode & 0o022:
+            raise Pending('untrusted private archive ancestry')
+        value = (info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid)
+        if current == path:
+            if stat.S_IMODE(info.st_mode) != 0o700:
+                raise Pending('archive staging directory is not private')
+            leaf = value
+        if current == TRUST_ROOT:
+            return leaf
+        current = current.parent
+
+
+def directory_matches(path, fd, before):
+    info = os.fstat(fd)
+    value = (info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid)
+    if value != before or directory_identity(path) != before:
+        raise Pending('private archive directory descriptor or path changed')
+
+
+def file_identity(info):
+    if (not stat.S_ISREG(info.st_mode) or info.st_uid != TRUSTED_UID or
+        stat.S_IMODE(info.st_mode) != 0o600 or info.st_nlink != 1):
+        raise Pending('untrusted private archive stage')
+    return KERNEL.signature(info) + (info.st_nlink,)
+
+
+def file_matches(directory, name, fd):
+    value = file_identity(os.fstat(fd))
+    if value[0] != os.fstat(directory).st_dev or value != file_identity(os.stat(name, dir_fd=directory, follow_symlinks=False)):
+        raise Pending('private archive stage descriptor or name changed')
+    return value
+
+
+def readback(directory, name, identity, count, digest, end):
+    admission(end)
+    if file_identity(os.stat(name, dir_fd=directory, follow_symlinks=False)) != identity:
+        raise Pending('private archive readback identity changed')
+    fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=directory)
+    try:
+        if file_matches(directory, name, fd) != identity:
+            raise Pending('private archive readback descriptor changed')
+        total = 0; hashed = hashlib.sha256()
+        while True:
+            admission(end)
+            part = os.read(fd, min(CHUNK, count - total + 1))
+            admission(end)
+            if not part:
+                break
+            total += len(part)
+            if total > count:
+                raise Pending('private archive readback exceeds committed size')
+            hashed.update(part)
+        if total != count or hashed.hexdigest() != digest or file_matches(directory, name, fd) != identity:
+            raise Pending('private archive bytes or identity changed during readback')
+        admission(end)
+    finally:
+        closing, fd = fd, None
+        os.close(closing)
+
+
+def stage(path, name, stream, limit, deadline=None):
+    end = window(deadline)
+    if (type(name) is not str or
+        re.fullmatch(r'[0-9a-f]{64}-mk8\\.(dns|email)\\.dump\\.partial', name) is None or
+        name.startswith('0' * 64 + '-')):
+        raise Pending('unsupported private archive staging leaf')
+    if type(limit) is not int or not 1 <= limit <= MAX_BYTES or not callable(getattr(stream, 'read', None)):
+        raise Pending('unsupported private archive stream or bound')
+    admission(end); before = directory_identity(path)
+    directory = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    fd = None; acquired = False
+    try:
+        directory_matches(path, directory, before)
+        fcntl.flock(directory, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        directory_matches(path, directory, before); admission(end)
+        fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC,
+                     0o600, dir_fd=directory)
+        acquired = True
+        os.fchmod(fd, 0o600)
+        file_matches(directory, name, fd)
+        total = 0; hashed = hashlib.sha256()
+        while True:
+            admission(end)
+            requested = min(CHUNK, limit - total + 1)
+            part = stream.read(requested)
+            admission(end)
+            if type(part) is not bytes or len(part) > requested:
+                raise Pending('untyped or oversized private archive stream delivery')
+            if not part:
+                break
+            if total + len(part) > limit:
+                raise Pending('private archive stream exceeds byte bound')
+            offset = 0
+            while offset < len(part):
+                admission(end)
+                count = os.write(fd, part[offset:])
+                if type(count) is not int or not 0 < count <= len(part) - offset:
+                    raise Pending('private archive write did not advance')
+                offset += count
+            total += len(part); hashed.update(part)
+        if total == 0:
+            raise Pending('empty private archive staging stream')
+        os.fsync(fd)
+        identity = file_matches(directory, name, fd)
+        if identity[5] != total:
+            raise Pending('private archive stage size disagrees')
+        receipt = PREP.canonical({'schema':1, 'state':'private-unverified-archive-stage-only',
+            'directory':str(path), 'directory_identity':list(before), 'leaf':name,
+            'bytes':total, 'limit_bytes':limit, 'sha256':hashed.hexdigest(), 'identity':list(identity)})
+        if len(receipt) > MAX_RECEIPT:
+            raise Pending('private archive staging receipt exceeds bound')
+        if file_matches(directory, name, fd) != identity:
+            raise Pending('private archive stage changed after encoding')
+        directory_matches(path, directory, before); admission(end)
+        closing, fd = fd, None
+        os.close(closing)
+        os.fsync(directory)
+        readback(directory, name, identity, total, hashed.hexdigest(), end)
+        directory_matches(path, directory, before); admission(end)
+        return receipt
+    except BaseException as error:
+        if acquired or isinstance(error, FileExistsError):
+            raise Blocked('archive staging target exists or may be visible; no automatic retry') from error
+        raise
+    finally:
+        try:
+            if fd is not None:
+                closing, fd = fd, None
+                os.close(closing)
+        finally:
+            closing, directory = directory, None
+            os.close(closing)
+" > "$S4B_STAGE/"lib/postgresql/archive_stage.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Protected .partial listing SOURCE only, not archive completeness or restore.
+
+The default delivery WOULD execute pg_restore --list against the supplied file.
+No database option, dump, restore, mutation, promotion, retry or installer join
+is supplied. Listing bytes and public receipts are not native origin attestation.
+Path reopening, cooperating locks and repeated reads are sequential, not atomic
+or non-ABA guarantees; finite IO/cleanup and honest immutable modules are assumed.
+\"\"\"
+import fcntl
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import selectors
+import signal
+import stat
+import subprocess
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_inspection_stage',
+    Path(__file__).with_name('archive_stage.py'))
+STAGE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(STAGE)
+KERNEL, PREP, Pending = STAGE.KERNEL, STAGE.PREP, STAGE.Pending
+RESTORE = Path('/usr/lib/postgresql/17/bin/pg_restore')
+MAX_LISTING = 67108864
+MAX_OUTPUT = 2 * MAX_LISTING + 16384
+ATTEMPT_SECONDS = 60
+
+
+def checked(raw):
+    if type(raw) is not bytes or not 1 <= len(raw) <= STAGE.MAX_RECEIPT:
+        raise Pending('unsupported archive stage receipt bytes')
+    try:
+        value = json.loads(raw.decode('ascii'), object_pairs_hook=KERNEL.unique_object,
+            parse_constant=lambda s: (_ for _ in ()).throw(Pending('nonfinite stage receipt')))
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid archive stage receipt') from error
+    fields = {'schema', 'state', 'directory', 'directory_identity', 'leaf',
+              'bytes', 'limit_bytes', 'sha256', 'identity'}
+    KERNEL.known(value, fields, fields)
+    if (type(value['schema']) is not int or value['schema'] != 1 or
+        value['state'] != 'private-unverified-archive-stage-only' or
+        type(value['directory']) is not str or not 1 <= len(value['directory']) <= 512 or
+        any(ord(c) < 32 or ord(c) > 126 for c in value['directory']) or
+        not Path(value['directory']).is_absolute() or os.path.normpath(value['directory']) != value['directory'] or
+        type(value['leaf']) is not str or
+        re.fullmatch(r'[0-9a-f]{64}-mk8\\.(dns|email)\\.dump\\.partial', value['leaf']) is None or
+        value['leaf'].startswith('0' * 64 + '-') or
+        type(value['bytes']) is not int or type(value['limit_bytes']) is not int or
+        not 1 <= value['bytes'] <= value['limit_bytes'] <= STAGE.MAX_BYTES or
+        type(value['sha256']) is not str or re.fullmatch(r'[0-9a-f]{64}', value['sha256']) is None):
+        raise Pending('unsupported archive stage receipt fields')
+    for field, width in (('directory_identity', 5), ('identity', 9)):
+        row = value[field]
+        if type(row) is not list or len(row) != width or any(type(n) is not int for n in row):
+            raise Pending('untyped archive stage identity')
+    directory, leaf = value['directory_identity'], value['identity']
+    if (any(n < 0 for n in directory) or any(leaf[n] < 0 for n in (0, 1, 2, 3, 4, 5, 8)) or
+        directory[2] != stat.S_IFDIR | 0o700 or directory[3] != STAGE.TRUSTED_UID or
+        leaf[0] != directory[0] or leaf[2] != stat.S_IFREG | 0o600 or
+        leaf[3] != STAGE.TRUSTED_UID or leaf[5] != value['bytes'] or leaf[8] != 1):
+        raise Pending('unsupported archive stage identity facts')
+    if raw != PREP.canonical(value):
+        raise Pending('noncanonical archive stage receipt')
+    return value
+
+
+def native(path, maximum, end):
+    \"\"\"Fixed read-only listing primitive; calling real host tools needs authority.\"\"\"
+    STAGE.admission(end)
+    if type(maximum) is not int or not 1 <= maximum <= MAX_LISTING:
+        raise Pending('unsupported archive listing bound')
+    if (type(path) is not type(RESTORE) or not path.is_absolute() or
+        os.path.normpath(str(path)) != str(path) or len(str(path)) > 1024 or
+        any(ord(c) < 32 or ord(c) > 126 for c in str(path)) or
+        re.fullmatch(r'[0-9a-f]{64}-mk8\\.(dns|email)\\.dump\\.partial', path.name) is None or
+        path.name.startswith('0' * 64 + '-')):
+        raise Pending('unsupported archive listing input pathname')
+    before = KERNEL.trusted_binary(RESTORE)
+    context = KERNEL.uint(KERNEL.namespace(), 2**64 - 1)
+    if context == 0:
+        raise Pending('invalid archive listing namespace')
+    until = min(end, KERNEL.now() + KERNEL.QUERY_SECONDS)
+    STAGE.admission(until)
+    child = subprocess.Popen([str(RESTORE), '--list', str(path)], stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        env={'PATH': '/usr/bin:/usr/sbin', 'LC_ALL': 'C'}, close_fds=True, start_new_session=True)
+    buffers = {'stdout': bytearray(), 'stderr': bytearray()}
+    try:
+        with selectors.DefaultSelector() as selector:
+            for name, stream in (('stdout', child.stdout), ('stderr', child.stderr)):
+                os.set_blocking(stream.fileno(), False)
+                selector.register(stream, selectors.EVENT_READ, name)
+            while selector.get_map():
+                STAGE.admission(until)
+                remaining = until - KERNEL.now()
+                if remaining <= 0:
+                    raise Pending('archive listing capture window expired')
+                for key, _ in selector.select(remaining):
+                    part = os.read(key.fileobj.fileno(), min(65536, maximum + 1 - len(buffers[key.data])))
+                    if not part:
+                        selector.unregister(key.fileobj)
+                        continue
+                    buffer = buffers[key.data]
+                    if len(buffer) + len(part) > maximum:
+                        raise Pending('archive listing channel exceeds bound')
+                    buffer.extend(part)
+            STAGE.admission(until)
+            remaining = until - KERNEL.now()
+            if remaining <= 0:
+                raise Pending('archive listing completion window expired')
+            code = child.wait(timeout=remaining)
+            if type(code) is not int or code != 0 or buffers['stderr']:
+                raise Pending('archive listing failed or warned')
+        if KERNEL.trusted_binary(RESTORE) != before or KERNEL.uint(KERNEL.namespace(), 2**64 - 1) != context:
+            raise Pending('archive listing executable or context changed')
+        STAGE.admission(until)
+        return bytes(buffers['stdout'])
+    finally:
+        try:
+            if child.returncode is None:
+                try:
+                    os.killpg(child.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                child.wait(timeout=KERNEL.CLEANUP_SECONDS)
+        finally:
+            try:
+                child.stdout.close()
+            finally:
+                child.stderr.close()
+
+
+def inspect_stage(raw, maximum, read=None, deadline=None):
+    start = KERNEL.now()
+    if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):
+        raise Pending('invalid archive inspection inherited deadline')
+    end = min(start + ATTEMPT_SECONDS, deadline) if deadline is not None else start + ATTEMPT_SECONDS
+    if type(maximum) is not int or not 1 <= maximum <= MAX_LISTING or read is not None and not callable(read):
+        raise Pending('unsupported archive inspection delivery or bound')
+    record = checked(raw)
+    context = KERNEL.uint(KERNEL.namespace(), 2**64 - 1)
+    if context == 0:
+        raise Pending('invalid archive inspection namespace')
+    path = Path(record['directory'])
+    STAGE.admission(end)
+    before = STAGE.directory_identity(path)
+    if list(before) != record['directory_identity']:
+        raise Pending('archive staging directory differs from receipt')
+    directory = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    try:
+        STAGE.directory_matches(path, directory, before)
+        fcntl.flock(directory, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        identity = tuple(record['identity'])
+        STAGE.readback(directory, record['leaf'], identity, record['bytes'], record['sha256'], end)
+        STAGE.directory_matches(path, directory, before)
+        executable = KERNEL.trusted_binary(RESTORE)
+        STAGE.admission(end)
+        if KERNEL.uint(KERNEL.namespace(), 2**64 - 1) != context:
+            raise Pending('archive inspection pre-entry context changed')
+        listing = (native if read is None else read)(path / record['leaf'], maximum, end)
+        STAGE.admission(end)
+        if type(listing) is not bytes or not 1 <= len(listing) <= maximum:
+            raise Pending('unsupported or oversized archive listing bytes')
+        payload = PREP.canonical({'schema': 1, 'state': 'private-archive-listing-source-only',
+            'stage': record, 'stage_sha256': hashlib.sha256(raw).hexdigest(), 'namespace': context,
+            'argv': [str(RESTORE), '--list', str(path / record['leaf'])],
+            'executable': list(executable), 'listing_limit_bytes': maximum,
+            'listing_bytes': len(listing), 'listing_sha256': hashlib.sha256(listing).hexdigest(),
+            'listing_hex': listing.hex()})
+        if len(payload) > MAX_OUTPUT:
+            raise Pending('archive inspection receipt exceeds bound')
+        STAGE.readback(directory, record['leaf'], identity, record['bytes'], record['sha256'], end)
+        STAGE.directory_matches(path, directory, before)
+        if KERNEL.trusted_binary(RESTORE) != executable or KERNEL.uint(KERNEL.namespace(), 2**64 - 1) != context:
+            raise Pending('archive inspection final executable or context changed')
+        STAGE.admission(end)
+        return payload
+    finally:
+        closing, directory = directory, None
+        os.close(closing)
+" > "$S4B_STAGE/"lib/postgresql/archive_inspection.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"One lazy fixed dump-child stream; no real-host calling authority or publication.
+
+Caller role/database inputs are validated syntax, NOT protected enrollment/NSS
+or peer authentication. A future orchestrator must bind fresh backup intentions.
+Constructing this stream does not start a child; an exclusive stage writer can
+acquire its target before the first read. Failures poison the stream, never reset
+it. EOF is returned only after both channels close, root zero/no warning and
+checked completion. This is not archive validity, restore, durability or ownership.
+\"\"\"
+import hashlib
+import importlib.util
+import os
+from pathlib import Path
+import selectors
+import signal
+import subprocess
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_dump_inputs', Path(__file__).with_name('prepare.py'))
+PREP = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(PREP)
+KERNEL, Pending = PREP.KERNEL, PREP.Pending
+RUNUSER = Path('/usr/sbin/runuser')
+DUMP = Path('/usr/lib/postgresql/17/bin/pg_dump')
+MAX_BYTES = 1 << 40
+MAX_STDERR = 1048576
+CHUNK = 65536
+MAX_RECEIPT = 16384
+
+
+class Uncertain(RuntimeError):
+    \"\"\"Preserve the original cause and separate cleanup failures; no second child.\"\"\"
+    def __init__(self, cause, evidence, cleanup):
+        super().__init__('dump child may have entered; no automatic retry')
+        self.cause, self.evidence, self.cleanup = cause, evidence, cleanup
+
+
+class DumpStream:
+    def __init__(self, role, database, limit, stderr_limit, seconds, lock_wait_ms, deadline=None):
+        role, database = PREP.identifier(role), PREP.identifier(database)
+        for value, low, high in ((limit,1024,MAX_BYTES),(stderr_limit,1,MAX_STDERR),
+                                 (seconds,1,3600),(lock_wait_ms,1,60000)):
+            if type(value) is not int or not low <= value <= high:
+                raise Pending('unsupported explicit dump stream bound')
+        start = KERNEL.now()
+        if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):
+            raise Pending('invalid inherited dump stream deadline')
+        self.end = min(start+seconds,deadline) if deadline is not None else start+seconds
+        self.argv = (str(RUNUSER),'-u',role,'--',str(DUMP),'--format=custom','--no-password',
+            '--host',PREP.SOCKET_DIRECTORY,'--port','5432','--username',role,'--dbname',database,
+            '--lock-wait-timeout='+str(lock_wait_ms))
+        self.limit, self.stderr_limit = limit, stderr_limit
+        self.child, self.selector, self.context, self.executables = None, None, None, None
+        self.streams = {}; self.received = 0; self.hashed = hashlib.sha256(); self.stderr = bytearray()
+        self.started, self.closed, self.done = False, False, False
+        self.receipt, self.poison = None, None
+
+    def fence(self):
+        if KERNEL.now() >= self.end:
+            raise Pending('dump stream admission window expired')
+        if self.context is not None:
+            current = KERNEL.namespace()
+            if type(current) is not int or current != self.context:
+                raise Pending('dump stream namespace changed')
+
+    def start(self):
+        if self.started or self.closed:
+            raise Pending('dump stream cannot enter twice')
+        self.fence()
+        context = KERNEL.uint(KERNEL.namespace(),2**64-1)
+        if not context: raise Pending('missing dump stream namespace')
+        self.context = context
+        self.executables = (KERNEL.trusted_binary(RUNUSER),KERNEL.trusted_binary(DUMP))
+        self.fence()
+        self.started = True # A Popen error may follow an attempted child entry.
+        self.child = subprocess.Popen(self.argv,stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+            env={'PATH':'/usr/bin:/usr/sbin','LC_ALL':'C'},close_fds=True,start_new_session=True)
+        self.streams = {'stdout':self.child.stdout,'stderr':self.child.stderr}
+        self.selector = selectors.DefaultSelector()
+        for name, stream in self.streams.items():
+            os.set_blocking(stream.fileno(),False)
+            self.selector.register(stream,selectors.EVENT_READ,name)
+
+    def evidence(self):
+        return (self.argv,self.context,self.executables,self.received,self.hashed.hexdigest(),
+                bytes(self.stderr),None if self.child is None else self.child.returncode,
+                self.started,self.closed)
+
+    def close(self):
+        if self.closed: return ()
+        self.closed = True # Retirement precedes every cleanup attempt.
+        errors = []
+        if self.child is not None and self.child.returncode is None:
+            try:
+                try: os.killpg(self.child.pid,signal.SIGKILL)
+                except ProcessLookupError: pass
+                self.child.wait(timeout=KERNEL.CLEANUP_SECONDS)
+            except BaseException as error: errors.append(error)
+        selector,self.selector = self.selector,None
+        if selector is not None:
+            try: selector.close()
+            except BaseException as error: errors.append(error)
+        for name in ('stdout','stderr'):
+            stream = self.streams.pop(name,None)
+            if self.child is not None:
+                if stream is None: stream = getattr(self.child,name,None)
+                setattr(self.child,name,None) # Retire the Popen reference before close.
+            if stream is not None:
+                try: stream.close()
+                except BaseException as error: errors.append(error)
+        return tuple(errors)
+
+    def fail(self, cause):
+        cleanup = self.close()
+        if self.started:
+            self.poison = Uncertain(cause,self.evidence(),cleanup)
+            raise self.poison from cause
+        if cleanup:
+            raise Uncertain(cause,self.evidence(),cleanup) from cause
+        raise cause
+
+    def finish(self):
+        self.fence()
+        remaining = self.end-KERNEL.now()
+        if remaining <= 0: raise Pending('dump completion window expired')
+        code = self.child.wait(timeout=remaining)
+        self.fence()
+        if type(code) is not int or code != 0 or self.stderr or not self.received:
+            raise Pending('dump child failed, warned or produced no archive bytes')
+        receipt = PREP.canonical({'schema':1,'state':'dump-stream-receipt-only',
+            'argv':list(self.argv),'namespace':self.context,
+            'executables':[list(row) for row in self.executables],
+            'received_bytes':self.received,'received_sha256':self.hashed.hexdigest(),
+            'limit_bytes':self.limit,'stderr_limit_bytes':self.stderr_limit,
+            'root_exit':code,'stderr_hex':bytes(self.stderr).hex()})
+        if len(receipt)>MAX_RECEIPT: raise Pending('dump stream receipt exceeds bound')
+        if (KERNEL.trusted_binary(RUNUSER),KERNEL.trusted_binary(DUMP))!=self.executables:
+            raise Pending('dump stream executable changed')
+        self.fence()
+        cleanup = self.close()
+        if cleanup: raise Uncertain(cleanup[0],self.evidence(),cleanup[1:]) from cleanup[0]
+        self.receipt, self.done = receipt, True
+
+    def read(self, requested):
+        if self.poison is not None: raise self.poison
+        if type(requested) is not int or not 1 <= requested <= CHUNK:
+            self.fail(Pending('unsupported dump stream read size'))
+        if self.done: return b''
+        if self.closed: raise Pending('dump stream is retired')
+        try:
+            if not self.started: self.start()
+            self.fence()
+            while self.selector.get_map():
+                self.fence(); remaining = self.end-KERNEL.now()
+                if remaining<=0: raise Pending('dump capture window expired')
+                chunk = None
+                for key,_ in self.selector.select(remaining):
+                    size = min(requested,self.limit-self.received+1) if key.data=='stdout' else min(CHUNK,self.stderr_limit-len(self.stderr)+1)
+                    part = os.read(key.fileobj.fileno(),size)
+                    self.fence()
+                    if not part:
+                        self.selector.unregister(key.fileobj);continue
+                    if key.data=='stdout':
+                        self.received += len(part);self.hashed.update(part)
+                        if self.received>self.limit: raise Pending('dump stdout exceeds byte bound')
+                        chunk = part
+                    else:
+                        self.stderr.extend(part)
+                        if len(self.stderr)>self.stderr_limit: raise Pending('dump stderr exceeds byte bound')
+                if chunk is not None: return chunk
+            self.finish(); return b''
+        except BaseException as error:
+            if isinstance(error,Uncertain) and self.closed:
+                self.poison=error;raise
+            self.fail(error)
+" > "$S4B_STAGE/"lib/postgresql/dump_stream.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Fresh protected selected backup intention -> one create-only partial stage.
+
+Default calls WOULD connect to PG and run a dump; real-host calling is unauthorized.
+No directory provisioning, native archive inspection, final backup publication,
+restore, durable uncertainty, retry or controller/installer join is supplied.
+All receipts are SOURCE only; private ancestry/modules/native delivery are trusted,
+read/lock equality is sequential/non-atomic/ABA/future, not ownership authentication.
+\"\"\"
+import importlib.util
+import json
+import os
+from pathlib import Path
+import fcntl
+
+
+def module(name, leaf):
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(leaf))
+    value = importlib.util.module_from_spec(spec); spec.loader.exec_module(value)
+    return value
+
+
+BACKUP = module('debian13s4_selected_backup', 'backup.py')
+DUMP = module('debian13s4_selected_dump', 'dump_stream.py')
+INSPECT = module('debian13s4_selected_inspection', 'archive_inspection.py')
+STAGE = INSPECT.STAGE
+PREP, KERNEL, Pending = BACKUP.PREP, BACKUP.KERNEL, BACKUP.Pending
+# Contains two independent60s preparations and at most3600s dump admission;
+# no accepted primitive window is widened, and these are not hard IO budgets.
+ATTEMPT_SECONDS = 2 * BACKUP.ATTEMPT_SECONDS + 3600
+MAX_OUTPUT = BACKUP.MAX_OUTPUT + DUMP.MAX_RECEIPT + STAGE.MAX_RECEIPT + 8192
+
+
+class Incomplete(RuntimeError):
+    \"\"\"Preserve original failure/uncertainty, known receipts and separate cleanup.\"\"\"
+    def __init__(self, cause, uncertainty, stream_receipt, stage_receipt, cleanup, provenance):
+        super().__init__('selected backup stage may exist; no automatic retry or publication')
+        self.cause, self.uncertainty = cause, uncertainty
+        self.stream_receipt, self.stage_receipt, self.cleanup = stream_receipt, stage_receipt, cleanup
+        self.provenance = provenance # Original immutable intention and AFTER-cleanup capture.
+
+
+def fence(end, context):
+    PREP.fence(end)
+    for kernel in (KERNEL, DUMP.KERNEL, STAGE.KERNEL):
+        current = kernel.namespace()
+        if type(current) is not int or current != context:
+            raise Pending('selected backup stage namespace changed')
+
+
+def intention(read, end):
+    raw = BACKUP.prepare(read=read, deadline=end)
+    value = BACKUP.ACCESS.decoded(raw, BACKUP.MAX_OUTPUT)
+    if (type(value.get('schema')) is not int or value['schema'] != 1 or
+        value.get('profile') != 'postgresql17-selected-logical-backup-intention-v1' or
+        value.get('state') != 'postgresql-logical-backup-intention-only' or
+        value['jobs'] != BACKUP.render(value['configuration']['value'], value['source_intention']) or
+        raw != PREP.canonical(value)):
+        raise Pending('selected stage requires the complete real canonical backup intention')
+    return raw, value
+
+
+def stage_selected(application, stderr_limit, read=None, deadline=None):
+    if type(application) is not str or application not in PREP.APPLICATIONS:
+        raise Pending('unsupported selected PostgreSQL backup application')
+    if type(stderr_limit) is not int or not 1 <= stderr_limit <= DUMP.MAX_STDERR or read is not None and not callable(read):
+        raise Pending('unsupported explicit selected dump delivery or stderr bound')
+    start = KERNEL.now()
+    if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):
+        raise Pending('invalid selected backup inherited deadline')
+    end = min(start + ATTEMPT_SECONDS, deadline) if deadline is not None else start + ATTEMPT_SECONDS
+    context = KERNEL.uint(KERNEL.namespace(), 2**64-1)
+    if not context: raise Pending('missing selected backup context')
+    fence(end, context)
+    original, value = intention(read, end)
+    if type(value['namespace']) is not int or value['namespace'] != context:
+        raise Pending('selected backup intention context differs')
+    settings = BACKUP.checked(value['configuration']['value']); job = value['jobs'][application]
+    path = STAGE.TRUST_ROOT / Path(settings['directory']).relative_to('/')
+    leaf = settings['generation'] + '-' + application + '.dump.partial'
+    stream = DUMP.DumpStream(job['role'],job['database'],settings['archive_limit_bytes'],stderr_limit,
+        settings['dump_timeout_seconds'],settings['lock_wait_ms'],deadline=end)
+    staged = None; directory = None
+    try:
+        if tuple(job['dump_argv']) != stream.argv or job['dump_environment'] != {'PATH':'/usr/bin:/usr/sbin','LC_ALL':'C'}:
+            raise Pending('selected dump argv or environment differs from protected intention')
+        fence(end, context)
+        staged = STAGE.stage(path,leaf,stream,settings['archive_limit_bytes'],deadline=end)
+        if stream.done is not True or stream.closed is not True or type(stream.receipt) is not bytes:
+            raise Pending('selected stage lacks checked dump completion')
+        stage_value = INSPECT.checked(staged)
+        stream_value = BACKUP.ACCESS.decoded(stream.receipt,DUMP.MAX_RECEIPT)
+        expected = {'schema':1,'state':'dump-stream-receipt-only','argv':list(stream.argv),
+            'namespace':stream.context,'executables':[list(row) for row in stream.executables],
+            'received_bytes':stream.received,'received_sha256':stream.hashed.hexdigest(),
+            'limit_bytes':stream.limit,'stderr_limit_bytes':stream.stderr_limit,
+            'root_exit':stream.child.returncode,'stderr_hex':bytes(stream.stderr).hex()}
+        if type(stream.child.returncode) is not int or stream.child.returncode != 0 or stream.stderr or stream.receipt != PREP.canonical(expected):
+            raise Pending('complete dump receipt differs from actual captured completion')
+        if (stream_value['namespace'] != context or stream_value['argv'] != job['dump_argv'] or
+            stream_value['root_exit'] != 0 or stream_value['stderr_hex'] != '' or
+            stream_value['received_bytes'] != stage_value['bytes'] or
+            stream_value['received_sha256'] != stage_value['sha256']):
+            raise Pending('selected protected stage and received dump bytes differ')
+        before = tuple(stage_value['directory_identity'])
+        directory = os.open(path,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
+        STAGE.directory_matches(path,directory,before)
+        fcntl.flock(directory,fcntl.LOCK_SH|fcntl.LOCK_NB)
+        payload = PREP.canonical({'schema':1,'state':'protected-selected-dump-stage-source-only',
+            'application':application,'namespace':context,'backup_intention':value,
+            'stream':stream_value,'stage':stage_value})
+        if len(payload)>MAX_OUTPUT: raise Pending('selected backup stage receipt exceeds bound')
+        final, _ = intention(read,end)
+        if final != original: raise Pending('complete protected backup intention changed after staging')
+        STAGE.readback(directory,leaf,tuple(stage_value['identity']),stage_value['bytes'],stage_value['sha256'],end)
+        STAGE.directory_matches(path,directory,before)
+        if [list(DUMP.KERNEL.trusted_binary(p)) for p in (DUMP.RUNUSER,DUMP.DUMP)] != stream_value['executables']:
+            raise Pending('selected dump executable changed after staging')
+        fence(end,context)
+        closing, directory = directory, None
+        os.close(closing)
+        cleanup = stream.close()
+        if cleanup: raise DUMP.Uncertain(cleanup[0],stream.evidence(),cleanup[1:]) from cleanup[0]
+        return payload
+    except BaseException as cause:
+        cleanup = []
+        if directory is not None:
+            closing, directory = directory, None
+            try: os.close(closing)
+            except BaseException as error: cleanup.append(error)
+        try: cleanup.extend(stream.close())
+        except BaseException as error: cleanup.append(error)
+        uncertainty = stream.poison
+        if isinstance(cause,DUMP.Uncertain): uncertainty = cause
+        if uncertainty is None and stream.started and not stream.done:
+            uncertainty = DUMP.Uncertain(cause,stream.evidence(),tuple(cleanup))
+        raise Incomplete(cause,uncertainty,stream.receipt,staged,tuple(cleanup),
+            (original,application,stderr_limit,stream.evidence())) from cause
+" > "$S4B_STAGE/"lib/postgresql/selected_stage.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Fresh protected selection -> whole private staged-byte listing SOURCE only.
+
+Default calls WOULD protected-read/connect PG/run pg_restore --list on the host;
+none is authorized here. Reported historical dump success/public receipts are
+forgeable, not origin, ownership, archive validity/completeness or backup proof.
+This entry never creates/dumps/promotes/restores/deletes/retries a stage. Separate
+locks/equal reads are non-atomic/ABA/future; honest modules/native delivery/private
+ancestry/finite IO and caller custody of failures remain required.
+\"\"\"
+import fcntl
+import hashlib
+import importlib.util
+import os
+from pathlib import Path
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_selected_listing_history',Path(__file__).with_name('selected_uncertainty.py'))
+HISTORY = importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(HISTORY)
+SELECTED, BACKUP, PREP, KERNEL, Pending = HISTORY.SELECTED, HISTORY.BACKUP, HISTORY.PREP, HISTORY.KERNEL, HISTORY.Pending
+INSPECT, STAGE = SELECTED.INSPECT, SELECTED.STAGE
+ATTEMPT_SECONDS = 2 * BACKUP.ATTEMPT_SECONDS + INSPECT.ATTEMPT_SECONDS
+MAX_OUTPUT = SELECTED.MAX_OUTPUT + INSPECT.MAX_OUTPUT + 8192
+
+
+class Incomplete(RuntimeError):
+    \"\"\"Original selection and known listing remain distinct; no retry permission.\"\"\"
+    def __init__(self, cause, selection, listing, cleanup):
+        super().__init__('selected stage listing incomplete; stage retained, no promotion or automatic retry')
+        self.cause, self.selection, self.listing, self.cleanup = cause, selection, listing, cleanup
+
+
+def checked(raw):
+    \"\"\"Historical rendering/type correspondence ONLY, no fresh observer or clock.\"\"\"
+    value = BACKUP.ACCESS.decoded(raw,SELECTED.MAX_OUTPUT)
+    HISTORY.fields(value,'schema state application namespace backup_intention stream stage')
+    app = value['application']
+    if type(value['schema']) is not int or value['schema'] != 1 or value['state'] != 'protected-selected-dump-stage-source-only' or type(app) is not str or app not in PREP.APPLICATIONS or type(value['namespace']) is not int or not 0 < value['namespace'] < 2**64:
+        raise Pending('unsupported historical selected-stage receipt')
+    plan = HISTORY.intention(PREP.canonical(value['backup_intention']))
+    settings = BACKUP.checked(plan['configuration']['value']);job = plan['jobs'][app]
+    stage = INSPECT.checked(PREP.canonical(value['stage']))
+    path = STAGE.TRUST_ROOT/Path(settings['directory']).relative_to('/')
+    if stage['directory'] != str(path) or stage['leaf'] != settings['generation']+'-'+app+'.dump.partial' or stage['limit_bytes'] != settings['archive_limit_bytes'] or plan['namespace'] != value['namespace']:
+        raise Pending('historical selected stage differs from protected job intention')
+    stream = value['stream']
+    HISTORY.fields(stream,'schema state argv namespace executables received_bytes received_sha256 limit_bytes stderr_limit_bytes root_exit stderr_hex')
+    if type(stream['schema']) is not int or stream['schema'] != 1 or stream['state'] != 'dump-stream-receipt-only' or stream['argv'] != job['dump_argv'] or type(stream['namespace']) is not int or stream['namespace'] != value['namespace'] or type(stream['root_exit']) is not int or stream['root_exit'] != 0 or stream['stderr_hex'] != '' or type(stream['stderr_limit_bytes']) is not int or not 1 <= stream['stderr_limit_bytes'] <= SELECTED.DUMP.MAX_STDERR:
+        raise Pending('historical selected dump receipt types or job differ')
+    if type(stream['received_bytes']) is not int or stream['received_bytes'] != stage['bytes'] or stream['received_sha256'] != stage['sha256'] or type(stream['limit_bytes']) is not int or stream['limit_bytes'] != stage['limit_bytes']:
+        raise Pending('historical dump capture and stage bytes differ')
+    rows = stream['executables']
+    if type(rows) is not list or len(rows) != 2 or any(type(row) is not list or len(row) != 8 or any(type(n) is not int for n in row) for row in rows):
+        raise Pending('untyped historical dump executable signatures')
+    if raw != PREP.canonical(value):raise Pending('selected-stage receipt is not canonical')
+    return value
+
+
+def fence(end, context):
+    PREP.fence(end)
+    for kernel in (KERNEL,INSPECT.KERNEL):
+        current = kernel.namespace()
+        if type(current) is not int or current != context:raise Pending('selected inspection namespace changed')
+
+
+def inspect_selected(raw, read=None, listing=None, deadline=None):
+    if read is not None and not callable(read) or listing is not None and not callable(listing):
+        raise Pending('unsupported selected inspection deliveries')
+    start = KERNEL.now()
+    if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):raise Pending('invalid selected inspection inherited deadline')
+    end = min(start+ATTEMPT_SECONDS,deadline) if deadline is not None else start+ATTEMPT_SECONDS
+    context = KERNEL.uint(KERNEL.namespace(),2**64-1)
+    if not context:raise Pending('missing selected inspection context')
+    fence(end,context);value = checked(raw)
+    if value['namespace'] != context:raise Pending('historical selected-stage context differs')
+    original = PREP.canonical(value['backup_intention']);settings = BACKUP.checked(value['backup_intention']['configuration']['value'])
+    job = value['backup_intention']['jobs'][value['application']];stage = value['stage']
+    path = Path(stage['directory']);target = path/stage['leaf']
+    if job['inspection_argv'][0] != str(INSPECT.RESTORE) or job['inspection_environment'] != {'PATH':'/usr/bin:/usr/sbin','LC_ALL':'C'}:
+        raise Pending('selected inspection binary or environment differs from protected intention')
+    listing_receipt, directory = None, None
+    try:
+        fresh,_ = SELECTED.intention(read,end)
+        if fresh != original:raise Pending('complete fresh backup intention differs before listing')
+        fence(end,context)
+        listing_receipt = INSPECT.inspect_stage(PREP.canonical(stage),settings['inventory_limit_bytes'],read=listing,deadline=end)
+        observed = BACKUP.ACCESS.decoded(listing_receipt,INSPECT.MAX_OUTPUT)
+        # The owned library supplies this receipt. Complete typed byte equality
+        # prevents Boolean/int aliasing or a substituted partial receipt.
+        expected = {'schema':1,'state':'private-archive-listing-source-only','stage':stage,
+            'stage_sha256':hashlib.sha256(PREP.canonical(stage)).hexdigest(),'namespace':context,
+            'argv':[str(INSPECT.RESTORE),'--list',str(target)],'executable':observed['executable'],
+            'listing_limit_bytes':settings['inventory_limit_bytes'],'listing_bytes':observed['listing_bytes'],
+            'listing_sha256':observed['listing_sha256'],'listing_hex':observed['listing_hex']}
+        data = HISTORY.hex_bytes(observed['listing_hex'],settings['inventory_limit_bytes'])
+        if not data or type(observed['listing_bytes']) is not int or observed['listing_bytes'] != len(data) or observed['listing_sha256'] != hashlib.sha256(data).hexdigest() or listing_receipt != PREP.canonical(expected):
+            raise Pending('complete selected listing receipt differs')
+        executable = observed['executable']
+        if type(executable) is not list or len(executable) != 8 or any(type(n) is not int for n in executable):raise Pending('untyped selected listing executable')
+        before = tuple(stage['directory_identity'])
+        directory = os.open(path,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
+        STAGE.directory_matches(path,directory,before);fcntl.flock(directory,fcntl.LOCK_SH|fcntl.LOCK_NB)
+        payload = PREP.canonical({'schema':1,'state':'protected-selected-stage-listing-source-only',
+            'namespace':context,'selection':value,'selection_sha256':hashlib.sha256(raw).hexdigest(),
+            'inspection':observed,'inspection_sha256':hashlib.sha256(listing_receipt).hexdigest()})
+        if len(payload)>MAX_OUTPUT:raise Pending('selected listing outer receipt exceeds bound')
+        final,_ = SELECTED.intention(read,end)
+        if final != original:raise Pending('complete fresh backup intention changed after listing')
+        STAGE.readback(directory,stage['leaf'],tuple(stage['identity']),stage['bytes'],stage['sha256'],end)
+        STAGE.directory_matches(path,directory,before)
+        if list(INSPECT.KERNEL.trusted_binary(INSPECT.RESTORE)) != executable:raise Pending('selected inspection executable changed')
+        fence(end,context)
+        closing,directory = directory,None;os.close(closing)
+        return payload
+    except BaseException as cause:
+        cleanup = []
+        if directory is not None:
+            closing,directory = directory,None
+            try:os.close(closing)
+            except BaseException as error:cleanup.append(error)
+        raise Incomplete(cause,raw,listing_receipt,tuple(cleanup)) from cause
+" > "$S4B_STAGE/"lib/postgresql/selected_inspection.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Private historical selected-stage failure custody; NEVER a retry decision.
+
+No stage/dump/source observation is called here. Original intentions, captures,
+exceptions and public hashes are reported/forgeable historical DATA. Known
+receipts are retained as OPAQUE bytes, including rejected receipt spellings;
+none is promoted to archive validity, completion, ownership or publication.
+Separate history failure MUST leave the original Incomplete/Uncertain intact.
+Trusted modules/private ancestry/cooperating locks/finite IO are required;
+equal samples and sync are not atomicity, non-ABA or power-loss guarantees.
+\"\"\"
+import hashlib
+import importlib.util
+from pathlib import Path
+import re
+
+
+def module(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    value = importlib.util.module_from_spec(spec); spec.loader.exec_module(value)
+    return value
+
+
+SELECTED = module('debian13s4_selected_history_source', Path(__file__).with_name('selected_stage.py'))
+_STORAGE = module('debian13s4_selected_history_storage', Path(__file__).with_name('private_storage.py'))
+BACKUP, DUMP, PREP, KERNEL, Pending = SELECTED.BACKUP, SELECTED.DUMP, SELECTED.PREP, SELECTED.KERNEL, SELECTED.Pending
+LEAF = 'selected-stage-incomplete.json'
+STATE = 'historical-selected-stage-incomplete-no-retry'
+MAX_RECORD = 6 * BACKUP.MAX_OUTPUT + 4 * DUMP.MAX_STDERR + 2 * DUMP.MAX_RECEIPT + 2 * SELECTED.STAGE.MAX_RECEIPT + 65536
+MAX_BYTES = 2 * MAX_RECORD + 4096
+
+
+def encoded(value):
+    return PREP.canonical(value)
+
+
+def fields(value, names):
+    KERNEL.known(value, set(names.split()), set(names.split()))
+
+
+def digest(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def hex_bytes(value, limit):
+    if type(value) is not str or len(value) > 2 * limit or len(value) % 2 or re.fullmatch('[0-9a-f]*', value) is None:
+        raise Pending('unsupported historical binary prefix')
+    return bytes.fromhex(value)
+
+
+def diagnostic(value):
+    if type(value) is not list or len(value) != 2 or type(value[0]) is not str or re.fullmatch('[A-Za-z_][A-Za-z0-9_]{0,127}',value[0]) is None or type(value[1]) is not str or len(value[1]) > 1024:
+        raise Pending('unsupported historical failure diagnostic')
+    value[1].encode('utf-8')
+
+
+def diagnostics(values):
+    if type(values) is not list or len(values) > 16:raise Pending('historical diagnostic inventory exceeds bound')
+    for value in values:diagnostic(value)
+
+
+def describe(error):
+    if not isinstance(error,BaseException):raise Pending('historical failure is not an exception')
+    row = [type(error).__name__,str(error)[:1024]];diagnostic(row);return row
+
+
+def chain(error):
+    rows, seen = [], set()
+    while error is not None:
+        if id(error) in seen or len(rows) == 16:raise Pending('cyclic or excessive historical cause chain')
+        seen.add(id(error));rows.append(describe(error))
+        error = error.__cause__ if error.__cause__ is not None else (None if error.__suppress_context__ else error.__context__)
+    return rows
+
+
+def intention(raw):
+    \"\"\"Re-render historical jobs/PG plan; preserve access/account facts as DATA.\"\"\"
+    value = BACKUP.ACCESS.decoded(raw,BACKUP.MAX_OUTPUT)
+    fields(value,'schema profile state namespace configuration source_intention enrollment access jobs')
+    if type(value['schema']) is not int or value['schema'] != 1 or value['profile'] != 'postgresql17-selected-logical-backup-intention-v1' or value['state'] != 'postgresql-logical-backup-intention-only' or type(value['namespace']) is not int or not 0 < value['namespace'] < 2**64:
+        raise Pending('unsupported historical selected backup intention')
+    fields(value['configuration'],'value source');settings = BACKUP.checked(value['configuration']['value'])
+    source = value['source_intention']
+    fields(source,'schema profile state namespace configuration account_source accounts plan')
+    fields(source['configuration'],'value source')
+    deployment = PREP.checked(source['configuration']['value'])
+    if type(source['schema']) is not int or source['schema'] != 1 or source['namespace'] != value['namespace'] or type(source['namespace']) is not int or source['profile'] != 'postgresql17-local-peer-new-cluster-intention-v1' or source['state'] != 'local-peer-provisioning-intention-only' or encoded(source['plan']) != encoded(PREP.render(deployment)) or encoded(value['jobs']) != encoded(BACKUP.render(settings,source)) or raw != encoded(value):
+        raise Pending('historical protected intention rendering or encoding differs')
+    return value
+
+
+def evidence(value, plan, application, stderr_limit):
+    if type(value) is not list or len(value) != 9:raise Pending('unsupported historical dump capture')
+    argv, context, executables, count, sha, stderr, code, started, closed = value
+    job = plan['jobs'][application];settings = plan['configuration']['value']
+    if type(argv) is not list or argv != job['dump_argv'] or type(count) is not int or not 0 <= count <= settings['archive_limit_bytes'] + 1 or type(sha) is not str or re.fullmatch('[0-9a-f]{64}',sha) is None or type(started) is not bool or closed is not True or (code is not None and (type(code) is not int or not -(1<<31) <= code < (1<<31))):
+        raise Pending('historical dump capture types or job differ')
+    hex_bytes(stderr,stderr_limit+1)
+    if context is not None and (type(context) is not int or context != plan['namespace']):raise Pending('historical dump context differs')
+    if executables is not None:
+        if type(executables) is not list or len(executables) != 2:raise Pending('unsupported historical executable inventory')
+        for row in executables:
+            if type(row) is not list or len(row) != 8 or any(type(n) is not int for n in row):raise Pending('untyped historical executable signature')
+    if started and (context is None or executables is None):raise Pending('entered dump lacks reported source identity')
+    if not started and (count or stderr or code is not None):raise Pending('pre-entry capture reports produced bytes or exit')
+    if count == 0 and sha != digest(b''):raise Pending('empty received prefix hash differs')
+
+
+def checked(raw):
+    value = BACKUP.ACCESS.decoded(raw,MAX_RECORD)
+    fields(value,'schema state intention intention_sha256 application stderr_limit_bytes cause cleanup capture uncertainty stream_receipt_hex stage_receipt_hex')
+    if value['schema'] != 'debian13s4-selected-stage-incomplete-1' or value['state'] != STATE or type(value['intention']) is not str or type(value['application']) is not str or value['application'] not in PREP.APPLICATIONS or type(value['stderr_limit_bytes']) is not int or not 1 <= value['stderr_limit_bytes'] <= DUMP.MAX_STDERR:
+        raise Pending('unsupported selected-stage history schema or bounds')
+    original = value['intention'].encode('utf-8');plan = intention(original)
+    if value['intention_sha256'] != digest(original):raise Pending('historical intention hash differs')
+    diagnostics(value['cause']);diagnostics(value['cleanup'])
+    if not value['cause']:raise Pending('missing historical original failure')
+    evidence(value['capture'],plan,value['application'],value['stderr_limit_bytes'])
+    uncertain = value['uncertainty']
+    if uncertain is not None:
+        fields(uncertain,'cause cleanup capture');diagnostics(uncertain['cause']);diagnostics(uncertain['cleanup'])
+        if not uncertain['cause']:raise Pending('missing uncertainty cause')
+        evidence(uncertain['capture'],plan,value['application'],value['stderr_limit_bytes'])
+    for field,maximum in (('stream_receipt_hex',DUMP.MAX_RECEIPT),('stage_receipt_hex',SELECTED.STAGE.MAX_RECEIPT)):
+        if value[field] is not None:hex_bytes(value[field],maximum)
+    if raw != encoded(value):raise Pending('historical selected-stage bytes are not canonical')
+    return value
+
+
+def copy_capture(row):
+    if type(row) is not tuple or len(row) != 9 or type(row[0]) is not tuple or type(row[5]) is not bytes or (row[2] is not None and (type(row[2]) is not tuple or any(type(item) is not tuple for item in row[2]))):
+        raise Pending('unsupported immutable selected dump evidence')
+    if len(row[0]) != 16 or any(type(item) is not str or len(item) > 512 for item in row[0]) or (row[2] is not None and (len(row[2]) != 2 or any(len(item) != 8 for item in row[2]))):
+        raise Pending('historical capture inventory exceeds bound')
+    if len(row[5]) > DUMP.MAX_STDERR+1:raise Pending('historical warning prefix exceeds bound')
+    return [list(row[0]),row[1],None if row[2] is None else [list(item) for item in row[2]],row[3],row[4],row[5].hex(),row[6],row[7],row[8]]
+
+
+def capture(error):
+    if type(error) is not SELECTED.Incomplete or type(error.provenance) is not tuple or len(error.provenance) != 4 or type(error.cleanup) is not tuple or len(error.cleanup) > 16:
+        raise Pending('exact selected-stage incomplete delivery is required')
+    original, app, stderr_limit, row = error.provenance
+    intention(original)
+    receipts = []
+    for raw, maximum in ((error.stream_receipt,DUMP.MAX_RECEIPT),(error.stage_receipt,SELECTED.STAGE.MAX_RECEIPT)):
+        if raw is not None and (type(raw) is not bytes or len(raw) > maximum):raise Pending('known opaque receipt exceeds bound')
+        receipts.append(None if raw is None else raw.hex())
+    uncertain = error.uncertainty
+    if uncertain is not None:
+        if type(uncertain) is not DUMP.Uncertain or type(uncertain.cleanup) is not tuple or len(uncertain.cleanup) > 16:raise Pending('unsupported original selected dump uncertainty')
+        uncertain = {'cause':chain(uncertain.cause),'cleanup':[describe(e) for e in uncertain.cleanup],'capture':copy_capture(uncertain.evidence)}
+    raw = encoded({'schema':'debian13s4-selected-stage-incomplete-1','state':STATE,
+        'intention':original.decode('utf-8'),'intention_sha256':digest(original),'application':app,'stderr_limit_bytes':stderr_limit,
+        'cause':chain(error.cause),'cleanup':[describe(e) for e in error.cleanup],'capture':copy_capture(row),
+        'uncertainty':uncertain,'stream_receipt_hex':receipts[0],'stage_receipt_hex':receipts[1]})
+    checked(raw);return raw
+
+
+def envelope(payload):
+    checked(payload)
+    raw = encoded({'schema':'debian13s4-selected-stage-incomplete-history-1','state':STATE,
+        'payload':payload.decode('utf-8'),'payload_sha256':digest(payload)})
+    if len(raw)>MAX_BYTES:raise Pending('selected-stage history envelope exceeds bound')
+    return raw
+
+
+def stored(raw):
+    value = BACKUP.ACCESS.decoded(raw,MAX_BYTES);fields(value,'schema state payload payload_sha256')
+    if value['schema'] != 'debian13s4-selected-stage-incomplete-history-1' or value['state'] != STATE or type(value['payload']) is not str:raise Pending('unsupported selected-stage history envelope')
+    payload = value['payload'].encode('utf-8');checked(payload)
+    if value['payload_sha256'] != digest(payload) or raw != encoded(value):raise Pending('selected-stage history envelope differs')
+    return payload
+
+
+_STORAGE.LEAF, _STORAGE.MAX_BYTES, _STORAGE.envelope, _STORAGE.checked = LEAF, MAX_BYTES, envelope, stored
+
+
+def record(path, error, deadline=None):
+    \"\"\"Storage errors propagate separately; they NEVER discharge original failure.\"\"\"
+    end = _STORAGE.window(deadline);raw = capture(error);_STORAGE.admission(end)
+    return _STORAGE.create(path,raw,deadline=end)
+
+
+def load(path, deadline=None):
+    return _STORAGE.load(path,deadline=deadline)
+" > "$S4B_STAGE/"lib/postgresql/selected_uncertainty.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Retain whole selected-stage/listing SOURCE correspondence in private history.
+
+This is a historical source manifest, NEVER completed/valid backup metadata or
+promotion, restore, retry, ownership, native-origin or readiness authority.
+No native/source observer/default directory/CLI/controller is called. Whole
+reported receipts and public hashes/generation may be forged. Existing private
+storage requires honest ancestry/modules/cooperating locks/finite IO; sync and
+sequential equal samples are not atomicity/non-ABA/physical persistence proof.
+\"\"\"
+import hashlib
+import importlib.util
+from pathlib import Path
+import stat
+
+
+def module(name,path):
+    spec=importlib.util.spec_from_file_location(name,path)
+    value=importlib.util.module_from_spec(spec);spec.loader.exec_module(value);return value
+
+
+LISTING=module('debian13s4_stage_manifest_listing',Path(__file__).with_name('selected_inspection.py'))
+_STORAGE=module('debian13s4_stage_manifest_storage',Path(__file__).with_name('private_storage.py'))
+HISTORY, PREP, KERNEL, Pending=LISTING.HISTORY,LISTING.PREP,LISTING.KERNEL,LISTING.Pending
+LEAF='selected-stage-manifest.json'
+STATE='historical-selected-listing-manifest-only'
+MAX_RECORD=2*LISTING.MAX_OUTPUT+4096
+MAX_BYTES=2*MAX_RECORD+4096
+
+
+def encoded(value):return PREP.canonical(value)
+
+
+def digest(raw):return hashlib.sha256(raw).hexdigest()
+
+
+def listing_checked(raw):
+    \"\"\"Recompute typed correspondence; never observe current state or re-list.\"\"\"
+    value=LISTING.BACKUP.ACCESS.decoded(raw,LISTING.MAX_OUTPUT)
+    HISTORY.fields(value,'schema state namespace selection selection_sha256 inspection inspection_sha256')
+    if type(value['schema']) is not int or value['schema']!=1 or value['state']!='protected-selected-stage-listing-source-only' or type(value['namespace']) is not int or not 0<value['namespace']<2**64:
+        raise Pending('unsupported historical selected listing profile')
+    selection=encoded(value['selection']);selected=LISTING.checked(selection)
+    plan=selected['backup_intention'];app=selected['application'];settings=LISTING.BACKUP.checked(plan['configuration']['value'])
+    observed=value['inspection']
+    HISTORY.fields(observed,'schema state stage stage_sha256 namespace argv executable listing_limit_bytes listing_bytes listing_sha256 listing_hex')
+    stage=selected['stage'];stage_raw=encoded(stage)
+    data=HISTORY.hex_bytes(observed['listing_hex'],settings['inventory_limit_bytes'])
+    expected={'schema':1,'state':'private-archive-listing-source-only','stage':stage,'stage_sha256':digest(stage_raw),
+        'namespace':selected['namespace'],'argv':[str(LISTING.INSPECT.RESTORE),'--list',str(Path(stage['directory'])/stage['leaf'])],
+        'executable':observed['executable'],'listing_limit_bytes':settings['inventory_limit_bytes'],
+        'listing_bytes':len(data),'listing_sha256':digest(data),'listing_hex':data.hex()}
+    row=observed['executable']
+    if type(row) is not list or len(row)!=8 or any(type(item) is not int for item in row):raise Pending('untyped historical listing executable')
+    if any(item<0 for item in row[:6]) or not row[1] or not stat.S_ISREG(row[2]) or not row[2]&0o100 or row[2]&0o022 or row[3]!=LISTING.INSPECT.KERNEL.TRUSTED_UID:
+        raise Pending('unsupported reported listing executable kind/owner/mode')
+    if not data or value['namespace']!=selected['namespace'] or encoded(observed)!=encoded(expected) or value['selection_sha256']!=digest(selection) or value['inspection_sha256']!=digest(encoded(observed)) or raw!=encoded(value):
+        raise Pending('whole historical selected listing correspondence differs')
+    return value
+
+
+def capture(raw):
+    value=listing_checked(raw);selected=value['selection'];settings=selected['backup_intention']['configuration']['value']
+    payload=encoded({'schema':'debian13s4-selected-stage-source-manifest-1','state':STATE,
+        'application':selected['application'],'generation':settings['generation'],
+        'selected_listing':raw.decode('utf-8'),'selected_listing_sha256':digest(raw)})
+    checked(payload);return payload
+
+
+def checked(raw):
+    value=LISTING.BACKUP.ACCESS.decoded(raw,MAX_RECORD)
+    HISTORY.fields(value,'schema state application generation selected_listing selected_listing_sha256')
+    if value['schema']!='debian13s4-selected-stage-source-manifest-1' or value['state']!=STATE or type(value['selected_listing']) is not str:
+        raise Pending('unsupported selected-stage source manifest')
+    payload=value['selected_listing'].encode('utf-8');source=listing_checked(payload);selected=source['selection']
+    if type(value['application']) is not str or value['application']!=selected['application'] or value['generation']!=selected['backup_intention']['configuration']['value']['generation'] or value['selected_listing_sha256']!=digest(payload) or raw!=encoded(value):
+        raise Pending('historical source manifest label/integrity differs')
+    return value
+
+
+def envelope(payload):
+    checked(payload)
+    raw=encoded({'schema':'debian13s4-selected-stage-source-manifest-history-1','state':STATE,
+        'payload':payload.decode('utf-8'),'payload_sha256':digest(payload)})
+    if len(raw)>MAX_BYTES:raise Pending('historical source manifest envelope exceeds bound')
+    return raw
+
+
+def stored(raw):
+    value=LISTING.BACKUP.ACCESS.decoded(raw,MAX_BYTES);HISTORY.fields(value,'schema state payload payload_sha256')
+    if value['schema']!='debian13s4-selected-stage-source-manifest-history-1' or value['state']!=STATE or type(value['payload']) is not str:raise Pending('unsupported source manifest history envelope')
+    payload=value['payload'].encode('utf-8');checked(payload)
+    if value['payload_sha256']!=digest(payload) or raw!=encoded(value):raise Pending('source manifest envelope differs')
+    return payload
+
+
+_STORAGE.LEAF,_STORAGE.MAX_BYTES,_STORAGE.envelope,_STORAGE.checked=LEAF,MAX_BYTES,envelope,stored
+
+
+def record(path,listing,deadline=None):
+    \"\"\"No-replace historical storage; failure may leave bytes, never retry authority.\"\"\"
+    end=_STORAGE.window(deadline);payload=capture(listing);_STORAGE.admission(end)
+    return _STORAGE.create(path,payload,deadline=end)
+
+
+def load(path,deadline=None):return _STORAGE.load(path,deadline=deadline)
+" > "$S4B_STAGE/"lib/postgresql/stage_manifest.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"One create-only private backup-attempt slot; no reset or retry authority.
+
+Every existing target blocks, including identical or partially written data.
+Acquired files remain on failures. Public random correlation is not a credential,
+registration/globaldedup/ownership/native completion or physical persistence.
+Honest modules/private ancestry/cooperating locks/finite IO are required.
+\"\"\"
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import secrets
+
+SPEC=importlib.util.spec_from_file_location('debian13s4_backup_attempt_storage',Path(__file__).with_name('private_storage.py'))
+_STORAGE=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(_STORAGE)
+KERNEL,Pending=_STORAGE.KERNEL,_STORAGE.Pending
+LEAF='selected-backup-attempt.json'
+MAX_BYTES=4096
+APPLICATIONS=('mk8.dns','mk8.email')
+
+
+class Blocked(RuntimeError):
+    \"\"\"The attempt slot remains closed even if acquisition or sync failed.\"\"\"
+
+
+def encoded(value):
+    return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False,allow_nan=False).encode('utf-8')+b'\\n'
+
+
+def checked(raw):
+    value=_STORAGE.decoded(raw,MAX_BYTES)
+    fields={'schema','state','namespace','application','correlation_id'}
+    KERNEL.known(value,fields,fields)
+    if value['schema']!='debian13s4-selected-backup-attempt-1' or value['state']!='backup-attempt-reserved-no-retry' or type(value['namespace']) is not int or not 0<value['namespace']<2**64 or type(value['application']) is not str or value['application'] not in APPLICATIONS or type(value['correlation_id']) is not str or re.fullmatch('[0-9a-f]{64}',value['correlation_id']) is None or value['correlation_id']=='0'*64 or raw!=encoded(value):
+        raise Pending('unsupported historical backup attempt slot')
+    return raw
+
+
+def envelope(application,namespace):
+    if type(application) is not str or application not in APPLICATIONS or type(namespace) is not int or not 0<namespace<2**64:raise Pending('unsupported backup attempt selector/context')
+    marker=secrets.token_hex(32)
+    raw=encoded({'schema':'debian13s4-selected-backup-attempt-1','state':'backup-attempt-reserved-no-retry','namespace':namespace,'application':application,'correlation_id':marker})
+    checked(raw);return raw
+
+
+_STORAGE.LEAF,_STORAGE.MAX_BYTES,_STORAGE.checked=LEAF,MAX_BYTES,checked
+
+
+def reserve(path, application, namespace, deadline=None):
+    \"\"\"Exclusive reservation; NEVER treat an identical existing record as success.\"\"\"
+    end = _STORAGE.window(deadline)
+    raw = envelope(application, namespace)
+    _STORAGE.admission(end)
+    directory, before = _STORAGE.locked(path, end)
+    fd, acquired = None, False
+    try:
+        try:
+            fd = os.open(LEAF, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC,
+                         0o600, dir_fd=directory)
+            acquired = True
+            os.fchmod(fd, 0o600)
+            identity = _STORAGE.file_identity(os.fstat(fd))
+            if identity[0] != before[0] or identity != _STORAGE.file_identity(os.stat(LEAF, dir_fd=directory, follow_symlinks=False)):
+                raise Pending('backup reservation descriptor or path disagrees')
+            offset = 0
+            while offset < len(raw):
+                _STORAGE.admission(end)
+                count = os.write(fd, raw[offset:])
+                if type(count) is not int or not 0 < count <= len(raw) - offset:
+                    raise Pending('backup reservation write did not advance')
+                offset += count
+            os.fsync(fd)
+            identity = _STORAGE.file_identity(os.fstat(fd))
+            if identity != _STORAGE.file_identity(os.stat(LEAF, dir_fd=directory, follow_symlinks=False)):
+                raise Pending('backup reservation changed during write')
+            _STORAGE.directory_matches(path, directory, before)
+            _STORAGE.admission(end)
+            closing, fd = fd, None
+            os.close(closing)  # retire ownership before its ONE checked close
+            os.fsync(directory)
+            if checked(_STORAGE.read_at(directory, end)) != raw or \\
+                    _STORAGE.file_identity(os.stat(LEAF, dir_fd=directory, follow_symlinks=False)) != identity:
+                raise Pending('backup reservation readback or identity disagrees')
+            _STORAGE.directory_matches(path, directory, before)
+            _STORAGE.admission(end)
+            return raw
+        finally:
+            try:
+                if fd is not None:
+                    closing, fd = fd, None
+                    os.close(closing)
+            finally:
+                os.close(directory)
+    except FileExistsError as error:
+        raise Blocked('backup attempt slot already exists; no automatic retry') from error
+    except BaseException as error:
+        if acquired:
+            raise Blocked('backup reservation may be visible; no automatic retry') from error
+        raise
+
+
+def load(path,deadline=None):return _STORAGE.load(path,deadline=deadline)
+" > "$S4B_STAGE/"lib/postgresql/backup_attempt.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"One reserved selected-stage/listing/history SOURCE attempt; no host authority.
+
+Default calls WOULD protected-read/connect PG/run dump/createpartial/list/store;
+real-host calling remains unauthorized. No archive validity/completeness, final
+backup, publication, restore, native recovery, reset or retry is supplied. Slots
+are per-directory/cooperating history, not authenticated/global deduplication.
+Sequential locks/reads/public hashes/markers are non-atomic/ABA/future; finite IO,
+scheduling, honest modules/native delivery/private ancestry are assumed.
+\"\"\"
+import fcntl
+import importlib.util
+import os
+from pathlib import Path
+
+
+def module(name,leaf):
+    spec=importlib.util.spec_from_file_location(name,Path(__file__).with_name(leaf))
+    value=importlib.util.module_from_spec(spec);spec.loader.exec_module(value);return value
+
+
+MANIFEST=module('debian13s4_backup_lifecycle_manifest','stage_manifest.py')
+ATTEMPT=module('debian13s4_backup_lifecycle_attempt','backup_attempt.py')
+LISTING=MANIFEST.LISTING
+UNCERTAINTY=LISTING.HISTORY
+SELECTED=UNCERTAINTY.SELECTED # EXACT class consumed by historical uncertainty capture.
+BACKUP,PREP,KERNEL,Pending=LISTING.BACKUP,LISTING.PREP,LISTING.KERNEL,LISTING.Pending
+STAGE=SELECTED.STAGE
+ATTEMPT_SECONDS=SELECTED.ATTEMPT_SECONDS+LISTING.ATTEMPT_SECONDS+BACKUP.ATTEMPT_SECONDS+30
+MAX_OUTPUT=SELECTED.MAX_OUTPUT+LISTING.MAX_OUTPUT+MANIFEST.MAX_RECORD+ATTEMPT.MAX_BYTES+8192
+
+
+class Blocked(RuntimeError):
+    \"\"\"Keep original cause, known source outcomes and separate history/cleanup.\"\"\"
+    def __init__(self,cause,reservation,selection,listing,manifest,history_error,cleanup):
+        super().__init__('backup SOURCE attempt incomplete; reserved slot forbids automatic retry')
+        self.cause,self.reservation,self.selection=cause,reservation,selection
+        self.listing,self.manifest,self.history_error,self.cleanup=listing,manifest,history_error,cleanup
+
+
+def admission(end,context):LISTING.fence(end,context)
+
+
+def outcomes_absent(path,end):
+    backend=ATTEMPT._STORAGE;until=backend.window(end);directory,before=backend.locked(path,until)
+    try:
+        for leaf in (MANIFEST.LEAF,UNCERTAINTY.LEAF):
+            backend.admission(until)
+            try:os.stat(leaf,dir_fd=directory,follow_symlinks=False)
+            except FileNotFoundError:continue
+            raise Pending('existing backup outcome history forbids another attempt')
+        backend.directory_matches(path,directory,before);backend.admission(until)
+    finally:os.close(directory)
+
+
+def run_once(path,application,stderr_limit,read=None,listing=None,deadline=None):
+    if type(application) is not str or application not in PREP.APPLICATIONS or type(stderr_limit) is not int or not 1<=stderr_limit<=SELECTED.DUMP.MAX_STDERR or read is not None and not callable(read) or listing is not None and not callable(listing):
+        raise Pending('unsupported explicit backup lifecycle selector/bounds/deliveries')
+    start=KERNEL.now()
+    if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline<=start):raise Pending('invalid backup lifecycle inherited deadline')
+    end=min(start+ATTEMPT_SECONDS,deadline) if deadline is not None else start+ATTEMPT_SECONDS
+    context=KERNEL.uint(KERNEL.namespace(),2**64-1)
+    if not context:raise Pending('missing backup lifecycle context')
+    query=BACKUP.ACCESS.LIVE.native if read is None else read
+    inspect=LISTING.INSPECT.native if listing is None else listing
+    def delivered(operation,*args):
+        window=args[-1]
+        if not KERNEL.finite_deadline(window) or window>end:raise Pending('backup delivery exceeds inherited window')
+        admission(end,context);PREP.fence(window)
+        raw=operation(*args)
+        PREP.fence(window);admission(end,context)
+        return raw
+    def capture(kind,window):return delivered(query,kind,window)
+    def list_stage(archive,maximum,window):return delivered(inspect,archive,maximum,window)
+    admission(end,context);outcomes_absent(path,end)
+    reservation=ATTEMPT.reserve(path,application,context,deadline=end)
+    selected,listed,manifest,directory=None,None,None,None
+    try:
+        outcomes_absent(path,end)
+        if ATTEMPT.load(path,deadline=end)!=reservation:raise Pending('backup attempt changed before fresh stage')
+        admission(end,context)
+        selected=SELECTED.stage_selected(application,stderr_limit,read=capture,deadline=end)
+        outcomes_absent(path,end)
+        if ATTEMPT.load(path,deadline=end)!=reservation:raise Pending('backup attempt changed before listing')
+        admission(end,context)
+        listed=LISTING.inspect_selected(selected,read=capture,listing=list_stage,deadline=end)
+        outcomes_absent(path,end)
+        manifest=MANIFEST.record(path,listed,deadline=end)
+        stage=LISTING.checked(selected)['stage'];result=MANIFEST.listing_checked(listed)
+        original=PREP.canonical(result['selection']['backup_intention'])
+        archive=Path(stage['directory']);before=tuple(stage['directory_identity'])
+        directory=os.open(archive,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
+        STAGE.directory_matches(archive,directory,before);fcntl.flock(directory,fcntl.LOCK_SH|fcntl.LOCK_NB)
+        payload=PREP.canonical({'schema':1,'state':'single-attempt-selected-backup-source-only','namespace':context,
+            'application':application,'reservation':BACKUP.ACCESS.decoded(reservation,ATTEMPT.MAX_BYTES),
+            'selection':result['selection'],'listing':result,'manifest':MANIFEST.checked(manifest)})
+        if len(payload)>MAX_OUTPUT:raise Pending('backup lifecycle SOURCE result exceeds bound')
+        final,_=SELECTED.intention(capture,end)
+        if final!=original:raise Pending('complete protected backup intention changed after history')
+        STAGE.readback(directory,stage['leaf'],tuple(stage['identity']),stage['bytes'],stage['sha256'],end)
+        STAGE.directory_matches(archive,directory,before)
+        if list(LISTING.INSPECT.KERNEL.trusted_binary(LISTING.INSPECT.RESTORE))!=result['inspection']['executable'] or [list(SELECTED.DUMP.KERNEL.trusted_binary(p)) for p in (SELECTED.DUMP.RUNUSER,SELECTED.DUMP.DUMP)]!=result['selection']['stream']['executables']:
+            raise Pending('backup executable identities changed after history')
+        if ATTEMPT.load(path,deadline=end)!=reservation or MANIFEST.load(path,deadline=end)!=manifest:raise Pending('checked backup attempt/outcome history changed')
+        admission(end,context)
+        closing,directory=directory,None;os.close(closing)
+        return payload
+    except BaseException as cause:
+        cleanup=[]
+        if directory is not None:
+            closing,directory=directory,None
+            try:os.close(closing)
+            except BaseException as error:cleanup.append(error)
+        history_error=None
+        if type(cause) is SELECTED.Incomplete:
+            try:UNCERTAINTY.record(path,cause,deadline=end)
+            except BaseException as failure:history_error=failure
+        raise Blocked(cause,reservation,selected,listed,manifest,history_error,tuple(cleanup)) from cause
+" > "$S4B_STAGE/"lib/postgresql/backup_lifecycle.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Private historical storage shared by the PostgreSQL backup record schemas.
+
+The bounded filesystem operations are retained from Firewall/proposal_store.py.
+This module owns only Kernel utilities, without the firewall compiler/observer
+import graph. Each owning record module loads an isolated instance and supplies
+its exact leaf, byte cap, envelope and checker. Unbound schemas always refuse.
+
+History remains historical: resync/link recovery does not authorize a dump,
+retry, reset or publication. Honest ancestry, cooperating locks and finite IO
+are required. Sync success is not physical persistence or crash completeness.
+\"\"\"
+import fcntl
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import secrets
+import stat
+
+ROOT = Path(__file__).resolve().parents[1]
+KERNEL_PATH = ROOT/'firewall/kernel.py'
+if not KERNEL_PATH.is_file():
+    KERNEL_PATH = ROOT/'Firewall/kernel.py'
+SPEC = importlib.util.spec_from_file_location('debian13s4_backup_storage_kernel', KERNEL_PATH)
+KERNEL = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(KERNEL)
+Pending = KERNEL.Pending
+TRUST_ROOT = Path('/')
+TRUSTED_UID = 0
+LEAF = ''
+MAX_BYTES = 0
+ATTEMPT_SECONDS = 10
+
+
+def intent(raw):
+    raise Pending('no backup history schema is bound to this operation')
+
+
+def envelope(payload):
+    raise Pending('no backup history envelope is bound')
+
+
+def checked(raw):
+    raise Pending('no backup history checker is bound')
+
+
+def admission(end):
+    if not KERNEL.finite_deadline(end) or KERNEL.now() >= end:
+        raise Pending('proposal storage window expired or invalid')
+
+
+def window(deadline):
+    start = KERNEL.now()
+    if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):
+        raise Pending('invalid proposal storage deadline')
+    return min(deadline, start + ATTEMPT_SECONDS) if deadline is not None else start + ATTEMPT_SECONDS
+
+
+def decoded(raw, limit):
+    if type(raw) is not bytes or not raw or len(raw) > limit:
+        raise Pending('invalid proposal byte delivery')
+    try:
+        value = json.loads(raw.decode('utf-8'), object_pairs_hook=KERNEL.unique_object,
+                           parse_constant=lambda text: (_ for _ in ()).throw(Pending('nonfinite proposal JSON')))
+        return value
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid proposal JSON') from error
+
+
+def directory_identity(path):
+    if not isinstance(path, Path) or not path.is_absolute() or os.path.normpath(str(path)) != str(path):
+        raise Pending('noncanonical proposal directory')
+    path.relative_to(TRUST_ROOT)
+    current, leaf = path, None
+    while True:
+        info = current.lstat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid != TRUSTED_UID or info.st_mode & 0o022:
+            raise Pending('untrusted proposal directory or ancestry')
+        identity = (info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid)
+        if current == path:
+            if stat.S_IMODE(info.st_mode) != 0o700:raise Pending('proposal directory is not private')
+            leaf = identity
+        if current == TRUST_ROOT:return leaf
+        current = current.parent
+
+
+def directory_matches(path, fd, before):
+    info = os.fstat(fd)
+    if (info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid) != before or directory_identity(path) != before:
+        raise Pending('proposal directory descriptor or path changed')
+
+
+def file_identity(info, links=1):
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != TRUSTED_UID or \\
+            stat.S_IMODE(info.st_mode) != 0o600 or info.st_nlink != links:
+        raise Pending('untrusted proposal leaf kind, owner, mode or links')
+    return KERNEL.signature(info) + (info.st_nlink,)
+
+
+def read_at(directory, end, sync=False, links=1):
+    admission(end)
+    before = file_identity(os.stat(LEAF, dir_fd=directory, follow_symlinks=False), links)
+    if before[0] != os.fstat(directory).st_dev:raise Pending('proposal leaf device disagrees')
+    fd = os.open(LEAF, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=directory)
+    try:
+        if file_identity(os.fstat(fd), links) != before:raise Pending('proposal leaf descriptor changed')
+        data = bytearray()
+        while True:
+            admission(end)
+            part = os.read(fd, min(65536, MAX_BYTES + 1 - len(data)))
+            if not part:break
+            data.extend(part)
+            if len(data) > MAX_BYTES:raise Pending('proposal leaf exceeds bound')
+        if sync:os.fsync(fd)
+        if file_identity(os.fstat(fd), links) != before or \\
+                file_identity(os.stat(LEAF, dir_fd=directory, follow_symlinks=False), links) != before:
+            raise Pending('proposal leaf changed during read')
+        admission(end)
+        return bytes(data)
+    finally:
+        os.close(fd)
+
+
+def locked(path, end):
+    admission(end)
+    before = directory_identity(path)
+    fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    try:
+        directory_matches(path, fd, before)
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        directory_matches(path, fd, before);admission(end)
+        return fd, before
+    except BaseException:
+        os.close(fd);raise
+
+
+def load(path, deadline=None):
+    end = window(deadline)
+    directory, before = locked(path, end)
+    try:
+        payload = checked(read_at(directory, end))
+        directory_matches(path, directory, before);admission(end)
+        return payload
+    finally:
+        os.close(directory)
+
+
+def reconcile_link(path, directory, before, payload, end):
+    try:
+        info = os.stat(LEAF, dir_fd=directory, follow_symlinks=False)
+    except FileNotFoundError:return
+    if info.st_nlink != 2:return
+    identity = file_identity(info, 2)
+    if checked(read_at(directory, end, sync=True, links=2)) != payload:
+        raise Pending('linked history belongs to a different proposal')
+    matches = []
+    with os.scandir(directory) as entries:
+        for count, entry in enumerate(entries, 1):
+            admission(end)
+            if count > 32:raise Pending('proposal staging inventory exceeds recovery bound')
+            if re.fullmatch(r'\\.proposal-[0-9a-f]{32}', entry.name):
+                stage = os.stat(entry.name, dir_fd=directory, follow_symlinks=False)
+                if (stage.st_dev, stage.st_ino) == identity[:2]:
+                    if file_identity(stage, 2) != identity:raise Pending('proposal staging link changed')
+                    matches.append(entry.name)
+    if len(matches) != 1:raise Pending('linked proposal lacks one positively identified private staging name')
+    directory_matches(path, directory, before);admission(end)
+    if file_identity(os.stat(LEAF, dir_fd=directory, follow_symlinks=False), 2) != identity or \\
+            file_identity(os.stat(matches[0], dir_fd=directory, follow_symlinks=False), 2) != identity:
+        raise Pending('proposal links changed before reconciliation')
+    os.unlink(matches[0], dir_fd=directory)
+    os.fsync(directory)
+    directory_matches(path, directory, before);admission(end)
+
+
+def staging_identity(info):
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != TRUSTED_UID:
+        raise Pending('untrusted acquired staging descriptor or path')
+    return info.st_dev, info.st_ino, info.st_uid, info.st_gid
+
+
+def create(path, payload, deadline=None):
+    end = window(deadline)
+    raw = envelope(payload);admission(end)
+    directory, before = locked(path, end)
+    temporary, owned, fd = None, None, None
+    try:
+        reconcile_link(path, directory, before, payload, end)
+        try:
+            current = read_at(directory, end, sync=True)
+        except FileNotFoundError:
+            current = None
+        if current is not None:
+            if checked(current) != payload:raise Pending('a different historical proposal already exists')
+            os.fsync(directory);directory_matches(path, directory, before);admission(end)
+            return payload
+        candidate = '.proposal-' + secrets.token_hex(16)
+        fd = os.open(candidate, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC,
+                     0o600, dir_fd=directory)
+        owned = staging_identity(os.fstat(fd))
+        if owned[0] != before[0]:raise Pending('acquired staging device disagrees')
+        temporary = candidate
+        os.fchmod(fd, 0o600)
+        offset = 0
+        while offset < len(raw):
+            admission(end)
+            count = os.write(fd, raw[offset:])
+            if type(count) is not int or not 0 < count <= len(raw) - offset:
+                raise Pending('proposal write did not advance')
+            offset += count
+        os.fsync(fd)
+        identity = file_identity(os.fstat(fd))
+        if identity != file_identity(os.stat(temporary, dir_fd=directory, follow_symlinks=False)):
+            raise Pending('proposal staging descriptor or path changed')
+        directory_matches(path, directory, before);admission(end)
+        os.link(temporary, LEAF, src_dir_fd=directory, dst_dir_fd=directory, follow_symlinks=False)
+        os.unlink(temporary, dir_fd=directory);temporary = None
+        closing, fd = fd, None
+        os.close(closing)
+        os.fsync(directory)
+        result = checked(read_at(directory, end))
+        if result != payload:raise Pending('published proposal differs from the intended bytes')
+        directory_matches(path, directory, before);admission(end)
+        return result
+    finally:
+        try:
+            if temporary is not None:
+                directory_matches(path, directory, before)
+                if staging_identity(os.fstat(fd)) != owned or \\
+                        staging_identity(os.stat(temporary, dir_fd=directory, follow_symlinks=False)) != owned:
+                    raise Pending('owned staging identity changed before cleanup')
+                os.unlink(temporary, dir_fd=directory)
+        finally:
+            try:
+                if fd is not None:
+                    closing, fd = fd, None
+                    os.close(closing)
+            finally:
+                os.close(directory)
+" > "$S4B_STAGE/"lib/postgresql/private_storage.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Inspect one existing private backup history directory without native work.
+
+All states describe retained history only. No state authorizes retry, proves a
+valid/completed backup, inspects a database/archive, or promotes/deletes a file.
+\"\"\"
+import argparse
+import hashlib
+import importlib.util
+import os
+from pathlib import Path
+import sys
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_backup_status_lifecycle',
+    Path(__file__).resolve().with_name('backup_lifecycle.py'))
+LIFECYCLE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(LIFECYCLE)
+Pending = LIFECYCLE.Pending
+MAX_OUTPUT = 16384
+
+
+def snapshot(directory, end):
+    \"\"\"Check each whole envelope; only an initially absent leaf is absent.\"\"\"
+    raw, records = {}, {}
+    for tag, module in (('reservation', LIFECYCLE.ATTEMPT),
+                        ('manifest', LIFECYCLE.MANIFEST),
+                        ('incomplete', LIFECYCLE.UNCERTAINTY)):
+        storage = module._STORAGE
+        until = storage.window(end)
+        try:
+            os.stat(storage.LEAF, dir_fd=directory, follow_symlinks=False)
+        except FileNotFoundError:
+            raw[tag], records[tag] = None, None
+            continue
+        data = storage.read_at(directory, until)
+        payload = storage.checked(data)
+        value = LIFECYCLE.BACKUP.ACCESS.decoded(payload, storage.MAX_BYTES)
+        raw[tag], records[tag] = data, value
+    return raw, records
+
+
+def classify(records):
+    reservation, manifest, incomplete = (records[tag] for tag in ('reservation', 'manifest', 'incomplete'))
+    if manifest is not None and incomplete is not None:
+        raise Pending('conflicting backup outcome records; preserve history and investigate')
+    if reservation is None:
+        if manifest is not None or incomplete is not None:
+            raise Pending('backup outcome exists without its reservation; preserve history')
+        return 'no-recorded-attempt', None
+    for outcome in (manifest, incomplete):
+        if outcome is not None and outcome['application'] != reservation['application']:
+            raise Pending('backup reservation and outcome applications differ')
+    state = ('historical-listing-recorded' if manifest is not None else
+             'historical-incomplete-recorded' if incomplete is not None else
+             'reserved-outcome-unknown')
+    return state, reservation['application']
+
+
+def inspect(path, deadline=None):
+    storage = LIFECYCLE.ATTEMPT._STORAGE
+    end = storage.window(deadline)
+    directory, before = storage.locked(path, end)
+    try:
+        raw, records = snapshot(directory, end)
+        state, application = classify(records)
+        observed = {}
+        for tag, data in raw.items():
+            observed[tag] = {'present': data is not None}
+            if data is not None:
+                observed[tag].update(bytes=len(data), sha256=hashlib.sha256(data).hexdigest(),
+                                     state=records[tag]['state'])
+        payload = LIFECYCLE.PREP.canonical({'schema': 1, 'state': state,
+            'scope': 'historical-backup-records-only', 'directory': str(path),
+            'application': application, 'records': observed,
+            'retry_authorized': False, 'backup_complete': False})
+        if len(payload) > MAX_OUTPUT:
+            raise Pending('backup history summary exceeds its output bound')
+        if snapshot(directory, end)[0] != raw:
+            raise Pending('backup history changed after summary encoding')
+        storage.directory_matches(path, directory, before)
+        storage.admission(end)
+    finally:
+        closing, directory = directory, None
+        os.close(closing)
+    return payload
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--directory', type=Path, required=True,
+                        help='existing private directory containing one reserved attempt')
+    parser.add_argument('--format', choices=('text', 'json'), default='text')
+    args = parser.parse_args(argv)
+    try:
+        raw = inspect(args.directory)
+        if args.format == 'text':
+            value = LIFECYCLE.BACKUP.ACCESS.decoded(raw, MAX_OUTPUT)
+            lines = ['Backup history: '+value['state'], 'Directory: '+value['directory']]
+            if value['application'] is not None:
+                lines.append('Application: '+value['application'])
+            lines.extend(tag+': '+('present' if row['present'] else 'absent')
+                         for tag, row in value['records'].items())
+            lines.append('Historical records do not establish a completed backup or authorize retry.')
+            raw = ('\\n'.join(lines)+'\\n').encode('utf-8')
+        count = sys.stdout.buffer.write(raw)
+        if type(count) is not int or count != len(raw):
+            raise Pending('incomplete backup status output')
+        sys.stdout.buffer.flush()
+        return 0
+    except (OSError, ValueError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: '+str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/postgresql/backup_status.py || return 1
     printf '%s' "#!/bin/bash
 
 # shellcheck source=Maintenance/common.sh
@@ -9737,6 +11594,18 @@ c695a6f939cef5eb0dec883b04722c71095877f7e0c06f9a76161b6672f35bdf  lib/ssh/repair
 61fb86d5519905de336e86aed17b86a5ebe241890f044fb6a288f2587142cf31  lib/postgresql/prepare.py
 7478f5c253c56f1079cddbf7282a187cc22f423335de6f9be62156aada1862e3  lib/postgresql/live.py
 e73ce455f1cb8c5aeb8cc73b77dce4cffe6bdd95d30bd2480bf44da16ca5f944  lib/postgresql/access.py
+075d1757636bc1a2d75809c8bc999be8e8907b02043fa38f1150eb916eef801f  lib/postgresql/backup.py
+f6aa639d8dcce5a8a608afe961074fba6b2e840cc9ab05b2e710301827f4572d  lib/postgresql/archive_stage.py
+4a57e4192202901d4633e365e3ab72bdcca1a0f9897df81df544cea1dc7965ae  lib/postgresql/archive_inspection.py
+2d3e55215a3fa91159fd5baacaf5e6bfe4ea7b4bdd79f709fc94ea26b0a15a1a  lib/postgresql/dump_stream.py
+b30c8812d83b813bcb9527ae0d94d9c2e8bd045563409851562bd88560bc7399  lib/postgresql/selected_stage.py
+48ab9060385fde87cf7fe8ef2ec2ffe27f1a161c73f817d30d9992faa067a857  lib/postgresql/selected_inspection.py
+8ee33451c466e42e7509008d5181098f78bf462c18011a64ab7d5cf29af6083e  lib/postgresql/selected_uncertainty.py
+844e7b6eac0d47bfdf312bd017983f6d66a572645845ecc18b0d8eb08ee57251  lib/postgresql/stage_manifest.py
+2630cb24ea64108000990c07996177a767473851e5929536368f24993a1f1602  lib/postgresql/backup_attempt.py
+6ec9ef543051de4282f7e61cfbe10dc5e0ba6891b6c70a1fa512105999d7128d  lib/postgresql/backup_lifecycle.py
+49852fae5396589b4e66ad2724200e29da4f9ac56be8775a4898d6b653625aa4  lib/postgresql/private_storage.py
+2d13b36879a8adbe4e2dd12206879dc263ee852b519077b580ad9c98bed1221a  lib/postgresql/backup_status.py
 369af8f804c8cc5381eebdae6884acd092f7e89931e1f7e3a8d555c323a0ad78  lib/postgresql/common.sh
 8970d97756f23f5a59e3ea3b13e251226883ebb35563746369befd626db30d42  lib/postgresql/repair.sh
 53d2380f5858b0674e27357e702913e6026370733c97884d837463180db68d5e  lib/postgresql/debian13s4-postgresql-server.service

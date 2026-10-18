@@ -198,8 +198,13 @@ class SelectedUncertaintyTests(unittest.TestCase):
         import ast
         raw=(fixture.ROOT/'Firewall/proposal_store.py').read_bytes();tree=ast.parse(raw)
         self.assertEqual(self.m._STORAGE.LEAF,self.m.LEAF)
-        self.assertEqual(self.m._STORAGE.create.__code__.co_filename,str(fixture.ROOT/'Firewall/proposal_store.py'))
+        self.assertEqual(self.m._STORAGE.create.__code__.co_filename,str(fixture.ROOT/'PostgreSQL/private_storage.py'))
         self.assertTrue(any(isinstance(n,ast.FunctionDef) and n.name=='create' for n in tree.body))
+        original={n.name:ast.dump(n,include_attributes=False) for n in tree.body if isinstance(n,ast.FunctionDef)}
+        current=ast.parse((fixture.ROOT/'PostgreSQL/private_storage.py').read_bytes())
+        for node in current.body:
+            if isinstance(node,ast.FunctionDef) and node.name not in ('intent','envelope','checked'):
+                self.assertEqual(ast.dump(node,include_attributes=False),original[node.name])
         self.assertIsNot(self.m._STORAGE,self.h.m.STAGE)
         self.assertEqual(self.h.m.STAGE.MAX_RECEIPT,4096)
 
