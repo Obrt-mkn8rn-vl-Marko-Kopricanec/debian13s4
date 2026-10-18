@@ -108,8 +108,19 @@ def flag(row, name):
     return value
 
 
-def configuration(value, peer):
-    """Check selected Worker fields and every supported credential reference."""
+def secret_reference(row, field, credential, kind, expected, required=True):
+    if row.get(field, '') != '' or type(row.get(field, '')) is not str:
+        raise Pending('Email secrets must use separate credential files')
+    filename = row.get(field+'File', '')
+    if required:
+        if filename != credential: raise Pending('Email secret must use its fixed credential leaf')
+        expected[credential] = kind
+    elif filename not in ('', None):
+        raise Pending('disabled Email feature still references secret material')
+
+
+def transport_configuration(value, peer):
+    """Selected shared database/messaging/object-store file intentions."""
     KERNEL.known(value, SECTIONS, REQUIRED)
     if any(type(row) is not dict for row in value.values()):
         raise Pending('Email configuration sections must be objects')
@@ -118,36 +129,27 @@ def configuration(value, peer):
                     {'Host', 'Port', 'Name', 'Username', 'Password', 'PasswordFile'})
     if (db['Host'] != BASE.SOCKET_DIRECTORY or type(db['Port']) is not int or db['Port'] != 5432
         or db['Name'] != peer['database'] or db['Username'] != peer['user']):
-        raise Pending('Email database differs from its selected Application local-peer intention')
+        raise Pending('Email database differs from its selected role/database file intention')
     expected = {}
-    def secret(row, field, credential, kind, required=True):
-        if row.get(field, '') != '' or type(row.get(field, '')) is not str:
-            raise Pending('Email secrets must use separate credential files')
-        filename = row.get(field+'File', '')
-        if required:
-            if filename != credential: raise Pending('Email secret must use its fixed credential leaf')
-            expected[credential] = kind
-        elif filename not in ('', None):
-            raise Pending('disabled Email feature still references secret material')
-    secret(db, 'Password', 'database.password', 'password')
+    secret_reference(db, 'Password', 'database.password', 'password', expected)
     msg_fields = {'Enabled', 'EncryptionKeyId', 'EncryptionKey', 'EncryptionKeyFile', 'DecryptionKeys',
         'MaxPayloadBytes', 'InlinePayloadThresholdBytes', 'LeaseSeconds', 'NotificationFallbackSeconds', 'WorkerId'}
     KERNEL.known(msg, msg_fields, msg_fields)
-    if not flag(msg, 'Enabled'): raise Pending('Email Worker requires distributed messaging')
+    if not flag(msg, 'Enabled'): raise Pending('Email transport requires distributed messaging')
     identifier = r'[A-Za-z0-9][A-Za-z0-9._:-]{0,63}'
     if type(msg['EncryptionKeyId']) is not str or re.fullmatch(identifier, msg['EncryptionKeyId']) is None:
         raise Pending('unsupported Email messaging encryption key identifier')
     if (type(msg['WorkerId']) is not str or
         re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:@/-]{0,127}', msg['WorkerId']) is None):
-        raise Pending('Email Worker requires an explicit bounded identity, without machine-name fallback')
-    secret(msg, 'EncryptionKey', 'messaging.key', 'key32')
+        raise Pending('Email transport requires an explicit bounded identity, without machine-name fallback')
+    secret_reference(msg, 'EncryptionKey', 'messaging.key', 'key32', expected)
     previous = msg['DecryptionKeys']; ids = {msg['EncryptionKeyId']}
     if type(previous) is not list or len(previous) > 8: raise Pending('too many Email decryption keys')
     for number, row in enumerate(previous):
         KERNEL.known(row, {'Id', 'Key', 'KeyFile'}, {'Id', 'Key', 'KeyFile'})
         if type(row['Id']) is not str or re.fullmatch(identifier, row['Id']) is None or row['Id'] in ids:
             raise Pending('Email messaging key identifiers must be distinct')
-        ids.add(row['Id']); secret(row, 'Key', f'messaging.decrypt-{number}.key', 'key32')
+        ids.add(row['Id']); secret_reference(row, 'Key', f'messaging.decrypt-{number}.key', 'key32', expected)
     message_bytes = KERNEL.uint(value['Limits'].get('MaxMessageSizeBytes'), 1_073_741_824)
     payload = KERNEL.uint(msg['MaxPayloadBytes'], 1_073_741_824)
     if message_bytes < 65536 or payload < (4*message_bytes+2)//3+1048576:
@@ -158,21 +160,27 @@ def configuration(value, peer):
     object_fields = {'Provider', 'ConnectionString', 'ConnectionStringFile', 'ContainerName', 'ObjectPrefix', 'CreateContainerIfMissing'}
     KERNEL.known(objects, object_fields, object_fields)
     if objects['Provider'] != 'azure-blob' or flag(objects, 'CreateContainerIfMissing'):
-        raise Pending('Email Worker profile requires preprovisioned azure-blob object storage')
+        raise Pending('Email transport profile requires preprovisioned azure-blob object storage')
     container = objects['ContainerName']
     if (type(container) is not str or re.fullmatch(r'[a-z0-9][a-z0-9-]{1,61}[a-z0-9]', container) is None
         or '--' in container): raise Pending('unsupported Email object container name')
     prefix = objects['ObjectPrefix']
     if type(prefix) is not str or len(prefix) > 512 or prefix.startswith('/') or '//' in prefix or '\0' in prefix:
         raise Pending('unsupported Email object prefix')
-    secret(objects, 'ConnectionString', 'objects.connection', 'connection')
+    secret_reference(objects, 'ConnectionString', 'objects.connection', 'connection', expected)
+    return expected
+
+
+def configuration(value, peer):
+    """Check selected Worker fields and every supported credential reference."""
+    expected = transport_configuration(value, peer)
     oauth, mfa, dkim = (value[name] for name in ('OAuth', 'Mfa', 'Dkim'))
     enabled = flag(oauth, 'EnableOAuth'); oidc = flag(oauth, 'EnableOpenIdConnect')
     if oidc and not enabled: raise Pending('Email OpenID Connect requires OAuth')
-    secret(oauth, 'SigningKey', 'oauth-signing.pem', 'pem', oidc)
+    secret_reference(oauth, 'SigningKey', 'oauth-signing.pem', 'pem', expected, oidc)
     totp = flag(mfa, 'EnableTotp')
     if totp and not enabled: raise Pending('Email TOTP requires OAuth')
-    secret(mfa, 'EncryptionKey', 'mfa.key', 'key32', totp)
+    secret_reference(mfa, 'EncryptionKey', 'mfa.key', 'key32', expected, totp)
     if flag(dkim, 'EnableSigning'):
         if dkim.get('PrivateKeyPath') != 'dkim.pem': raise Pending('Email DKIM requires its credential leaf')
         expected['dkim.pem'] = 'pem'

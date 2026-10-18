@@ -405,9 +405,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=af35f59fedd899bf95f0d9e95a35e701dc1a2544a9592e17872404c69945f1cb
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/managed_runtime.py lib/dns/prepare.py)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=36c6a21b8c8941aa1e044a9bba5d31578c001a1d2a1994e4435de509c66ade9b
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/managed_runtime.py lib/dns/prepare.py)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     mkdir -p -- "$S4B_STAGE/"lib "$S4B_STAGE/"lib/tasks/prerequisites "$S4B_STAGE/"units "$S4B_STAGE/"lib/maintenance "$S4B_STAGE/"lib/tasks/maintenance "$S4B_STAGE/"lib/dotnet "$S4B_STAGE/"lib/tasks/dotnet "$S4B_STAGE/"lib/network "$S4B_STAGE/"lib/tasks/network "$S4B_STAGE/"lib/retention "$S4B_STAGE/"lib/tasks/retention "$S4B_STAGE/"lib/hardening "$S4B_STAGE/"lib/tasks/hardening "$S4B_STAGE/"lib/firewall "$S4B_STAGE/"lib/ssh "$S4B_STAGE/"lib/tasks/ssh "$S4B_STAGE/"lib/postgresql "$S4B_STAGE/"lib/tasks/postgresql "$S4B_STAGE/"lib/web "$S4B_STAGE/"lib/tasks/web "$S4B_STAGE/"lib/applications "$S4B_STAGE/"lib/dns || return 1
@@ -11453,8 +11453,19 @@ def flag(row, name):
     return value
 
 
-def configuration(value, peer):
-    \"\"\"Check selected Worker fields and every supported credential reference.\"\"\"
+def secret_reference(row, field, credential, kind, expected, required=True):
+    if row.get(field, '') != '' or type(row.get(field, '')) is not str:
+        raise Pending('Email secrets must use separate credential files')
+    filename = row.get(field+'File', '')
+    if required:
+        if filename != credential: raise Pending('Email secret must use its fixed credential leaf')
+        expected[credential] = kind
+    elif filename not in ('', None):
+        raise Pending('disabled Email feature still references secret material')
+
+
+def transport_configuration(value, peer):
+    \"\"\"Selected shared database/messaging/object-store file intentions.\"\"\"
     KERNEL.known(value, SECTIONS, REQUIRED)
     if any(type(row) is not dict for row in value.values()):
         raise Pending('Email configuration sections must be objects')
@@ -11463,36 +11474,27 @@ def configuration(value, peer):
                     {'Host', 'Port', 'Name', 'Username', 'Password', 'PasswordFile'})
     if (db['Host'] != BASE.SOCKET_DIRECTORY or type(db['Port']) is not int or db['Port'] != 5432
         or db['Name'] != peer['database'] or db['Username'] != peer['user']):
-        raise Pending('Email database differs from its selected Application local-peer intention')
+        raise Pending('Email database differs from its selected role/database file intention')
     expected = {}
-    def secret(row, field, credential, kind, required=True):
-        if row.get(field, '') != '' or type(row.get(field, '')) is not str:
-            raise Pending('Email secrets must use separate credential files')
-        filename = row.get(field+'File', '')
-        if required:
-            if filename != credential: raise Pending('Email secret must use its fixed credential leaf')
-            expected[credential] = kind
-        elif filename not in ('', None):
-            raise Pending('disabled Email feature still references secret material')
-    secret(db, 'Password', 'database.password', 'password')
+    secret_reference(db, 'Password', 'database.password', 'password', expected)
     msg_fields = {'Enabled', 'EncryptionKeyId', 'EncryptionKey', 'EncryptionKeyFile', 'DecryptionKeys',
         'MaxPayloadBytes', 'InlinePayloadThresholdBytes', 'LeaseSeconds', 'NotificationFallbackSeconds', 'WorkerId'}
     KERNEL.known(msg, msg_fields, msg_fields)
-    if not flag(msg, 'Enabled'): raise Pending('Email Worker requires distributed messaging')
+    if not flag(msg, 'Enabled'): raise Pending('Email transport requires distributed messaging')
     identifier = r'[A-Za-z0-9][A-Za-z0-9._:-]{0,63}'
     if type(msg['EncryptionKeyId']) is not str or re.fullmatch(identifier, msg['EncryptionKeyId']) is None:
         raise Pending('unsupported Email messaging encryption key identifier')
     if (type(msg['WorkerId']) is not str or
         re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:@/-]{0,127}', msg['WorkerId']) is None):
-        raise Pending('Email Worker requires an explicit bounded identity, without machine-name fallback')
-    secret(msg, 'EncryptionKey', 'messaging.key', 'key32')
+        raise Pending('Email transport requires an explicit bounded identity, without machine-name fallback')
+    secret_reference(msg, 'EncryptionKey', 'messaging.key', 'key32', expected)
     previous = msg['DecryptionKeys']; ids = {msg['EncryptionKeyId']}
     if type(previous) is not list or len(previous) > 8: raise Pending('too many Email decryption keys')
     for number, row in enumerate(previous):
         KERNEL.known(row, {'Id', 'Key', 'KeyFile'}, {'Id', 'Key', 'KeyFile'})
         if type(row['Id']) is not str or re.fullmatch(identifier, row['Id']) is None or row['Id'] in ids:
             raise Pending('Email messaging key identifiers must be distinct')
-        ids.add(row['Id']); secret(row, 'Key', f'messaging.decrypt-{number}.key', 'key32')
+        ids.add(row['Id']); secret_reference(row, 'Key', f'messaging.decrypt-{number}.key', 'key32', expected)
     message_bytes = KERNEL.uint(value['Limits'].get('MaxMessageSizeBytes'), 1_073_741_824)
     payload = KERNEL.uint(msg['MaxPayloadBytes'], 1_073_741_824)
     if message_bytes < 65536 or payload < (4*message_bytes+2)//3+1048576:
@@ -11503,21 +11505,27 @@ def configuration(value, peer):
     object_fields = {'Provider', 'ConnectionString', 'ConnectionStringFile', 'ContainerName', 'ObjectPrefix', 'CreateContainerIfMissing'}
     KERNEL.known(objects, object_fields, object_fields)
     if objects['Provider'] != 'azure-blob' or flag(objects, 'CreateContainerIfMissing'):
-        raise Pending('Email Worker profile requires preprovisioned azure-blob object storage')
+        raise Pending('Email transport profile requires preprovisioned azure-blob object storage')
     container = objects['ContainerName']
     if (type(container) is not str or re.fullmatch(r'[a-z0-9][a-z0-9-]{1,61}[a-z0-9]', container) is None
         or '--' in container): raise Pending('unsupported Email object container name')
     prefix = objects['ObjectPrefix']
     if type(prefix) is not str or len(prefix) > 512 or prefix.startswith('/') or '//' in prefix or '\\0' in prefix:
         raise Pending('unsupported Email object prefix')
-    secret(objects, 'ConnectionString', 'objects.connection', 'connection')
+    secret_reference(objects, 'ConnectionString', 'objects.connection', 'connection', expected)
+    return expected
+
+
+def configuration(value, peer):
+    \"\"\"Check selected Worker fields and every supported credential reference.\"\"\"
+    expected = transport_configuration(value, peer)
     oauth, mfa, dkim = (value[name] for name in ('OAuth', 'Mfa', 'Dkim'))
     enabled = flag(oauth, 'EnableOAuth'); oidc = flag(oauth, 'EnableOpenIdConnect')
     if oidc and not enabled: raise Pending('Email OpenID Connect requires OAuth')
-    secret(oauth, 'SigningKey', 'oauth-signing.pem', 'pem', oidc)
+    secret_reference(oauth, 'SigningKey', 'oauth-signing.pem', 'pem', expected, oidc)
     totp = flag(mfa, 'EnableTotp')
     if totp and not enabled: raise Pending('Email TOTP requires OAuth')
-    secret(mfa, 'EncryptionKey', 'mfa.key', 'key32', totp)
+    secret_reference(mfa, 'EncryptionKey', 'mfa.key', 'key32', expected, totp)
     if flag(dkim, 'EnableSigning'):
         if dkim.get('PrivateKeyPath') != 'dkim.pem': raise Pending('Email DKIM requires its credential leaf')
         expected['dkim.pem'] = 'pem'
@@ -11659,6 +11667,272 @@ def main(argv=None):
 if __name__ == '__main__':
     sys.exit(main())
 " > "$S4B_STAGE/"lib/applications/email_worker.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Prepare partial Email Gateway/Worker configuration correspondence.
+
+This reads existing protected files only. Gateway database authorization is
+absent from the current local-peer plan, so no runnable unit is emitted. Native
+configuration, cryptography, credentials, listeners and health remain unverified.
+\"\"\"
+import argparse
+import hashlib
+import importlib.util
+import ipaddress
+import json
+from pathlib import Path
+import sys
+
+
+def owned(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+ROOT = Path(__file__).resolve().parents[1]
+EMAIL = owned('debian13s4_email_gateway_worker', Path(__file__).resolve().with_name('email_worker.py'))
+WEB_PATH = ROOT/'Web/prepare.py'
+if not WEB_PATH.is_file(): WEB_PATH = ROOT/'web/prepare.py'
+WEB = owned('debian13s4_email_gateway_web', WEB_PATH)
+BASE, KERNEL, Pending = EMAIL.BASE, EMAIL.KERNEL, EMAIL.Pending
+INPUT = Path('/etc/debian13s4/email-gateway.json')
+MAX_INPUT, MAX_OUTPUT, ATTEMPT_SECONDS = 8192, 262144, 650
+PROFILE = 'email-gateway-worker-file-correspondence-v1'
+STATE = 'protected-email-gateway-file-correspondence-only'
+
+
+def descriptor(value):
+    fields = {'schema', 'settings', 'https_settings', 'credentials', 'state_directory'}
+    KERNEL.known(value, fields, fields)
+    if type(value['schema']) is not int or value['schema'] != 1:
+        raise Pending('unsupported Email Gateway descriptor schema')
+    credentials = value['credentials']
+    if type(credentials) is not dict or not 5 <= len(credentials) <= 13:
+        raise Pending('Email Gateway requires bounded explicit credential sources')
+    paths = [value['settings'], value['https_settings'], *credentials.values()]
+    for name in paths:
+        if not EMAIL.literal(name).startswith(str(EMAIL.SETTINGS_ROOT)+'/'):
+            raise Pending('Email Gateway files must be product settings descendants')
+    if len(set(paths)) != len(paths) or set(paths) & {str(INPUT), str(EMAIL.INPUT)}:
+        raise Pending('Email Gateway descriptor/settings/credential paths must remain distinct')
+    state = EMAIL.literal(value['state_directory'])
+    if not state.startswith(('/var/lib/debian13s4-email/', '/srv/debian13s4-email/')):
+        raise Pending('Email Gateway state requires an explicit product directory intention')
+    return value
+
+
+def web_prepared(end, context):
+    BASE.fence(end)
+    try:
+        raw = WEB.prepare(deadline=end, scope=WEB.KERNEL.namespace)
+    except WEB.Pending as error:
+        raise Pending('Email ingress preparation refused') from error
+    if type(raw) is not bytes or not raw or len(raw) > WEB.MAX_OUTPUT:
+        raise Pending('unsupported complete Email ingress receipt')
+    try:
+        value = json.loads(raw, object_pairs_hook=KERNEL.unique_object)
+        fields = {'schema', 'profile', 'state', 'namespace', 'configuration', 'materials', 'nginx', 'nginx_sha256'}
+        KERNEL.known(value, fields, fields)
+        if (type(value['schema']) is not int or value['schema'] != 1 or
+            value['profile'] != 'nginx-private-https-three-gateway-intention-v1' or
+            value['state'] != 'ingress-configuration-intention-only' or
+            KERNEL.uint(value['namespace'], 0xffffffffffffffff) != context or raw != BASE.canonical(value)):
+            raise Pending('Email ingress profile, context or canonical bytes differ')
+        nginx = WEB.render(value['configuration']['value'])
+        if value['nginx'] != nginx or value['nginx_sha256'] != hashlib.sha256(nginx.encode('ascii')).hexdigest():
+            raise Pending('Email ingress differs from the complete real renderer')
+    except WEB.Pending as error:
+        raise Pending('Email ingress renderer refused') from error
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise Pending('invalid complete Email ingress receipt') from error
+    BASE.fence(end)
+    return raw, value
+
+
+def public_options(row, private):
+    return {name: value for name, value in row.items() if name not in private}
+
+
+def configuration(value, worker, role, ingress, state):
+    \"\"\"A private HTTPS/JMAP-only profile; no extra mail TCP listeners selected.\"\"\"
+    required = EMAIL.REQUIRED | {'Imap', 'Pop3', 'Sieve', 'Jmap', 'Dav', 'Tls', 'Admin'}
+    KERNEL.known(value, EMAIL.SECTIONS, required)
+    expected = EMAIL.transport_configuration(value, {'user': role['name'], 'database': worker['Database']['Name']})
+    if value['Database']['Username'] == worker['Database']['Username']:
+        raise Pending('Email Gateway must not borrow the Application database identity')
+    for section, ignored in (
+        ('Messaging', {'WorkerId'}), ('ObjectStorage', set()), ('Limits', set()),
+        ('OAuth', {'SigningKey', 'SigningKeyFile'}), ('Mfa', {'EncryptionKey', 'EncryptionKeyFile'}),
+        ('Dkim', {'PrivateKeyPath'})):
+        if BASE.canonical(public_options(value[section], ignored)) != BASE.canonical(public_options(worker[section], ignored)):
+            raise Pending('Email Gateway and Worker '+section+' intentions differ')
+    if value['Messaging']['WorkerId'] == worker['Messaging']['WorkerId']:
+        raise Pending('Email Gateway and Worker require distinct explicit process identifiers')
+    for section, names in (('OAuth', ('SigningKey', 'SigningKeyFile')),
+                           ('Mfa', ('EncryptionKey', 'EncryptionKeyFile')),
+                           ('Dkim', ('PrivateKeyPath',))):
+        if any(value[section].get(name, '') != '' for name in names):
+            raise Pending('Worker-only signing/MFA material must not enter Gateway inputs')
+    for section, names in (
+        ('Smtp', ('EnableSmtp', 'EnableSubmission', 'EnableImplicitTls', 'EnableStartTls', 'RequireTls', 'AllowRelay')),
+        ('Imap', ('EnableImap', 'EnableImplicitTls')),
+        ('Pop3', ('EnablePop3', 'EnableImplicitTls', 'EnableStartTls')),
+        ('Sieve', ('EnableManageSieve', 'EnableStartTls')),
+        ('Dav', ('EnableDav',))):
+        if any(EMAIL.flag(value[section], name) for name in names):
+            raise Pending('Email Gateway profile selects private HTTPS/JMAP only')
+    if value['Smtp'].get('ListenAddress') != '127.0.0.1' or value['Smtp'].get('Hostname') != worker['Smtp']['Hostname']:
+        raise Pending('Email SMTP source identity or explicit loopback intention differs')
+    KERNEL.known(value['Tls'], {'CertificatePath', 'CertificateKeyPath'}, set())
+    if any(value['Tls'].get(name, '') != '' for name in ('CertificatePath', 'CertificateKeyPath')):
+        raise Pending('disabled mail TCP listeners must not reference separate TLS material')
+    jmap = value['Jmap']
+    if (not EMAIL.flag(jmap, 'EnableJmap') or type(jmap.get('Port')) is not int or
+        jmap['Port'] != ingress['upstream_port'] or jmap.get('PublicBaseUrl') != 'https://'+ingress['hostname']):
+        raise Pending('Email JMAP listener/public URL differ from the ingress intention')
+    for name, minimum, maximum in (('MaxUploadSizeBytes', 1048576, 1073741824),
+                                  ('MaxRequestSizeBytes', 65536, 104857600)):
+        if KERNEL.uint(jmap.get(name), maximum) < minimum:
+            raise Pending('unsupported Email JMAP body bound')
+    body = max(65536, jmap['MaxUploadSizeBytes'], jmap['MaxRequestSizeBytes'])
+    if ingress['body_bytes'] > body:
+        raise Pending('Email ingress body exceeds the selected Gateway body intention')
+    for name in ('EnableOAuth', 'EnableOpenIdConnect'):
+        EMAIL.flag(value['OAuth'], name)
+    if value['OAuth']['EnableOAuth'] and value['OAuth'].get('PublicBaseUrl') != 'https://'+ingress['hostname']:
+        raise Pending('Email OAuth public URL differs from ingress')
+    admin = value['Admin']
+    fields = {'AllowedNetworks', 'DataProtectionKeyPath', 'AuditLogPath', 'HealthStatusPath', 'SessionMinutes'}
+    KERNEL.known(admin, fields, fields)
+    if KERNEL.uint(admin['SessionMinutes'], 480) < 5:
+        raise Pending('unsupported Email admin session bound')
+    networks = admin['AllowedNetworks']
+    if type(networks) is not list or not 1 <= len(networks) <= 32:
+        raise Pending('Email admin networks must be explicit and bounded')
+    try:
+        if any(type(net) is not str or str(ipaddress.ip_network(net, strict=True)) != net for net in networks):
+            raise ValueError('noncanonical network')
+    except ValueError as error:
+        raise Pending('unsupported explicit Email admin network') from error
+    if len(set(networks)) != len(networks): raise Pending('duplicate Email admin network')
+    for name, leaf in (('DataProtectionKeyPath', 'data-protection'), ('AuditLogPath', 'audit.jsonl'), ('HealthStatusPath', 'health.json')):
+        if admin[name] != state+'/'+leaf: raise Pending('Email admin paths differ from explicit Gateway state')
+    return expected, {'body_bytes': body, 'admin_networks': networks,
+                      'admin_session_minutes': admin['SessionMinutes']}
+
+
+def https(value, ingress):
+    KERNEL.known(value, {'Kestrel'}, {'Kestrel'})
+    KERNEL.known(value['Kestrel'], {'Endpoints'}, {'Endpoints'})
+    endpoints = value['Kestrel']['Endpoints']
+    KERNEL.known(endpoints, {'Private'}, {'Private'})
+    endpoint = endpoints['Private']
+    KERNEL.known(endpoint, {'Url', 'Protocols', 'Certificate'}, {'Url', 'Protocols', 'Certificate'})
+    certificate = endpoint['Certificate']
+    KERNEL.known(certificate, {'Path', 'KeyPath', 'Password'}, {'Path', 'KeyPath', 'Password'})
+    if (endpoint['Url'] != 'https://127.0.0.1:'+str(ingress['upstream_port']) or endpoint['Protocols'] != 'Http1' or
+        certificate != {'Path': 'certificate.pem', 'KeyPath': 'private-key.pem', 'Password': ''}):
+        raise Pending('Email HTTPS requires one loopback HTTP1 listener and fixed credential leaves')
+    return {'address': '127.0.0.1', 'port': ingress['upstream_port'], 'scheme': 'https',
+            'protocol': 'Http1', 'server_name_intention': ingress['upstream_name']}
+
+
+def observe(joined, web, end):
+    worker_inputs, worker_private = EMAIL.observe(joined['role_bindings']['mk8.email'], end)
+    worker = json.loads(worker_private[1])
+    descriptor_raw, inputs, descriptor_source = EMAIL.document(INPUT, MAX_INPUT, end)
+    inputs = descriptor(inputs)
+    settings_raw, settings, settings_source = EMAIL.document(Path(inputs['settings']), EMAIL.MAX_SETTINGS, end)
+    https_raw, https_settings, https_source = EMAIL.document(Path(inputs['https_settings']), EMAIL.MAX_SETTINGS, end)
+    role = joined['identities']['execution_bindings']['mk8.email']['gateway']
+    ingress = web['configuration']['value']['applications']['mk8.email']
+    expected, options = configuration(settings, worker, role, ingress, inputs['state_directory'])
+    listener = https(https_settings, ingress)
+    expected.update({'certificate.pem': 'certificate', 'private-key.pem': 'private-key'})
+    if set(inputs['credentials']) != set(expected):
+        raise Pending('Email Gateway credential sources differ from selected references')
+    worker_sources = {row['id']: row['source'] for row in worker_inputs['credentials']}
+    forbidden = {worker_sources[name]['path'] for name in worker_sources
+                 if name in ('environment.json', 'database.password', 'oauth-signing.pem', 'mfa.key', 'dkim.pem')}
+    public_files = {row[field] for row in web['configuration']['value']['applications'].values()
+                    for field in ('certificate', 'upstream_ca')}
+    credentials = [{'id': 'environment.json', 'source': settings_source, 'bytes': len(settings_raw)},
+                   {'id': 'appsettings.json', 'source': https_source, 'bytes': len(https_raw)}]
+    private = [descriptor_raw, settings_raw, https_raw]
+    for name, kind in sorted(expected.items()):
+        filename = inputs['credentials'][name]
+        if filename in forbidden or kind != 'certificate' and filename in public_files:
+            raise Pending('Email Gateway reuses Worker-private or public ingress material')
+        raw, source = BASE.read_protected(Path(filename), EMAIL.MAX_SECRET, True, end)
+        if kind in ('certificate', 'private-key'):
+            try: WEB.pem(raw, kind == 'private-key')
+            except WEB.Pending as error: raise Pending('Email Gateway PEM grammar refused') from error
+        else:
+            EMAIL.secret_bytes(raw, kind)
+        if name == 'objects.connection' or name.startswith('messaging.'):
+            if source['sha256'] != worker_sources[name]['sha256']:
+                raise Pending('Email Gateway and Worker shared transport material bytes differ')
+        credentials.append({'id': name, 'source': source, 'bytes': len(raw)})
+        private.append(raw)
+    if sum(row['bytes'] for row in credentials) > EMAIL.MAX_CREDENTIAL_BYTES:
+        raise Pending('combined Email Gateway credentials exceed their bounded capacity')
+    record = {'configuration_source': descriptor_source, 'credentials': credentials,
+        'gateway_identity': role, 'listener': listener, 'presentation': options,
+        'required_state': {'path': inputs['state_directory'], 'owner_uid': role['uid'],
+            'owner_gid': role['primary_gid'], 'mode': '0700', 'observed': False, 'created': False},
+        'database': {'host': settings['Database']['Host'], 'port': 5432, 'name': settings['Database']['Name'],
+            'user': role['name'], 'authorized_by_current_local_peer_plan': False},
+        'unit_available': False, 'full_native_configuration_validated': False,
+        'worker_files': worker_inputs}
+    return record, tuple(private)+worker_private
+
+
+def prepare(deadline=None):
+    end = KERNEL.now()+ATTEMPT_SECONDS
+    if deadline is not None:
+        if not KERNEL.finite_deadline(deadline): raise Pending('invalid inherited Email Gateway window')
+        end = min(end, deadline)
+    BASE.fence(end)
+    context = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
+    if context == 0: raise Pending('missing Email Gateway namespace')
+    joined_raw, joined = EMAIL.prerequisite(end, context)
+    web_raw, web = web_prepared(end, context)
+    gateway, private = observe(joined, web, end)
+    raw = BASE.canonical({'schema': 1, 'profile': PROFILE, 'state': STATE, 'namespace': context,
+        'application_pg_sha256': hashlib.sha256(joined_raw).hexdigest(),
+        'identity_sha256': hashlib.sha256(BASE.canonical(joined['identities'])).hexdigest(),
+        'release_sha256': hashlib.sha256(BASE.canonical(joined['identities']['releases'])).hexdigest(),
+        'ingress_sha256': hashlib.sha256(web_raw).hexdigest(), 'gateway': gateway})
+    if len(raw) > MAX_OUTPUT: raise Pending('complete Email Gateway observation exceeds its output bound')
+    if EMAIL.prerequisite(end, context)[0] != joined_raw or web_prepared(end, context)[0] != web_raw:
+        raise Pending('complete Email identity/PG or ingress preparation changed')
+    after, after_private = observe(joined, web, end)
+    if BASE.canonical(after) != BASE.canonical(gateway) or after_private != private:
+        raise Pending('Email Gateway or Worker protected files changed')
+    if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != context:
+        raise Pending('Email Gateway namespace changed')
+    BASE.fence(end)
+    return raw
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.parse_args(argv)
+    try:
+        raw = prepare()
+        count = sys.stdout.buffer.write(raw)
+        if type(count) is not int or count != len(raw): raise Pending('incomplete Email Gateway output')
+        sys.stdout.buffer.flush()
+        return 0
+    except (Pending, OSError, ValueError, KeyError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: '+str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/applications/email_gateway.py || return 1
     printf '%s' "#!/usr/bin/python3
 \"\"\"Compose known protected application FILE prerequisites, never app readiness.
 
@@ -11847,6 +12121,8 @@ CHECKS = {
                      'protected-sava-service-intention-only'),
     'email-worker': ('email_worker.py', 'email-worker-credential-service-intentions-v1',
                      'protected-email-worker-service-intention-only'),
+    'email-gateway': ('email_gateway.py', 'email-gateway-worker-file-correspondence-v1',
+                      'protected-email-gateway-file-correspondence-only'),
     'prerequisites': ('prepare.py', 'application-file-prerequisites-v1',
                       'application-file-prerequisites-source-only'),
 }
@@ -12957,9 +13233,10 @@ adead23bd4503d3525e3a5cce0bf46de28f7c46b7e3dba9c362f53a1a46042fc  lib/applicatio
 d3a9632c7e3e3bb8e42a060d2c9c0ccbc01deade8d9d4f2a1b7d80754217e226  lib/applications/sava_ingress.py
 f4f9ef7d0a58d4a62f320f069df3b8246aa5f96d7b0873d3c7b47fcf6e8df0d2  lib/applications/sava_service.py
 e146268fc4e5f727d730135c3875282149c807079d989eb63f7e30da8d457c0d  lib/applications/private_directory.py
-f204ebe4536e14c06db453f7e439169b654bd176223c711d1741f152be469255  lib/applications/email_worker.py
+0ef1b8e9e6258d3492353bb1fcddce322e165c8c24b930c71522c8480ab19528  lib/applications/email_worker.py
+fffc4daf3a061c6223fc6ffb52125ea62b8bdef1ec9d0ebfd05b15b64474d8ed  lib/applications/email_gateway.py
 4668dcff64153729aa7dd09cdba6583adb9044f22e42bb8f230894339955d2b4  lib/applications/prepare.py
-8d0b0096f8dc6e865e759b374ceba6fcab7391efc790c2ccc2f16dcc90886e04  lib/applications/preflight.py
+8f9e3ddec0edbf5feafc656a3f14654b57de6680fe8428b415112e60ae3dab65  lib/applications/preflight.py
 1de119181721839e120647eaf34023d5879602ab1b7b9793e32750c0f65a43e7  lib/applications/release_manifest.py
 ba6972cd98dfe8761ea62d77f542ade67741d794f9b967c5bd84bd973e22913d  lib/applications/linux_images.py
 9f0009b9cdf5436649268b9b99dddbef78ce16092e48f554798fbab91c5aedb1  lib/applications/managed_runtime.py

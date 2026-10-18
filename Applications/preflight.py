@@ -37,6 +37,8 @@ CHECKS = {
                      'protected-sava-service-intention-only'),
     'email-worker': ('email_worker.py', 'email-worker-credential-service-intentions-v1',
                      'protected-email-worker-service-intention-only'),
+    'email-gateway': ('email_gateway.py', 'email-gateway-worker-file-correspondence-v1',
+                      'protected-email-gateway-file-correspondence-only'),
     'prerequisites': ('prepare.py', 'application-file-prerequisites-v1',
                       'application-file-prerequisites-source-only'),
 }
