@@ -1,6 +1,7 @@
 """Lossless text objects for the private bootstrap crash model, not real storage."""
 
 import hashlib
+import os
 from pathlib import Path
 import re
 
@@ -32,6 +33,27 @@ class SnapshotStore:
             state['disk'][scope] = {name: self.text(value) if isinstance(value, str) else value
                                    for name, value in state['disk'][scope].items()}
         return state
+
+    def files(self, directory):
+        """Fresh visible file contents, without descending excluded staging trees.
+
+        No metadata/content/trust result survives this invocation. The original
+        model excluded every path with a bundle.* component after walking it;
+        pruning those subtrees preserves that exclusion without the traversal.
+        """
+        directory = Path(directory)
+        if any(part.startswith('bundle.') for part in directory.parts):
+            return {}
+        result = {}
+        for parent, directories, filenames in os.walk(directory, followlinks=False):
+            directories[:] = [name for name in directories if not name.startswith('bundle.')]
+            for name in filenames:
+                if name.startswith('bundle.'):
+                    continue
+                path = Path(parent) / name
+                if path.is_file() and not path.is_symlink():
+                    result[str(path.relative_to(directory))] = self.text(path.read_text())
+        return result
 
     def expand(self, value, cache=None):
         if cache is None:

@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 
 from fixture_process import run_bash, session_processes
 from fixture_snapshots import SnapshotStore
@@ -77,6 +78,55 @@ class SnapshotTests(unittest.TestCase):
         data = b'\xff'; digest = hashlib.sha256(data).hexdigest()
         (self.store.directory / digest).write_bytes(data)
         with self.assertRaises(UnicodeDecodeError): self.store.expand({self.store.TAG: digest})
+
+    def test_visible_tree_matches_original_view_without_entering_excluded_staging(self):
+        tree = self.root/'tree'; (tree/'nested').mkdir(parents=True)
+        (tree/'top').write_text('first\r\nsecond\n')
+        (tree/'nested/unicode').write_text('héllo\n')
+        for directory in (tree/'bundle.stage/deep', tree/'nested/bundle.other/deep'):
+            directory.mkdir(parents=True); (directory/'unused').write_text('excluded\n')
+        (tree/'bundle.file').write_text('also excluded\n')
+        expected = {str(path.relative_to(tree)): path.read_text()
+                    for path in tree.rglob('*') if path.is_file() and not path.is_symlink()
+                    and not any(part.startswith('bundle.') for part in path.parts)}
+        scans = []; original = os.scandir
+        def scan(path):
+            scans.append(Path(path))
+            if any(part.startswith('bundle.') for part in Path(path).parts):
+                self.fail('excluded subtree must not be entered')
+            return original(path)
+        with patch('os.scandir', side_effect=scan):
+            actual = self.store.expand(self.store.files(tree))
+        self.assertEqual(actual, expected)
+        self.assertEqual(set(scans), {tree, tree/'nested'})
+        self.assertEqual(self.store.files(tree/'bundle.stage'), {})
+
+    def test_each_tree_capture_reads_changed_deleted_and_new_files_again(self):
+        tree = self.root/'tree'; tree.mkdir()
+        file = tree/'value'; file.write_text('before\n')
+        old = self.store.files(tree)
+        replacement = tree/'replacement'; replacement.write_text('after\n'); replacement.replace(file)
+        (tree/'new').write_text('new\n')
+        current = self.store.files(tree)
+        file.unlink()
+        latest = self.store.files(tree)
+        self.assertEqual(self.store.expand(old), {'value': 'before\n'})
+        self.assertEqual(self.store.expand(current), {'value': 'after\n', 'new': 'new\n'})
+        self.assertEqual(self.store.expand(latest), {'new': 'new\n'})
+        self.assertEqual(self.store.files(self.root/'absent'), {})
+
+    def test_visible_object_corruption_still_refuses_and_links_specials_are_ignored(self):
+        tree = self.root/'tree'; tree.mkdir()
+        path = tree/'value'; path.write_text('original\n')
+        (tree/'link').symlink_to(path)
+        (tree/'directory-link').symlink_to(self.root, target_is_directory=True)
+        os.mkfifo(tree/'fifo', 0o600)
+        view = self.store.files(tree)
+        self.assertEqual(set(view), {'value'})
+        digest = view['value'][self.store.TAG]
+        (self.store.directory/digest).write_bytes(b'corrupt\n')
+        with self.assertRaisesRegex(ValueError, 'changed'):
+            self.store.files(tree)
 
 
 class ProcessTests(unittest.TestCase):

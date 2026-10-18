@@ -59,10 +59,7 @@ def content(path):
     return path.read_text() if path.is_file() and not path.is_symlink() else None
 
 def files(directory):
-    return {str(path.relative_to(directory)): snapshots.text(path.read_text())
-            for path in directory.rglob("*")
-            if path.is_file() and not path.is_symlink()
-            and not any(part.startswith("bundle.") for part in path.parts)}
+    return snapshots.files(directory)
 
 def durable_guard():
     disk = state["disk"]
