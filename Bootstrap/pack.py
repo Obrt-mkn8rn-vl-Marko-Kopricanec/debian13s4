@@ -92,7 +92,7 @@ def assets():
     # It is not a runtime-health task and must not mark application setup complete.
     for name in ('releases.py', 'identities.py', 'dns_service.py', 'postgresql_identity.py',
                  'sava_transport.py', 'sava_ingress.py', 'sava_service.py', 'private_directory.py', 'email_worker.py',
-                 'prepare.py', 'preflight.py', 'release_manifest.py', 'linux_images.py'):
+                 'prepare.py', 'preflight.py', 'release_manifest.py', 'linux_images.py', 'managed_runtime.py'):
         result[f'lib/applications/{name}'] = ((ROOT / 'Applications' / name).read_bytes(), '0644')
     result['lib/dns/prepare.py'] = ((ROOT / 'DNS/prepare.py').read_bytes(), '0644')
     return result
