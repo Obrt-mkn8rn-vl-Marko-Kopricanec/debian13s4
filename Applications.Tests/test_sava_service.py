@@ -33,11 +33,18 @@ class SavaServiceTests(unittest.TestCase):
 
     def test_real_sources_render_distinct_credentials_argv_storage_and_no_secret_or_native_entry(self):
         before = {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
-        with patch('subprocess.Popen', side_effect=AssertionError('no native entry')):
+        observations, original = [], self.m.prerequisite
+        def prerequisite(*args):
+            result = original(*args); observations.append(result[1]); return result
+        with patch('subprocess.Popen', side_effect=AssertionError('no native entry')), \
+             patch.object(self.m, 'prerequisite', side_effect=prerequisite):
             raw = self.m.prepare()
         value = json.loads(raw)
         self.assertEqual(value['state'], 'protected-sava-service-intention-only')
         plan = value['plan']; app, gateway = (plan['units'][role] for role in ('application', 'gateway'))
+        identity = observations[0]['sava']['identities']
+        self.assertEqual(plan['identity_sha256'], hashlib.sha256(self.m.BASE.canonical(identity)).hexdigest())
+        self.assertEqual(plan['release_sha256'], hashlib.sha256(self.m.BASE.canonical(identity['releases'])).hexdigest())
         self.assertNotEqual(app['identity']['uid'], gateway['identity']['uid'])
         self.assertEqual([c['id'] for c in app['credentials']], ['appsettings.json', 'rpc.key'])
         self.assertEqual([c['id'] for c in gateway['credentials']],

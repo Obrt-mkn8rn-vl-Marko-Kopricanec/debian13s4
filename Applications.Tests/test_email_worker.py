@@ -58,9 +58,16 @@ class EmailWorkerTests(unittest.TestCase):
 
     def test_real_inputs_bind_worker_only_fixed_modes_and_private_credentials_without_native_entry(self):
         before = {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
-        with patch('subprocess.Popen', side_effect=AssertionError('no app/SQL/manager entry')):
+        observations, original = [], self.m.prerequisite
+        def prerequisite(*args):
+            result = original(*args); observations.append(result[1]); return result
+        with patch('subprocess.Popen', side_effect=AssertionError('no app/SQL/manager entry')), \
+             patch.object(self.m, 'prerequisite', side_effect=prerequisite):
             raw = self.m.prepare()
         value = json.loads(raw); plan = value['plan']
+        identity = observations[0]['identities']
+        self.assertEqual(plan['identity_sha256'], hashlib.sha256(self.m.BASE.canonical(identity)).hexdigest())
+        self.assertEqual(plan['release_sha256'], hashlib.sha256(self.m.BASE.canonical(identity['releases'])).hexdigest())
         self.assertEqual(value['state'], self.m.STATE)
         self.assertEqual(plan['application_identity']['name'], 'email_app')
         self.assertIn('Username=email_app', plan['database_intention'])

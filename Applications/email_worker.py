@@ -265,6 +265,8 @@ def render(joined, inputs):
     unit = '\n'.join(lines)+'\n'
     return {'unit_name': UNIT, 'unit': unit, 'unit_sha256': hashlib.sha256(unit.encode('ascii')).hexdigest(),
         'commands': commands, 'application_identity': binding, 'release_generation': release['generation'],
+        'release_sha256': hashlib.sha256(BASE.canonical(joined['identities']['releases'])).hexdigest(),
+        'identity_sha256': hashlib.sha256(BASE.canonical(joined['identities'])).hexdigest(),
         'database_intention': role['connection_intention'], 'inputs': inputs,
         'startup_database_mutations': True, 'full_native_configuration_validated': False}
 

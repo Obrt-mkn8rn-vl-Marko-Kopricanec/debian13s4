@@ -1,6 +1,7 @@
 """Focused private checks for the installed preflight command and its joins."""
 import base64
 import copy
+import hashlib
 import importlib.util
 import io
 import json
@@ -142,6 +143,84 @@ class PreflightTests(unittest.TestCase):
         a, b = self.plans()
         for sava in (a['components']['sava'], b['sava']): sava['settings']['rpc'] = {'address': '::1', 'port': 9100}
         self.assertEqual(len(self.m.listener_plan(a, b)), 5)
+
+    def service_plans(self):
+        def unit(name):
+            text = '[Service]\nDescription=MODEL '+name+'\n'
+            return {'name': name, 'unit': text, 'unit_sha256': hashlib.sha256(text.encode()).hexdigest()}
+        release, identity = 'a'*64, 'b'*64
+        settings = {'value': {'schema': 1, 'architecture': 'x86_64'}, 'source': {'sha256': 'c'*64}}
+        email = unit('debian13s4-email-application.service')
+        email['unit_name'] = email.pop('name')
+        email.update(release_sha256=release, identity_sha256=identity)
+        values = {'linux-images': {'release_sha256': release, 'configuration': settings},
+            'managed-runtime': {'release_sha256': release, 'image_configuration': copy.deepcopy(settings)},
+            'sava-service': {'plan': {'release_sha256': release, 'identity_sha256': identity, 'units': {
+                role: unit('debian13s4-sava-'+role+'.service') for role in ('application', 'gateway')}}},
+            'email-worker': {'plan': email}}
+        for tag, value in values.items():
+            value.update(schema=1, namespace=4711, profile=self.m.CHECKS[tag][1], state=self.m.CHECKS[tag][2])
+        return values
+
+    def test_service_plan_join_refuses_release_identity_target_and_unit_divergence(self):
+        values = self.service_plans()
+        result = self.m.service_plan_correspondence(values)
+        self.assertEqual((result['release_sha256'], result['identity_sha256']), ('a'*64, 'b'*64))
+        self.assertEqual(len(result['units']), 3)
+        self.assertFalse(result['complete_four_application_service_plan'])
+        mutations = [lambda v: v['linux-images'].__setitem__('release_sha256', 'd'*64),
+            lambda v: v['managed-runtime'].__setitem__('release_sha256', 'd'*64),
+            lambda v: v['sava-service']['plan'].__setitem__('release_sha256', 'd'*64),
+            lambda v: v['email-worker']['plan'].__setitem__('release_sha256', 'd'*64),
+            lambda v: v['email-worker']['plan'].__setitem__('identity_sha256', 'd'*64),
+            lambda v: v['managed-runtime']['image_configuration']['value'].__setitem__('schema', True),
+            lambda v: v['managed-runtime']['image_configuration']['source'].__setitem__('sha256', 'd'*64),
+            lambda v: v['email-worker']['plan'].__setitem__('unit', '[Service]\nDescription=changed\n'),
+            lambda v: v['email-worker']['plan'].__setitem__('unit_name', 'debian13s4-sava-gateway.service'),
+            lambda v: v['sava-service']['plan'].__delitem__('identity_sha256')]
+        for mutate in mutations:
+            changed = copy.deepcopy(values); mutate(changed)
+            with self.subTest(mutate=mutate), self.assertRaises(self.m.Pending):
+                self.m.service_plan_correspondence(changed)
+        for invalid in (True, None, '0'*64, 'A'*64, 'a'*63):
+            changed = copy.deepcopy(values)
+            for tag, row in changed.items():
+                (row['plan'] if tag.endswith(('service', 'worker')) else row)['release_sha256'] = invalid
+            with self.subTest(hash=invalid), self.assertRaises(self.m.Pending):
+                self.m.service_plan_correspondence(changed)
+
+    def test_combined_service_selection_has_owned_order_shared_deadline_and_final_fences(self):
+        values, calls, contexts = self.service_plans(), [], [4711]
+        kernel = types.SimpleNamespace(namespace=lambda: contexts[0], uint=lambda value, maximum: value)
+        def owned(tag):
+            def prepare(deadline):
+                calls.append((tag, deadline))
+                return self.m.canonical(values[tag])
+            return types.SimpleNamespace(KERNEL=kernel, MAX_OUTPUT=65536, Pending=ValueError, prepare=prepare)
+        with patch.object(self.m, 'owned', side_effect=owned), patch.object(self.m, 'now', return_value=10):
+            raw = self.m.prepare('service-plans', deadline=20)
+        self.assertEqual(calls, [(tag, 20) for tag in self.m.GROUPS['service-plans']])
+        report = json.loads(raw)
+        self.assertEqual(set(report['checks']), set(values))
+        self.assertEqual(report['listener_intentions'], [])
+        self.assertEqual(report['service_plan_correspondence'], self.m.service_plan_correspondence(values))
+        canonical = self.m.canonical
+        def changed(value):
+            result = canonical(value)
+            if value.get('state') == 'application-preflight-source-only': contexts[0] = 4712
+            return result
+        with patch.object(self.m, 'owned', side_effect=owned), patch.object(self.m, 'now', return_value=10), \
+             patch.object(self.m, 'canonical', side_effect=changed), self.assertRaisesRegex(self.m.Pending, 'namespace changed'):
+            self.m.prepare('service-plans', deadline=20)
+        contexts[0] = 4711
+        def expired(value):
+            result = canonical(value)
+            if value.get('state') == 'application-preflight-source-only': clock[0] = 20
+            return result
+        clock = [10]
+        with patch.object(self.m, 'owned', side_effect=owned), patch.object(self.m, 'now', side_effect=lambda: clock[0]), \
+             patch.object(self.m, 'canonical', side_effect=expired), self.assertRaisesRegex(self.m.Pending, 'window expired'):
+            self.m.prepare('service-plans', deadline=20)
 
     def test_decode_bounds_aliases_and_canonical_types_fail_closed(self):
         raw = self.m.canonical({'schema': 1, 'profile': self.m.CHECKS['releases'][1],

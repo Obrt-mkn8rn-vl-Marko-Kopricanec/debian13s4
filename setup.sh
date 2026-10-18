@@ -405,7 +405,7 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=5fb409f448184f6aa2bf6e27d6767521ea2047bcdc2d4228cfc4034727d3d4fa
+S4B_BUNDLE_ID=af35f59fedd899bf95f0d9e95a35e701dc1a2544a9592e17872404c69945f1cb
 S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/managed_runtime.py lib/dns/prepare.py)
 S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
@@ -11116,6 +11116,8 @@ def render(ingress):
         result[role] = unit(role, bindings[role], release['directory'], data, credentials)
         result[role]['credential_bytes'] = total
     return {'units': result, 'release_generation': release['generation'],
+            'release_sha256': hashlib.sha256(BASE.canonical(identity['releases'])).hexdigest(),
+            'identity_sha256': hashlib.sha256(BASE.canonical(identity)).hexdigest(),
             'required_storage': {'path': data, 'owner_uid': bindings['application']['uid'],
                 'owner_gid': bindings['application']['primary_gid'], 'mode': '0700',
                 'observed': False, 'created': False},
@@ -11608,6 +11610,8 @@ def render(joined, inputs):
     unit = '\\n'.join(lines)+'\\n'
     return {'unit_name': UNIT, 'unit': unit, 'unit_sha256': hashlib.sha256(unit.encode('ascii')).hexdigest(),
         'commands': commands, 'application_identity': binding, 'release_generation': release['generation'],
+        'release_sha256': hashlib.sha256(BASE.canonical(joined['identities']['releases'])).hexdigest(),
+        'identity_sha256': hashlib.sha256(BASE.canonical(joined['identities'])).hexdigest(),
         'database_intention': role['connection_intention'], 'inputs': inputs,
         'startup_database_mutations': True, 'full_native_configuration_validated': False}
 
@@ -11817,6 +11821,7 @@ import importlib.util
 import json
 import math
 from pathlib import Path
+import re
 import sys
 import time
 
@@ -11844,6 +11849,10 @@ CHECKS = {
                      'protected-email-worker-service-intention-only'),
     'prerequisites': ('prepare.py', 'application-file-prerequisites-v1',
                       'application-file-prerequisites-source-only'),
+}
+GROUPS = {
+    'all': ('prerequisites', 'ingress'),
+    'service-plans': ('linux-images', 'managed-runtime', 'sava-service', 'email-worker'),
 }
 ATTEMPT_SECONDS = 2400
 MAX_OUTPUT = 65536
@@ -11946,15 +11955,50 @@ def listener_plan(prerequisites, ingress):
     return claims
 
 
+def digest(value):
+    if type(value) is not str or re.fullmatch('[0-9a-f]{64}', value) is None or value == '0'*64:
+        raise Pending('unsupported complete source commitment')
+    return value
+
+
+def service_plan_correspondence(values):
+    \"\"\"Join observed files and three unit intentions, not installed services.\"\"\"
+    try:
+        image, runtime = values['linux-images'], values['managed-runtime']
+        sava, email = values['sava-service']['plan'], values['email-worker']['plan']
+        releases = [digest(row['release_sha256']) for row in (image, runtime, sava, email)]
+        if len(set(releases)) != 1:
+            raise Pending('complete release observations differ between image, runtime and service plans')
+        identities = [digest(row['identity_sha256']) for row in (sava, email)]
+        if identities[0] != identities[1]:
+            raise Pending('complete identity observations differ between service plans')
+        if canonical(image['configuration']) != canonical(runtime['image_configuration']):
+            raise Pending('Linux target configuration observations differ between image and runtime checks')
+        units = []
+        for name, row in [(sava['units'][role]['name'], sava['units'][role])
+                          for role in ('application', 'gateway')] + [(email['unit_name'], email)]:
+            if (type(name) is not str or re.fullmatch('debian13s4-[a-z-]+\\\\.service', name) is None or
+                type(row['unit']) is not str or not row['unit'] or
+                hashlib.sha256(row['unit'].encode('ascii')).hexdigest() != digest(row['unit_sha256'])):
+                raise Pending('unit intention text or its commitment differs')
+            units.append({'name': name, 'sha256': row['unit_sha256']})
+        if len({row['name'] for row in units}) != len(units):
+            raise Pending('service intentions claim the same unit name')
+        return {'release_sha256': releases[0], 'identity_sha256': identities[0],
+                'units': units, 'complete_four_application_service_plan': False}
+    except (KeyError, TypeError, UnicodeError) as error:
+        raise Pending('incomplete service-plan correspondence') from error
+
+
 def prepare(check='all', deadline=None):
-    if type(check) is not str or check not in (*CHECKS, 'all'):
+    if type(check) is not str or check not in (*CHECKS, *GROUPS):
         raise Pending('unknown application preflight check')
     start = now()
     if deadline is not None and (type(deadline) not in (int, float) or
                                 not math.isfinite(deadline) or deadline <= start):
         raise Pending('invalid inherited preflight deadline')
     end = min(start+ATTEMPT_SECONDS, deadline) if deadline is not None else start+ATTEMPT_SECONDS
-    selected = ('prerequisites', 'ingress') if check == 'all' else (check,)
+    selected = GROUPS.get(check, (check,))
     values, summaries, modules = {}, {}, []
     namespace = None
     for tag in selected:
@@ -11970,9 +12014,12 @@ def prepare(check='all', deadline=None):
         summaries[tag] = {'state': value['state'], 'bytes': len(raw),
                           'sha256': hashlib.sha256(raw).hexdigest()}
     listeners = listener_plan(values['prerequisites'], values['ingress']) if check == 'all' else []
-    payload = canonical({'schema': 1, 'state': 'application-preflight-source-only',
+    report = {'schema': 1, 'state': 'application-preflight-source-only',
         'requested': check, 'namespace': namespace, 'checks': summaries,
-        'listener_intentions': listeners, 'limitations': list(LIMITATIONS)})
+        'listener_intentions': listeners, 'limitations': list(LIMITATIONS)}
+    if check == 'service-plans':
+        report['service_plan_correspondence'] = service_plan_correspondence(values)
+    payload = canonical(report)
     if len(payload) > MAX_OUTPUT:
         raise Pending('preflight report exceeds its bound')
     for module in modules:
@@ -11984,7 +12031,7 @@ def prepare(check='all', deadline=None):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--check', choices=(*CHECKS, 'all'), default='all')
+    parser.add_argument('--check', choices=(*CHECKS, *GROUPS), default='all')
     parser.add_argument('--format', choices=('text', 'json'), default='text')
     args = parser.parse_args(argv)
     try:
@@ -11995,6 +12042,9 @@ def main(argv=None):
                      'Scope: source inputs only; application readiness remains unverified.']
             lines.extend(f\"{row['owner']}: {row['address']}:{row['port']} ({row['transport']} intention)\"
                          for row in value['listener_intentions'])
+            if 'service_plan_correspondence' in value:
+                lines.append('Matching release and identity observations for unit intentions: '+
+                    ', '.join(row['name'] for row in value['service_plan_correspondence']['units'])+'.')
             lines.extend(value['limitations'])
             raw = ('\\n'.join(lines)+'\\n').encode('ascii')
         sink = sys.stdout.buffer
@@ -12905,11 +12955,11 @@ ba5b74a1977287ea168574c2021e638966f400a5bc3f47e255c144a4e59d4073  lib/applicatio
 f5e10597f7bb35cb04ca76ee75c0ec2aed5910698fe256e523f6e2e91f23d561  lib/applications/postgresql_identity.py
 adead23bd4503d3525e3a5cce0bf46de28f7c46b7e3dba9c362f53a1a46042fc  lib/applications/sava_transport.py
 d3a9632c7e3e3bb8e42a060d2c9c0ccbc01deade8d9d4f2a1b7d80754217e226  lib/applications/sava_ingress.py
-358c142b6ee062282292c05c444c20a2e9c76f593f57673f261664dcbd485588  lib/applications/sava_service.py
+f4f9ef7d0a58d4a62f320f069df3b8246aa5f96d7b0873d3c7b47fcf6e8df0d2  lib/applications/sava_service.py
 e146268fc4e5f727d730135c3875282149c807079d989eb63f7e30da8d457c0d  lib/applications/private_directory.py
-15b6aa8cdf5c96d2ed0372b8130a56b7704a0f531f4f204782436002ab3a4676  lib/applications/email_worker.py
+f204ebe4536e14c06db453f7e439169b654bd176223c711d1741f152be469255  lib/applications/email_worker.py
 4668dcff64153729aa7dd09cdba6583adb9044f22e42bb8f230894339955d2b4  lib/applications/prepare.py
-806f4c802535191bd03bfedf1d0256407ca0016899c07db04b41cf910c056718  lib/applications/preflight.py
+8d0b0096f8dc6e865e759b374ceba6fcab7391efc790c2ccc2f16dcc90886e04  lib/applications/preflight.py
 1de119181721839e120647eaf34023d5879602ab1b7b9793e32750c0f65a43e7  lib/applications/release_manifest.py
 ba6972cd98dfe8761ea62d77f542ade67741d794f9b967c5bd84bd973e22913d  lib/applications/linux_images.py
 9f0009b9cdf5436649268b9b99dddbef78ce16092e48f554798fbab91c5aedb1  lib/applications/managed_runtime.py

@@ -11,6 +11,7 @@ import importlib.util
 import json
 import math
 from pathlib import Path
+import re
 import sys
 import time
 
@@ -38,6 +39,10 @@ CHECKS = {
                      'protected-email-worker-service-intention-only'),
     'prerequisites': ('prepare.py', 'application-file-prerequisites-v1',
                       'application-file-prerequisites-source-only'),
+}
+GROUPS = {
+    'all': ('prerequisites', 'ingress'),
+    'service-plans': ('linux-images', 'managed-runtime', 'sava-service', 'email-worker'),
 }
 ATTEMPT_SECONDS = 2400
 MAX_OUTPUT = 65536
@@ -140,15 +145,50 @@ def listener_plan(prerequisites, ingress):
     return claims
 
 
+def digest(value):
+    if type(value) is not str or re.fullmatch('[0-9a-f]{64}', value) is None or value == '0'*64:
+        raise Pending('unsupported complete source commitment')
+    return value
+
+
+def service_plan_correspondence(values):
+    """Join observed files and three unit intentions, not installed services."""
+    try:
+        image, runtime = values['linux-images'], values['managed-runtime']
+        sava, email = values['sava-service']['plan'], values['email-worker']['plan']
+        releases = [digest(row['release_sha256']) for row in (image, runtime, sava, email)]
+        if len(set(releases)) != 1:
+            raise Pending('complete release observations differ between image, runtime and service plans')
+        identities = [digest(row['identity_sha256']) for row in (sava, email)]
+        if identities[0] != identities[1]:
+            raise Pending('complete identity observations differ between service plans')
+        if canonical(image['configuration']) != canonical(runtime['image_configuration']):
+            raise Pending('Linux target configuration observations differ between image and runtime checks')
+        units = []
+        for name, row in [(sava['units'][role]['name'], sava['units'][role])
+                          for role in ('application', 'gateway')] + [(email['unit_name'], email)]:
+            if (type(name) is not str or re.fullmatch('debian13s4-[a-z-]+\\.service', name) is None or
+                type(row['unit']) is not str or not row['unit'] or
+                hashlib.sha256(row['unit'].encode('ascii')).hexdigest() != digest(row['unit_sha256'])):
+                raise Pending('unit intention text or its commitment differs')
+            units.append({'name': name, 'sha256': row['unit_sha256']})
+        if len({row['name'] for row in units}) != len(units):
+            raise Pending('service intentions claim the same unit name')
+        return {'release_sha256': releases[0], 'identity_sha256': identities[0],
+                'units': units, 'complete_four_application_service_plan': False}
+    except (KeyError, TypeError, UnicodeError) as error:
+        raise Pending('incomplete service-plan correspondence') from error
+
+
 def prepare(check='all', deadline=None):
-    if type(check) is not str or check not in (*CHECKS, 'all'):
+    if type(check) is not str or check not in (*CHECKS, *GROUPS):
         raise Pending('unknown application preflight check')
     start = now()
     if deadline is not None and (type(deadline) not in (int, float) or
                                 not math.isfinite(deadline) or deadline <= start):
         raise Pending('invalid inherited preflight deadline')
     end = min(start+ATTEMPT_SECONDS, deadline) if deadline is not None else start+ATTEMPT_SECONDS
-    selected = ('prerequisites', 'ingress') if check == 'all' else (check,)
+    selected = GROUPS.get(check, (check,))
     values, summaries, modules = {}, {}, []
     namespace = None
     for tag in selected:
@@ -164,9 +204,12 @@ def prepare(check='all', deadline=None):
         summaries[tag] = {'state': value['state'], 'bytes': len(raw),
                           'sha256': hashlib.sha256(raw).hexdigest()}
     listeners = listener_plan(values['prerequisites'], values['ingress']) if check == 'all' else []
-    payload = canonical({'schema': 1, 'state': 'application-preflight-source-only',
+    report = {'schema': 1, 'state': 'application-preflight-source-only',
         'requested': check, 'namespace': namespace, 'checks': summaries,
-        'listener_intentions': listeners, 'limitations': list(LIMITATIONS)})
+        'listener_intentions': listeners, 'limitations': list(LIMITATIONS)}
+    if check == 'service-plans':
+        report['service_plan_correspondence'] = service_plan_correspondence(values)
+    payload = canonical(report)
     if len(payload) > MAX_OUTPUT:
         raise Pending('preflight report exceeds its bound')
     for module in modules:
@@ -178,7 +221,7 @@ def prepare(check='all', deadline=None):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--check', choices=(*CHECKS, 'all'), default='all')
+    parser.add_argument('--check', choices=(*CHECKS, *GROUPS), default='all')
     parser.add_argument('--format', choices=('text', 'json'), default='text')
     args = parser.parse_args(argv)
     try:
@@ -189,6 +232,9 @@ def main(argv=None):
                      'Scope: source inputs only; application readiness remains unverified.']
             lines.extend(f"{row['owner']}: {row['address']}:{row['port']} ({row['transport']} intention)"
                          for row in value['listener_intentions'])
+            if 'service_plan_correspondence' in value:
+                lines.append('Matching release and identity observations for unit intentions: '+
+                    ', '.join(row['name'] for row in value['service_plan_correspondence']['units'])+'.')
             lines.extend(value['limitations'])
             raw = ('\n'.join(lines)+'\n').encode('ascii')
         sink = sys.stdout.buffer

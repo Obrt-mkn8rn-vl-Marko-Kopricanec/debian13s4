@@ -183,6 +183,8 @@ def render(ingress):
         result[role] = unit(role, bindings[role], release['directory'], data, credentials)
         result[role]['credential_bytes'] = total
     return {'units': result, 'release_generation': release['generation'],
+            'release_sha256': hashlib.sha256(BASE.canonical(identity['releases'])).hexdigest(),
+            'identity_sha256': hashlib.sha256(BASE.canonical(identity)).hexdigest(),
             'required_storage': {'path': data, 'owner_uid': bindings['application']['uid'],
                 'owner_gid': bindings['application']['primary_gid'], 'mode': '0700',
                 'observed': False, 'created': False},
