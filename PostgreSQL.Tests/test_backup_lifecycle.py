@@ -20,7 +20,7 @@ class BackupLifecycleTests(unittest.TestCase):
         self.m.UNCERTAINTY.DUMP=self.m.SELECTED.DUMP # SAME private exception class delivery.
         self.m.BACKUP=self.h.m.BACKUP;self.m.PREP=self.h.m.PREP;self.m.KERNEL=self.h.m.KERNEL;self.m.STAGE=self.h.h.m.STAGE
         self.store=self.h.h.fixture.root/'lifecycle';self.store.mkdir(mode=0o700)
-        for backend in (self.m.ATTEMPT._STORAGE,self.m.MANIFEST._STORAGE,self.m.UNCERTAINTY._STORAGE):
+        for backend in (self.m.ATTEMPT._STORAGE,self.m.MANIFEST._STORAGE,self.m.UNCERTAINTY._STORAGE,self.m.FAILURE._STORAGE):
             backend.TRUST_ROOT=self.h.h.fixture.root;backend.TRUSTED_UID=os.geteuid()
         self.application='mk8.dns';self.points=[]
 
@@ -67,9 +67,10 @@ class BackupLifecycleTests(unittest.TestCase):
         self.assertEqual(leaf.read_bytes(),first);self.assertEqual(leaf.stat().st_ino,before.st_ino)
 
     def test_each_outcome_leaf_blocks_before_reservation_and_fresh_even_without_slot(self):
-        for name in (self.m.MANIFEST.LEAF,self.m.UNCERTAINTY.LEAF):
+        for name in (self.m.MANIFEST.LEAF,self.m.UNCERTAINTY.LEAF,self.m.FAILURE.LEAF):
             leaf=self.store/name;leaf.write_bytes(b'unknown');leaf.chmod(0o600)
-            with self.subTest(name=name),patch.object(self.m.ATTEMPT,'reserve',side_effect=AssertionError('reserve')),self.assertRaises(ValueError):self.run_once()
+            refusal=self.m.ATTEMPT.Blocked if name==self.m.FAILURE.LEAF else ValueError
+            with self.subTest(name=name),patch.object(self.m.ATTEMPT,'reserve',side_effect=AssertionError('reserve')),self.assertRaises(refusal):self.run_once()
             self.assertEqual(leaf.read_bytes(),b'unknown');leaf.unlink()
         self.assertFalse((self.store/self.m.ATTEMPT.LEAF).exists());self.assertFalse(self.h.h.ledger.exists())
 

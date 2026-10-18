@@ -21,6 +21,7 @@ def module(name,leaf):
 
 MANIFEST=module('debian13s4_backup_lifecycle_manifest','stage_manifest.py')
 ATTEMPT=module('debian13s4_backup_lifecycle_attempt','backup_attempt.py')
+FAILURE=module('debian13s4_backup_lifecycle_failure','attempt_failure.py')
 LISTING=MANIFEST.LISTING
 UNCERTAINTY=LISTING.HISTORY
 SELECTED=UNCERTAINTY.SELECTED # EXACT class consumed by historical uncertainty capture.
@@ -36,6 +37,7 @@ class Blocked(RuntimeError):
         super().__init__('backup SOURCE attempt incomplete; reserved slot forbids automatic retry')
         self.cause,self.reservation,self.selection=cause,reservation,selection
         self.listing,self.manifest,self.history_error,self.cleanup=listing,manifest,history_error,cleanup
+        self.failure_record,self.failure_record_error=None,None
 
 
 def admission(end,context):LISTING.fence(end,context)
@@ -44,10 +46,12 @@ def admission(end,context):LISTING.fence(end,context)
 def outcomes_absent(path,end):
     backend=ATTEMPT._STORAGE;until=backend.window(end);directory,before=backend.locked(path,until)
     try:
-        for leaf in (MANIFEST.LEAF,UNCERTAINTY.LEAF):
+        for leaf in (MANIFEST.LEAF,UNCERTAINTY.LEAF,FAILURE.LEAF):
             backend.admission(until)
             try:os.stat(leaf,dir_fd=directory,follow_symlinks=False)
             except FileNotFoundError:continue
+            if leaf==FAILURE.LEAF:
+                raise ATTEMPT.Blocked('backup failure history closes this attempt; no automatic retry')
             raise Pending('existing backup outcome history forbids another attempt')
         backend.directory_matches(path,directory,before);backend.admission(until)
     finally:os.close(directory)
@@ -75,17 +79,23 @@ def run_once(path,application,stderr_limit,read=None,listing=None,deadline=None)
     admission(end,context);outcomes_absent(path,end)
     reservation=ATTEMPT.reserve(path,application,context,deadline=end)
     selected,listed,manifest,directory=None,None,None,None
+    phase='pre-stage'
     try:
         outcomes_absent(path,end)
         if ATTEMPT.load(path,deadline=end)!=reservation:raise Pending('backup attempt changed before fresh stage')
         admission(end,context)
+        phase='stage'
         selected=SELECTED.stage_selected(application,stderr_limit,read=capture,deadline=end)
+        phase='pre-listing'
         outcomes_absent(path,end)
         if ATTEMPT.load(path,deadline=end)!=reservation:raise Pending('backup attempt changed before listing')
         admission(end,context)
+        phase='listing'
         listed=LISTING.inspect_selected(selected,read=capture,listing=list_stage,deadline=end)
+        phase='manifest'
         outcomes_absent(path,end)
         manifest=MANIFEST.record(path,listed,deadline=end)
+        phase='final-validation'
         stage=LISTING.checked(selected)['stage'];result=MANIFEST.listing_checked(listed)
         original=PREP.canonical(result['selection']['backup_intention'])
         archive=Path(stage['directory']);before=tuple(stage['directory_identity'])
@@ -115,4 +125,10 @@ def run_once(path,application,stderr_limit,read=None,listing=None,deadline=None)
         if type(cause) is SELECTED.Incomplete:
             try:UNCERTAINTY.record(path,cause,deadline=end)
             except BaseException as failure:history_error=failure
-        raise Blocked(cause,reservation,selected,listed,manifest,history_error,tuple(cleanup)) from cause
+        blocked=Blocked(cause,reservation,selected,listed,manifest,history_error,tuple(cleanup))
+        try:
+            blocked.failure_record=FAILURE.record(path,reservation,phase,cause,
+                {'selection':selected,'listing':listed,'manifest':manifest},history_error,tuple(cleanup),deadline=end)
+        except BaseException as failure:
+            blocked.failure_record_error=failure
+        raise blocked from cause

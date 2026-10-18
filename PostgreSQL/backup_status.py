@@ -7,6 +7,7 @@ valid/completed backup, inspects a database/archive, or promotes/deletes a file.
 import argparse
 import hashlib
 import importlib.util
+import json
 import os
 from pathlib import Path
 import sys
@@ -24,7 +25,8 @@ def snapshot(directory, end):
     raw, records = {}, {}
     for tag, module in (('reservation', LIFECYCLE.ATTEMPT),
                         ('manifest', LIFECYCLE.MANIFEST),
-                        ('incomplete', LIFECYCLE.UNCERTAINTY)):
+                        ('incomplete', LIFECYCLE.UNCERTAINTY),
+                        ('failure', LIFECYCLE.FAILURE)):
         storage = module._STORAGE
         until = storage.window(end)
         try:
@@ -41,16 +43,18 @@ def snapshot(directory, end):
 
 def classify(records):
     reservation, manifest, incomplete = (records[tag] for tag in ('reservation', 'manifest', 'incomplete'))
+    failure = records.get('failure')
     if manifest is not None and incomplete is not None:
         raise Pending('conflicting backup outcome records; preserve history and investigate')
     if reservation is None:
-        if manifest is not None or incomplete is not None:
+        if manifest is not None or incomplete is not None or failure is not None:
             raise Pending('backup outcome exists without its reservation; preserve history')
         return 'no-recorded-attempt', None
-    for outcome in (manifest, incomplete):
+    for outcome in (manifest, incomplete, failure):
         if outcome is not None and outcome['application'] != reservation['application']:
             raise Pending('backup reservation and outcome applications differ')
-    state = ('historical-listing-recorded' if manifest is not None else
+    state = ('historical-attempt-incomplete-recorded' if failure is not None else
+             'historical-listing-recorded' if manifest is not None else
              'historical-incomplete-recorded' if incomplete is not None else
              'reserved-outcome-unknown')
     return state, reservation['application']
@@ -63,12 +67,19 @@ def inspect(path, deadline=None):
     try:
         raw, records = snapshot(directory, end)
         state, application = classify(records)
+        if records['failure'] is not None and records['failure']['reservation'].encode('utf-8') != raw['reservation']:
+            raise Pending('recorded lifecycle failure belongs to a different reservation')
         observed = {}
         for tag, data in raw.items():
             observed[tag] = {'present': data is not None}
             if data is not None:
                 observed[tag].update(bytes=len(data), sha256=hashlib.sha256(data).hexdigest(),
                                      state=records[tag]['state'])
+                if tag == 'failure':
+                    kind, detail = records[tag]['cause'][-1]
+                    observed[tag].update(phase=records[tag]['phase'],
+                        diagnostic={'type': kind, 'detail': detail[:256]},
+                        diagnostic_truncated=len(detail) > 256)
         payload = LIFECYCLE.PREP.canonical({'schema': 1, 'state': state,
             'scope': 'historical-backup-records-only', 'directory': str(path),
             'application': application, 'records': observed,
@@ -100,6 +111,10 @@ def main(argv=None):
                 lines.append('Application: '+value['application'])
             lines.extend(tag+': '+('present' if row['present'] else 'absent')
                          for tag, row in value['records'].items())
+            failure = value['records']['failure']
+            if failure['present']:
+                lines.append('Failure phase: '+failure['phase'])
+                lines.append('Recorded cause prefix: '+json.dumps(failure['diagnostic'], ensure_ascii=True))
             lines.append('Historical records do not establish a completed backup or authorize retry.')
             raw = ('\n'.join(lines)+'\n').encode('utf-8')
         count = sys.stdout.buffer.write(raw)

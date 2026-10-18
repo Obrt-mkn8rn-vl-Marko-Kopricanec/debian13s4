@@ -405,9 +405,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=063a37e976b8353f0e039007b16224bd8eaf41a123591d76efb1406e53dff5f1
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/dns/prepare.py)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=4941ac91880d31f1a1379e87db29edc82249fe7279e751977f7478ea6d4e5e79
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/dns/prepare.py)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     mkdir -p -- "$S4B_STAGE/"lib "$S4B_STAGE/"lib/tasks/prerequisites "$S4B_STAGE/"units "$S4B_STAGE/"lib/maintenance "$S4B_STAGE/"lib/tasks/maintenance "$S4B_STAGE/"lib/dotnet "$S4B_STAGE/"lib/tasks/dotnet "$S4B_STAGE/"lib/network "$S4B_STAGE/"lib/tasks/network "$S4B_STAGE/"lib/retention "$S4B_STAGE/"lib/tasks/retention "$S4B_STAGE/"lib/hardening "$S4B_STAGE/"lib/tasks/hardening "$S4B_STAGE/"lib/firewall "$S4B_STAGE/"lib/ssh "$S4B_STAGE/"lib/tasks/ssh "$S4B_STAGE/"lib/postgresql "$S4B_STAGE/"lib/tasks/postgresql "$S4B_STAGE/"lib/web "$S4B_STAGE/"lib/tasks/web "$S4B_STAGE/"lib/applications "$S4B_STAGE/"lib/dns || return 1
@@ -7501,6 +7501,7 @@ def module(name,leaf):
 
 MANIFEST=module('debian13s4_backup_lifecycle_manifest','stage_manifest.py')
 ATTEMPT=module('debian13s4_backup_lifecycle_attempt','backup_attempt.py')
+FAILURE=module('debian13s4_backup_lifecycle_failure','attempt_failure.py')
 LISTING=MANIFEST.LISTING
 UNCERTAINTY=LISTING.HISTORY
 SELECTED=UNCERTAINTY.SELECTED # EXACT class consumed by historical uncertainty capture.
@@ -7516,6 +7517,7 @@ class Blocked(RuntimeError):
         super().__init__('backup SOURCE attempt incomplete; reserved slot forbids automatic retry')
         self.cause,self.reservation,self.selection=cause,reservation,selection
         self.listing,self.manifest,self.history_error,self.cleanup=listing,manifest,history_error,cleanup
+        self.failure_record,self.failure_record_error=None,None
 
 
 def admission(end,context):LISTING.fence(end,context)
@@ -7524,10 +7526,12 @@ def admission(end,context):LISTING.fence(end,context)
 def outcomes_absent(path,end):
     backend=ATTEMPT._STORAGE;until=backend.window(end);directory,before=backend.locked(path,until)
     try:
-        for leaf in (MANIFEST.LEAF,UNCERTAINTY.LEAF):
+        for leaf in (MANIFEST.LEAF,UNCERTAINTY.LEAF,FAILURE.LEAF):
             backend.admission(until)
             try:os.stat(leaf,dir_fd=directory,follow_symlinks=False)
             except FileNotFoundError:continue
+            if leaf==FAILURE.LEAF:
+                raise ATTEMPT.Blocked('backup failure history closes this attempt; no automatic retry')
             raise Pending('existing backup outcome history forbids another attempt')
         backend.directory_matches(path,directory,before);backend.admission(until)
     finally:os.close(directory)
@@ -7555,17 +7559,23 @@ def run_once(path,application,stderr_limit,read=None,listing=None,deadline=None)
     admission(end,context);outcomes_absent(path,end)
     reservation=ATTEMPT.reserve(path,application,context,deadline=end)
     selected,listed,manifest,directory=None,None,None,None
+    phase='pre-stage'
     try:
         outcomes_absent(path,end)
         if ATTEMPT.load(path,deadline=end)!=reservation:raise Pending('backup attempt changed before fresh stage')
         admission(end,context)
+        phase='stage'
         selected=SELECTED.stage_selected(application,stderr_limit,read=capture,deadline=end)
+        phase='pre-listing'
         outcomes_absent(path,end)
         if ATTEMPT.load(path,deadline=end)!=reservation:raise Pending('backup attempt changed before listing')
         admission(end,context)
+        phase='listing'
         listed=LISTING.inspect_selected(selected,read=capture,listing=list_stage,deadline=end)
+        phase='manifest'
         outcomes_absent(path,end)
         manifest=MANIFEST.record(path,listed,deadline=end)
+        phase='final-validation'
         stage=LISTING.checked(selected)['stage'];result=MANIFEST.listing_checked(listed)
         original=PREP.canonical(result['selection']['backup_intention'])
         archive=Path(stage['directory']);before=tuple(stage['directory_identity'])
@@ -7595,7 +7605,13 @@ def run_once(path,application,stderr_limit,read=None,listing=None,deadline=None)
         if type(cause) is SELECTED.Incomplete:
             try:UNCERTAINTY.record(path,cause,deadline=end)
             except BaseException as failure:history_error=failure
-        raise Blocked(cause,reservation,selected,listed,manifest,history_error,tuple(cleanup)) from cause
+        blocked=Blocked(cause,reservation,selected,listed,manifest,history_error,tuple(cleanup))
+        try:
+            blocked.failure_record=FAILURE.record(path,reservation,phase,cause,
+                {'selection':selected,'listing':listed,'manifest':manifest},history_error,tuple(cleanup),deadline=end)
+        except BaseException as failure:
+            blocked.failure_record_error=failure
+        raise blocked from cause
 " > "$S4B_STAGE/"lib/postgresql/backup_lifecycle.py || return 1
     printf '%s' "#!/usr/bin/python3
 \"\"\"Private historical storage shared by the PostgreSQL backup record schemas.
@@ -7848,6 +7864,7 @@ valid/completed backup, inspects a database/archive, or promotes/deletes a file.
 import argparse
 import hashlib
 import importlib.util
+import json
 import os
 from pathlib import Path
 import sys
@@ -7865,7 +7882,8 @@ def snapshot(directory, end):
     raw, records = {}, {}
     for tag, module in (('reservation', LIFECYCLE.ATTEMPT),
                         ('manifest', LIFECYCLE.MANIFEST),
-                        ('incomplete', LIFECYCLE.UNCERTAINTY)):
+                        ('incomplete', LIFECYCLE.UNCERTAINTY),
+                        ('failure', LIFECYCLE.FAILURE)):
         storage = module._STORAGE
         until = storage.window(end)
         try:
@@ -7882,16 +7900,18 @@ def snapshot(directory, end):
 
 def classify(records):
     reservation, manifest, incomplete = (records[tag] for tag in ('reservation', 'manifest', 'incomplete'))
+    failure = records.get('failure')
     if manifest is not None and incomplete is not None:
         raise Pending('conflicting backup outcome records; preserve history and investigate')
     if reservation is None:
-        if manifest is not None or incomplete is not None:
+        if manifest is not None or incomplete is not None or failure is not None:
             raise Pending('backup outcome exists without its reservation; preserve history')
         return 'no-recorded-attempt', None
-    for outcome in (manifest, incomplete):
+    for outcome in (manifest, incomplete, failure):
         if outcome is not None and outcome['application'] != reservation['application']:
             raise Pending('backup reservation and outcome applications differ')
-    state = ('historical-listing-recorded' if manifest is not None else
+    state = ('historical-attempt-incomplete-recorded' if failure is not None else
+             'historical-listing-recorded' if manifest is not None else
              'historical-incomplete-recorded' if incomplete is not None else
              'reserved-outcome-unknown')
     return state, reservation['application']
@@ -7904,12 +7924,19 @@ def inspect(path, deadline=None):
     try:
         raw, records = snapshot(directory, end)
         state, application = classify(records)
+        if records['failure'] is not None and records['failure']['reservation'].encode('utf-8') != raw['reservation']:
+            raise Pending('recorded lifecycle failure belongs to a different reservation')
         observed = {}
         for tag, data in raw.items():
             observed[tag] = {'present': data is not None}
             if data is not None:
                 observed[tag].update(bytes=len(data), sha256=hashlib.sha256(data).hexdigest(),
                                      state=records[tag]['state'])
+                if tag == 'failure':
+                    kind, detail = records[tag]['cause'][-1]
+                    observed[tag].update(phase=records[tag]['phase'],
+                        diagnostic={'type': kind, 'detail': detail[:256]},
+                        diagnostic_truncated=len(detail) > 256)
         payload = LIFECYCLE.PREP.canonical({'schema': 1, 'state': state,
             'scope': 'historical-backup-records-only', 'directory': str(path),
             'application': application, 'records': observed,
@@ -7941,6 +7968,10 @@ def main(argv=None):
                 lines.append('Application: '+value['application'])
             lines.extend(tag+': '+('present' if row['present'] else 'absent')
                          for tag, row in value['records'].items())
+            failure = value['records']['failure']
+            if failure['present']:
+                lines.append('Failure phase: '+failure['phase'])
+                lines.append('Recorded cause prefix: '+json.dumps(failure['diagnostic'], ensure_ascii=True))
             lines.append('Historical records do not establish a completed backup or authorize retry.')
             raw = ('\\n'.join(lines)+'\\n').encode('utf-8')
         count = sys.stdout.buffer.write(raw)
@@ -7956,6 +7987,134 @@ def main(argv=None):
 if __name__ == '__main__':
     sys.exit(main())
 " > "$S4B_STAGE/"lib/postgresql/backup_status.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Retain a reserved lifecycle failure without discharging its original error.
+
+Known returned receipts are opaque historical bytes, not archive validation or
+native completion. Recording can itself fail or leave visible data without
+success. Neither outcome authorizes a second attempt, reset or publication.
+\"\"\"
+import hashlib
+import importlib.util
+from pathlib import Path
+
+
+def module(name, leaf):
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(leaf))
+    value = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(value)
+    return value
+
+
+MANIFEST = module('debian13s4_attempt_failure_manifest', 'stage_manifest.py')
+ATTEMPT = module('debian13s4_attempt_failure_reservation', 'backup_attempt.py')
+_STORAGE = module('debian13s4_attempt_failure_storage', 'private_storage.py')
+HISTORY, PREP, Pending = MANIFEST.HISTORY, MANIFEST.PREP, MANIFEST.Pending
+LEAF = 'selected-backup-incomplete.json'
+STATE = 'historical-backup-attempt-incomplete-no-retry'
+PHASES = ('pre-stage', 'stage', 'pre-listing', 'listing', 'manifest', 'final-validation')
+LIMITS = {'selection': HISTORY.SELECTED.MAX_OUTPUT,
+          'listing': MANIFEST.LISTING.MAX_OUTPUT, 'manifest': MANIFEST.MAX_RECORD}
+MAX_RECORD = 2 * sum(LIMITS.values()) + 2 * ATTEMPT.MAX_BYTES + 131072
+MAX_BYTES = 2 * MAX_RECORD + 4096
+
+
+def digest(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def opaque(raw, maximum):
+    if raw is None:
+        return None
+    if type(raw) is not bytes or len(raw) > maximum:
+        raise Pending('known backup outcome is not bounded immutable bytes')
+    return {'bytes': len(raw), 'sha256': digest(raw), 'hex': raw.hex()}
+
+
+def checked(raw):
+    value = HISTORY.BACKUP.ACCESS.decoded(raw, MAX_RECORD)
+    HISTORY.fields(value, 'schema state application reservation reservation_sha256 phase cause known history_error cleanup')
+    if value['schema'] != 'debian13s4-backup-attempt-incomplete-1' or value['state'] != STATE or \\
+            type(value['reservation']) is not str or type(value['phase']) is not str or value['phase'] not in PHASES:
+        raise Pending('unsupported backup attempt failure profile')
+    reservation = value['reservation'].encode('utf-8')
+    ATTEMPT.checked(reservation)
+    slot = HISTORY.BACKUP.ACCESS.decoded(reservation, ATTEMPT.MAX_BYTES)
+    if type(value['application']) is not str or value['application'] != slot['application'] or \\
+            value['reservation_sha256'] != digest(reservation):
+        raise Pending('backup failure and reserved attempt differ')
+    HISTORY.diagnostics(value['cause'])
+    HISTORY.diagnostics(value['cleanup'])
+    if not value['cause']:
+        raise Pending('missing original backup failure')
+    if value['history_error'] is not None:
+        HISTORY.diagnostics(value['history_error'])
+        if not value['history_error']:
+            raise Pending('missing separate history failure')
+    HISTORY.fields(value['known'], 'selection listing manifest')
+    for tag, maximum in LIMITS.items():
+        row = value['known'][tag]
+        if row is not None:
+            HISTORY.fields(row, 'bytes sha256 hex')
+            data = HISTORY.hex_bytes(row['hex'], maximum)
+            if type(row['bytes']) is not int or row['bytes'] != len(data) or row['sha256'] != digest(data):
+                raise Pending('known opaque backup outcome commitment differs')
+    if raw != PREP.canonical(value):
+        raise Pending('backup attempt failure is not canonical')
+    return value
+
+
+def capture(reservation, phase, cause, known, history_error, cleanup):
+    ATTEMPT.checked(reservation)
+    slot = HISTORY.BACKUP.ACCESS.decoded(reservation, ATTEMPT.MAX_BYTES)
+    if type(phase) is not str or phase not in PHASES or type(cleanup) is not tuple or len(cleanup) > 16:
+        raise Pending('unsupported backup failure phase or cleanup inventory')
+    HISTORY.fields(known, 'selection listing manifest')
+    # Known receipts are never parsed into a fabricated successful outcome here.
+    outcomes = {tag: opaque(known[tag], maximum) for tag, maximum in LIMITS.items()}
+    raw = PREP.canonical({'schema': 'debian13s4-backup-attempt-incomplete-1', 'state': STATE,
+        'application': slot['application'], 'reservation': reservation.decode('utf-8'),
+        'reservation_sha256': digest(reservation), 'phase': phase, 'cause': HISTORY.chain(cause),
+        'known': outcomes, 'history_error': None if history_error is None else HISTORY.chain(history_error),
+        'cleanup': [HISTORY.describe(error) for error in cleanup]})
+    checked(raw)
+    return raw
+
+
+def envelope(payload):
+    checked(payload)
+    raw = PREP.canonical({'schema': 'debian13s4-backup-attempt-failure-history-1', 'state': STATE,
+                          'payload': payload.decode('utf-8'), 'payload_sha256': digest(payload)})
+    if len(raw) > MAX_BYTES:
+        raise Pending('backup failure history exceeds its storage bound')
+    return raw
+
+
+def stored(raw):
+    value = HISTORY.BACKUP.ACCESS.decoded(raw, MAX_BYTES)
+    HISTORY.fields(value, 'schema state payload payload_sha256')
+    if value['schema'] != 'debian13s4-backup-attempt-failure-history-1' or value['state'] != STATE or type(value['payload']) is not str:
+        raise Pending('unsupported backup failure history envelope')
+    payload = value['payload'].encode('utf-8')
+    checked(payload)
+    if value['payload_sha256'] != digest(payload) or raw != PREP.canonical(value):
+        raise Pending('backup failure envelope changed')
+    return payload
+
+
+_STORAGE.LEAF, _STORAGE.MAX_BYTES, _STORAGE.envelope, _STORAGE.checked = LEAF, MAX_BYTES, envelope, stored
+
+
+def record(path, reservation, phase, cause, known, history_error, cleanup, deadline=None):
+    end = _STORAGE.window(deadline)
+    payload = capture(reservation, phase, cause, known, history_error, cleanup)
+    _STORAGE.admission(end)
+    return _STORAGE.create(path, payload, deadline=end)
+
+
+def load(path, deadline=None):
+    return _STORAGE.load(path, deadline=deadline)
+" > "$S4B_STAGE/"lib/postgresql/attempt_failure.py || return 1
     printf '%s' "#!/bin/bash
 
 # shellcheck source=Maintenance/common.sh
@@ -11603,9 +11762,10 @@ b30c8812d83b813bcb9527ae0d94d9c2e8bd045563409851562bd88560bc7399  lib/postgresql
 8ee33451c466e42e7509008d5181098f78bf462c18011a64ab7d5cf29af6083e  lib/postgresql/selected_uncertainty.py
 844e7b6eac0d47bfdf312bd017983f6d66a572645845ecc18b0d8eb08ee57251  lib/postgresql/stage_manifest.py
 2630cb24ea64108000990c07996177a767473851e5929536368f24993a1f1602  lib/postgresql/backup_attempt.py
-6ec9ef543051de4282f7e61cfbe10dc5e0ba6891b6c70a1fa512105999d7128d  lib/postgresql/backup_lifecycle.py
+18de7923f6dd4e6ade2b80f88e6aa793074d82d6b6af8cb02ba2c34bf2a2c94b  lib/postgresql/backup_lifecycle.py
 49852fae5396589b4e66ad2724200e29da4f9ac56be8775a4898d6b653625aa4  lib/postgresql/private_storage.py
-2d13b36879a8adbe4e2dd12206879dc263ee852b519077b580ad9c98bed1221a  lib/postgresql/backup_status.py
+94d12ec5e94f12e24e6dd1da402e3e3b4b636a14f8dd1d7e687155e41886e61c  lib/postgresql/backup_status.py
+a3ae727aea741fd1e6eefd24b0e1ceb49ac8ba6200d0f29d6bf112e189337efb  lib/postgresql/attempt_failure.py
 369af8f804c8cc5381eebdae6884acd092f7e89931e1f7e3a8d555c323a0ad78  lib/postgresql/common.sh
 8970d97756f23f5a59e3ea3b13e251226883ebb35563746369befd626db30d42  lib/postgresql/repair.sh
 53d2380f5858b0674e27357e702913e6026370733c97884d837463180db68d5e  lib/postgresql/debian13s4-postgresql-server.service

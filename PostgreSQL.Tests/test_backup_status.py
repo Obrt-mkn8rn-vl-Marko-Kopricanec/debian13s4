@@ -19,7 +19,7 @@ class BackupStatusTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix='debian13s4-backup-status.')
         self.addCleanup(self.temp.cleanup)
         self.store = Path(self.temp.name); self.store.chmod(0o700)
-        for module in (self.m.LIFECYCLE.ATTEMPT, self.m.LIFECYCLE.MANIFEST, self.m.LIFECYCLE.UNCERTAINTY):
+        for module in (self.m.LIFECYCLE.ATTEMPT, self.m.LIFECYCLE.MANIFEST, self.m.LIFECYCLE.UNCERTAINTY, self.m.LIFECYCLE.FAILURE):
             module._STORAGE.TRUST_ROOT = self.store
             module._STORAGE.TRUSTED_UID = os.geteuid()
 
@@ -94,7 +94,7 @@ class BackupStatusTests(unittest.TestCase):
         history = self.store/'history'; history.mkdir(mode=0o700)
         with patch('subprocess.Popen', side_effect=AssertionError('no native entry')):
             spec.loader.exec_module(installed)
-            for module in (installed.LIFECYCLE.ATTEMPT, installed.LIFECYCLE.MANIFEST, installed.LIFECYCLE.UNCERTAINTY):
+            for module in (installed.LIFECYCLE.ATTEMPT, installed.LIFECYCLE.MANIFEST, installed.LIFECYCLE.UNCERTAINTY, installed.LIFECYCLE.FAILURE):
                 module._STORAGE.TRUST_ROOT = self.store
                 module._STORAGE.TRUSTED_UID = os.geteuid()
                 self.assertFalse(hasattr(module._STORAGE, 'AUTO'))
