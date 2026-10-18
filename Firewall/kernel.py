@@ -225,6 +225,45 @@ def native_route(destination, interface, deadline):
     return _query_json(arguments, deadline, 1)
 
 
+class CaptureCleanupFailure(Pending):
+    """A native capture and its independent owned cleanup failures."""
+    def __init__(self, cause, cleanup):
+        super().__init__('owned native capture cleanup incomplete')
+        self.cause, self.cleanup = cause, cleanup
+
+
+def close_capture(process, selector):
+    """Retire both channels before attempting each bounded cleanup step."""
+    streams = process.stdout, process.stderr
+    process.stdout = process.stderr = None
+    errors = []
+    # An unreaped direct child still reserves its PID even when a descendant
+    # holds the pipes. Never signal a group after the root has been reaped.
+    if process.returncode is None:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        except BaseException as error:
+            errors.append(error)
+        try:
+            process.wait(timeout=CLEANUP_SECONDS)
+        except BaseException as error:
+            errors.append(error)
+    if selector is not None:
+        try:
+            selector.close()
+        except BaseException as error:
+            errors.append(error)
+    for stream in streams:
+        if stream is not None:
+            try:
+                stream.close()
+            except BaseException as error:
+                errors.append(error)
+    return tuple(errors)
+
+
 def _query_json(arguments, deadline, limit):
     if not finite_deadline(deadline):
         raise Pending("invalid native deadline")
@@ -232,32 +271,33 @@ def _query_json(arguments, deadline, limit):
     end = min(deadline, now() + QUERY_SECONDS)
     if now() >= end:
         raise Pending("observation deadline expired")
+    cause, selector = None, None
     process = subprocess.Popen([str(IP_BINARY), "-j", "-N", *arguments],
                                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                env={"PATH": "/usr/bin:/usr/sbin", "LC_ALL": "C"},
                                close_fds=True, start_new_session=True)
-    buffers = {"stdout": bytearray(), "stderr": bytearray()}
     try:
-        with selectors.DefaultSelector() as selector:
-            for label, stream in (("stdout", process.stdout), ("stderr", process.stderr)):
-                os.set_blocking(stream.fileno(), False)
-                selector.register(stream, selectors.EVENT_READ, label)
-            while selector.get_map():
-                remaining = end - now()
-                if remaining <= 0:
-                    raise Pending("native query timed out")
-                for key, _ in selector.select(remaining):
-                    data = os.read(key.fileobj.fileno(), 65536)
-                    if not data:
-                        selector.unregister(key.fileobj)
-                        continue
-                    buffer = buffers[key.data]
-                    if len(buffer) + len(data) > MAX_BYTES:
-                        raise Pending("native output limit exceeded")
-                    buffer.extend(data)
+        buffers = {"stdout": bytearray(), "stderr": bytearray()}
+        selector = selectors.DefaultSelector()
+        for label, stream in (("stdout", process.stdout), ("stderr", process.stderr)):
+            os.set_blocking(stream.fileno(), False)
+            selector.register(stream, selectors.EVENT_READ, label)
+        while selector.get_map():
             remaining = end - now()
-            if remaining <= 0 or process.wait(timeout=remaining) != 0 or buffers["stderr"]:
-                raise Pending("native query failed or warned")
+            if remaining <= 0:
+                raise Pending("native query timed out")
+            for key, _ in selector.select(remaining):
+                data = os.read(key.fileobj.fileno(), 65536)
+                if not data:
+                    selector.unregister(key.fileobj)
+                    continue
+                buffer = buffers[key.data]
+                if len(buffer) + len(data) > MAX_BYTES:
+                    raise Pending("native output limit exceeded")
+                buffer.extend(data)
+        remaining = end - now()
+        if remaining <= 0 or process.wait(timeout=remaining) != 0 or buffers["stderr"]:
+            raise Pending("native query failed or warned")
         if trusted_binary(IP_BINARY) != identity:
             raise Pending("native binary changed during observation")
         try:
@@ -266,21 +306,18 @@ def _query_json(arguments, deadline, limit):
             raise Pending("invalid native JSON") from error
         return rows(value, limit)
     except subprocess.TimeoutExpired as error:
-        raise Pending("native query timed out after pipe closure") from error
+        cause = Pending("native query timed out after pipe closure")
+        raise cause from error
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        try:
-            # Keep the direct PID unreaped until group termination on a capture
-            # error. A leader that exited while a child holds a pipe still owns
-            # its PID, so this cannot target a newly reused process group.
-            if process.returncode is None:
-                try:
-                    os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                process.wait(timeout=CLEANUP_SECONDS)
-        finally:
-            process.stdout.close()
-            process.stderr.close()
+        closing, selector = selector, None
+        cleanup = close_capture(process, closing)
+        if cleanup:
+            if cause is None and len(cleanup) == 1:
+                raise cleanup[0]
+            raise CaptureCleanupFailure(cause, cleanup) from cause
 
 
 def normalize(snapshot):

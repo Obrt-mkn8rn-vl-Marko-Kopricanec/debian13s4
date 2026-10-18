@@ -436,43 +436,44 @@ def capture(binary, arguments, deadline):
     identity = KERNEL.trusted_binary(binary)
     end = min(deadline, KERNEL.now() + KERNEL.QUERY_SECONDS)
     fence(end)
+    cause, selector = None, None
     process = subprocess.Popen([str(binary), *arguments], stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         env={'PATH': '/usr/bin:/usr/sbin', 'LC_ALL': 'C'}, close_fds=True, start_new_session=True)
-    buffers = {'stdout': bytearray(), 'stderr': bytearray()}
     try:
-        with selectors.DefaultSelector() as selector:
-            for label, stream in (('stdout', process.stdout), ('stderr', process.stderr)):
-                os.set_blocking(stream.fileno(), False)
-                selector.register(stream, selectors.EVENT_READ, label)
-            while selector.get_map():
-                fence(end)
-                for key, _ in selector.select(end - KERNEL.now()):
-                    data = os.read(key.fileobj.fileno(), 65536)
-                    if not data:
-                        selector.unregister(key.fileobj); continue
-                    buffer = buffers[key.data]
-                    if len(buffer) + len(data) > MAX_BYTES:
-                        raise Pending('SSH native channel limit exceeded')
-                    buffer.extend(data)
+        buffers = {'stdout': bytearray(), 'stderr': bytearray()}
+        selector = selectors.DefaultSelector()
+        for label, stream in (('stdout', process.stdout), ('stderr', process.stderr)):
+            os.set_blocking(stream.fileno(), False)
+            selector.register(stream, selectors.EVENT_READ, label)
+        while selector.get_map():
             fence(end)
-            code = process.wait(timeout=end - KERNEL.now())
-            if type(code) is not int or code != 0 or buffers['stderr']:
-                raise Pending('SSH native check failed or warned')
+            for key, _ in selector.select(end - KERNEL.now()):
+                data = os.read(key.fileobj.fileno(), 65536)
+                if not data:
+                    selector.unregister(key.fileobj); continue
+                buffer = buffers[key.data]
+                if len(buffer) + len(data) > MAX_BYTES:
+                    raise Pending('SSH native channel limit exceeded')
+                buffer.extend(data)
+        fence(end)
+        code = process.wait(timeout=end - KERNEL.now())
+        if type(code) is not int or code != 0 or buffers['stderr']:
+            raise Pending('SSH native check failed or warned')
         if KERNEL.trusted_binary(binary) != identity:
             raise Pending('SSH native executable changed')
         fence(end)
         return bytes(buffers['stdout'])
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        try:
-            if process.returncode is None:
-                try:
-                    os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                process.wait(timeout=KERNEL.CLEANUP_SECONDS)
-        finally:
-            process.stdout.close(); process.stderr.close()
+        closing, selector = selector, None
+        cleanup = KERNEL.close_capture(process, closing)
+        if cleanup:
+            if cause is None and len(cleanup) == 1:
+                raise cleanup[0]
+            raise KERNEL.CaptureCleanupFailure(cause, cleanup) from cause
 
 
 def effective(raw, plan):

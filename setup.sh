@@ -405,7 +405,7 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=374dc382c6347e53cddd4470e3171831931be8d123fca81f13d5c165cab2a0f9
+S4B_BUNDLE_ID=d6549f0a86f31fcff562dc57319fa467f23b37cc40971d3a89c7a520d0a482f1
 S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/backup_run.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/linux_linkage.py lib/applications/managed_runtime.py lib/applications/cli_image.py lib/applications/managed_images.py lib/applications/managed_assets.py lib/dns/prepare.py)
 S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
@@ -3974,6 +3974,45 @@ def native_route(destination, interface, deadline):
     return _query_json(arguments, deadline, 1)
 
 
+class CaptureCleanupFailure(Pending):
+    \"\"\"A native capture and its independent owned cleanup failures.\"\"\"
+    def __init__(self, cause, cleanup):
+        super().__init__('owned native capture cleanup incomplete')
+        self.cause, self.cleanup = cause, cleanup
+
+
+def close_capture(process, selector):
+    \"\"\"Retire both channels before attempting each bounded cleanup step.\"\"\"
+    streams = process.stdout, process.stderr
+    process.stdout = process.stderr = None
+    errors = []
+    # An unreaped direct child still reserves its PID even when a descendant
+    # holds the pipes. Never signal a group after the root has been reaped.
+    if process.returncode is None:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        except BaseException as error:
+            errors.append(error)
+        try:
+            process.wait(timeout=CLEANUP_SECONDS)
+        except BaseException as error:
+            errors.append(error)
+    if selector is not None:
+        try:
+            selector.close()
+        except BaseException as error:
+            errors.append(error)
+    for stream in streams:
+        if stream is not None:
+            try:
+                stream.close()
+            except BaseException as error:
+                errors.append(error)
+    return tuple(errors)
+
+
 def _query_json(arguments, deadline, limit):
     if not finite_deadline(deadline):
         raise Pending(\"invalid native deadline\")
@@ -3981,32 +4020,33 @@ def _query_json(arguments, deadline, limit):
     end = min(deadline, now() + QUERY_SECONDS)
     if now() >= end:
         raise Pending(\"observation deadline expired\")
+    cause, selector = None, None
     process = subprocess.Popen([str(IP_BINARY), \"-j\", \"-N\", *arguments],
                                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                env={\"PATH\": \"/usr/bin:/usr/sbin\", \"LC_ALL\": \"C\"},
                                close_fds=True, start_new_session=True)
-    buffers = {\"stdout\": bytearray(), \"stderr\": bytearray()}
     try:
-        with selectors.DefaultSelector() as selector:
-            for label, stream in ((\"stdout\", process.stdout), (\"stderr\", process.stderr)):
-                os.set_blocking(stream.fileno(), False)
-                selector.register(stream, selectors.EVENT_READ, label)
-            while selector.get_map():
-                remaining = end - now()
-                if remaining <= 0:
-                    raise Pending(\"native query timed out\")
-                for key, _ in selector.select(remaining):
-                    data = os.read(key.fileobj.fileno(), 65536)
-                    if not data:
-                        selector.unregister(key.fileobj)
-                        continue
-                    buffer = buffers[key.data]
-                    if len(buffer) + len(data) > MAX_BYTES:
-                        raise Pending(\"native output limit exceeded\")
-                    buffer.extend(data)
+        buffers = {\"stdout\": bytearray(), \"stderr\": bytearray()}
+        selector = selectors.DefaultSelector()
+        for label, stream in ((\"stdout\", process.stdout), (\"stderr\", process.stderr)):
+            os.set_blocking(stream.fileno(), False)
+            selector.register(stream, selectors.EVENT_READ, label)
+        while selector.get_map():
             remaining = end - now()
-            if remaining <= 0 or process.wait(timeout=remaining) != 0 or buffers[\"stderr\"]:
-                raise Pending(\"native query failed or warned\")
+            if remaining <= 0:
+                raise Pending(\"native query timed out\")
+            for key, _ in selector.select(remaining):
+                data = os.read(key.fileobj.fileno(), 65536)
+                if not data:
+                    selector.unregister(key.fileobj)
+                    continue
+                buffer = buffers[key.data]
+                if len(buffer) + len(data) > MAX_BYTES:
+                    raise Pending(\"native output limit exceeded\")
+                buffer.extend(data)
+        remaining = end - now()
+        if remaining <= 0 or process.wait(timeout=remaining) != 0 or buffers[\"stderr\"]:
+            raise Pending(\"native query failed or warned\")
         if trusted_binary(IP_BINARY) != identity:
             raise Pending(\"native binary changed during observation\")
         try:
@@ -4015,21 +4055,18 @@ def _query_json(arguments, deadline, limit):
             raise Pending(\"invalid native JSON\") from error
         return rows(value, limit)
     except subprocess.TimeoutExpired as error:
-        raise Pending(\"native query timed out after pipe closure\") from error
+        cause = Pending(\"native query timed out after pipe closure\")
+        raise cause from error
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        try:
-            # Keep the direct PID unreaped until group termination on a capture
-            # error. A leader that exited while a child holds a pipe still owns
-            # its PID, so this cannot target a newly reused process group.
-            if process.returncode is None:
-                try:
-                    os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                process.wait(timeout=CLEANUP_SECONDS)
-        finally:
-            process.stdout.close()
-            process.stderr.close()
+        closing, selector = selector, None
+        cleanup = close_capture(process, closing)
+        if cleanup:
+            if cause is None and len(cleanup) == 1:
+                raise cleanup[0]
+            raise CaptureCleanupFailure(cause, cleanup) from cause
 
 
 def normalize(snapshot):
@@ -5030,43 +5067,44 @@ def capture(binary, arguments, deadline):
     identity = KERNEL.trusted_binary(binary)
     end = min(deadline, KERNEL.now() + KERNEL.QUERY_SECONDS)
     fence(end)
+    cause, selector = None, None
     process = subprocess.Popen([str(binary), *arguments], stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         env={'PATH': '/usr/bin:/usr/sbin', 'LC_ALL': 'C'}, close_fds=True, start_new_session=True)
-    buffers = {'stdout': bytearray(), 'stderr': bytearray()}
     try:
-        with selectors.DefaultSelector() as selector:
-            for label, stream in (('stdout', process.stdout), ('stderr', process.stderr)):
-                os.set_blocking(stream.fileno(), False)
-                selector.register(stream, selectors.EVENT_READ, label)
-            while selector.get_map():
-                fence(end)
-                for key, _ in selector.select(end - KERNEL.now()):
-                    data = os.read(key.fileobj.fileno(), 65536)
-                    if not data:
-                        selector.unregister(key.fileobj); continue
-                    buffer = buffers[key.data]
-                    if len(buffer) + len(data) > MAX_BYTES:
-                        raise Pending('SSH native channel limit exceeded')
-                    buffer.extend(data)
+        buffers = {'stdout': bytearray(), 'stderr': bytearray()}
+        selector = selectors.DefaultSelector()
+        for label, stream in (('stdout', process.stdout), ('stderr', process.stderr)):
+            os.set_blocking(stream.fileno(), False)
+            selector.register(stream, selectors.EVENT_READ, label)
+        while selector.get_map():
             fence(end)
-            code = process.wait(timeout=end - KERNEL.now())
-            if type(code) is not int or code != 0 or buffers['stderr']:
-                raise Pending('SSH native check failed or warned')
+            for key, _ in selector.select(end - KERNEL.now()):
+                data = os.read(key.fileobj.fileno(), 65536)
+                if not data:
+                    selector.unregister(key.fileobj); continue
+                buffer = buffers[key.data]
+                if len(buffer) + len(data) > MAX_BYTES:
+                    raise Pending('SSH native channel limit exceeded')
+                buffer.extend(data)
+        fence(end)
+        code = process.wait(timeout=end - KERNEL.now())
+        if type(code) is not int or code != 0 or buffers['stderr']:
+            raise Pending('SSH native check failed or warned')
         if KERNEL.trusted_binary(binary) != identity:
             raise Pending('SSH native executable changed')
         fence(end)
         return bytes(buffers['stdout'])
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        try:
-            if process.returncode is None:
-                try:
-                    os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                process.wait(timeout=KERNEL.CLEANUP_SECONDS)
-        finally:
-            process.stdout.close(); process.stderr.close()
+        closing, selector = selector, None
+        cleanup = KERNEL.close_capture(process, closing)
+        if cleanup:
+            if cause is None and len(cleanup) == 1:
+                raise cleanup[0]
+            raise KERNEL.CaptureCleanupFailure(cause, cleanup) from cause
 
 
 def effective(raw, plan):
@@ -14380,9 +14418,9 @@ b7e4737e20c27894bbd2613f8df131614b6d0ebfc9aa589c758df9aac2de8efc  lib/hardening/
 e2de7086c2159bf4cd8a2775d8a3aba484b1c5c5237f9c4a36f7e0db4c8e371a  lib/hardening/debian13s4-hardening.timer
 896f7ea78d7f63a5858bbbe278c13fbfc1b49e34875b22c7fcf32567c32d836b  lib/tasks/hardening/apply.sh
 93f98e5dac2f0a3a4e7479eadfa4b52941ac936d4cce43adf7360ad4d08ec8f7  lib/tasks/hardening/verify.sh
-c96d0066b1cb453daf45d4a7fb41d4bada3c96c499e60dfc7da7ee60dfdc562e  lib/firewall/kernel.py
+79bfcfbfa9e7077835f997599d981baa41e2611631e0c72285a5bda39f7c9a27  lib/firewall/kernel.py
 8be3551e55ba629d5b428d4b4eb790633e62f389a280c622e9a017992b7fbdb1  lib/ssh/common.sh
-ea0235d4e421a1ae91d9c95eea8bcc50a992d440476f77ff415aaddf14029c87  lib/ssh/policy.py
+d5aa5c2cdbd5d586a096ce135d6041606173aafdc28b694b953512552cf6dab1  lib/ssh/policy.py
 c695a6f939cef5eb0dec883b04722c71095877f7e0c06f9a76161b6672f35bdf  lib/ssh/repair.sh
 1bb3285e71f2461e8159bd93ba240fae1b89d03cfcf832f811d0d8b411bac735  lib/ssh/debian13s4-admin-ssh.service
 37346a701711ae61f025720ce4360cc5b8de008fce611ce077c43c1181302b59  lib/ssh/debian13s4-ssh.service
