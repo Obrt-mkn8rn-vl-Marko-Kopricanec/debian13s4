@@ -28,6 +28,8 @@ CHECKS = {
              'sava-split-transport-policy-source-only'),
     'ingress': ('sava_ingress.py', 'sava-gateway-nginx-file-correspondence-v1',
                 'protected-sava-gateway-ingress-source-only'),
+    'sava-service': ('sava_service.py', 'sava-systemd-credential-service-intentions-v1',
+                     'protected-sava-service-intention-only'),
     'prerequisites': ('prepare.py', 'application-file-prerequisites-v1',
                       'application-file-prerequisites-source-only'),
 }
