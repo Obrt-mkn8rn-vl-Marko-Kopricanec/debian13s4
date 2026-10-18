@@ -405,7 +405,7 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=f084978be3fa6fd4dd78e47c6e859cf8178363f61a780c3d25a44fcfddb3baf0
+S4B_BUNDLE_ID=f3a3adeb7508e43b0e5ed482d73bb4b842126d83aa254f849dff54724ecf2b7c
 S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/backup_run.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/managed_runtime.py lib/dns/prepare.py)
 S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
@@ -6305,6 +6305,44 @@ class Blocked(RuntimeError):
     \"\"\"An existing or acquired .partial target is not automatically retryable.\"\"\"
 
 
+class CleanupFailure(Blocked):
+    \"\"\"Keep the original failure and each separate checked-close failure.\"\"\"
+    def __init__(self, cause, cleanup):
+        super().__init__('private archive operation and cleanup incomplete; no automatic retry')
+        self.cause, self.cleanup = cause, cleanup
+
+
+def close_retired(cause, *descriptors):
+    \"\"\"Close already-retired owned descriptors once, even if an earlier close fails.\"\"\"
+    errors = []
+    for descriptor in descriptors:
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except BaseException as error:
+                errors.append(error)
+    if errors:
+        if cause is None and len(errors) == 1:
+            raise errors[0]
+        raise CleanupFailure(cause, tuple(errors)) from cause
+
+
+def cleanup_errors(cause):
+    \"\"\"Collect owned archive close errors from the original bounded cause chain.\"\"\"
+    groups, seen = [], set()
+    while cause is not None and id(cause) not in seen and len(seen) < 16:
+        seen.add(id(cause))
+        if type(cause) is CleanupFailure:
+            groups.append(cause.cleanup)
+        cause = cause.__cause__
+    errors, seen = [], set()
+    for group in reversed(groups):
+        for error in group:
+            if id(error) not in seen:
+                seen.add(id(error)); errors.append(error)
+    return tuple(errors)
+
+
 def admission(end):
     if not KERNEL.finite_deadline(end) or KERNEL.now() >= end:
         raise Pending('private archive staging window expired')
@@ -6363,6 +6401,7 @@ def readback(directory, name, identity, count, digest, end):
     if file_identity(os.stat(name, dir_fd=directory, follow_symlinks=False)) != identity:
         raise Pending('private archive readback identity changed')
     fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=directory)
+    cause = None
     try:
         if file_matches(directory, name, fd) != identity:
             raise Pending('private archive readback descriptor changed')
@@ -6380,9 +6419,12 @@ def readback(directory, name, identity, count, digest, end):
         if total != count or hashed.hexdigest() != digest or file_matches(directory, name, fd) != identity:
             raise Pending('private archive bytes or identity changed during readback')
         admission(end)
+    except BaseException as error:
+        cause = error
+        raise
     finally:
         closing, fd = fd, None
-        os.close(closing)
+        close_retired(cause, closing)
 
 
 def stage(path, name, stream, limit, deadline=None):
@@ -6395,7 +6437,7 @@ def stage(path, name, stream, limit, deadline=None):
         raise Pending('unsupported private archive stream or bound')
     admission(end); before = directory_identity(path)
     directory = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
-    fd = None; acquired = False
+    fd = None; acquired = False; cause = None
     try:
         directory_matches(path, directory, before)
         fcntl.flock(directory, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -6446,17 +6488,15 @@ def stage(path, name, stream, limit, deadline=None):
         directory_matches(path, directory, before); admission(end)
         return receipt
     except BaseException as error:
+        cause = error
         if acquired or isinstance(error, FileExistsError):
-            raise Blocked('archive staging target exists or may be visible; no automatic retry') from error
+            cause = Blocked('archive staging target exists or may be visible; no automatic retry')
+            raise cause from error
         raise
     finally:
-        try:
-            if fd is not None:
-                closing, fd = fd, None
-                os.close(closing)
-        finally:
-            closing, directory = directory, None
-            os.close(closing)
+        closing_file, fd = fd, None
+        closing_directory, directory = directory, None
+        close_retired(cause, closing_file, closing_directory)
 " > "$S4B_STAGE/"lib/postgresql/archive_stage.py || return 1
     printf '%s' "#!/usr/bin/python3
 \"\"\"Protected .partial listing SOURCE only, not archive completeness or restore.
@@ -6611,6 +6651,7 @@ def inspect_stage(raw, maximum, read=None, deadline=None):
     if list(before) != record['directory_identity']:
         raise Pending('archive staging directory differs from receipt')
     directory = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    cause = None
     try:
         STAGE.directory_matches(path, directory, before)
         fcntl.flock(directory, fcntl.LOCK_SH | fcntl.LOCK_NB)
@@ -6639,9 +6680,12 @@ def inspect_stage(raw, maximum, read=None, deadline=None):
             raise Pending('archive inspection final executable or context changed')
         STAGE.admission(end)
         return payload
+    except BaseException as error:
+        cause = error
+        raise
     finally:
         closing, directory = directory, None
-        os.close(closing)
+        STAGE.close_retired(cause, closing)
 " > "$S4B_STAGE/"lib/postgresql/archive_inspection.py || return 1
     printf '%s' "#!/usr/bin/python3
 \"\"\"One lazy fixed dump-child stream; no real-host calling authority or publication.
@@ -6945,7 +6989,7 @@ def stage_selected(application, stderr_limit, read=None, deadline=None):
         if cleanup: raise DUMP.Uncertain(cleanup[0],stream.evidence(),cleanup[1:]) from cleanup[0]
         return payload
     except BaseException as cause:
-        cleanup = []
+        cleanup = list(STAGE.cleanup_errors(cause))
         if directory is not None:
             closing, directory = directory, None
             try: os.close(closing)
@@ -7073,7 +7117,7 @@ def inspect_selected(raw, read=None, listing=None, deadline=None):
         closing,directory = directory,None;os.close(closing)
         return payload
     except BaseException as cause:
-        cleanup = []
+        cleanup = list(STAGE.cleanup_errors(cause))
         if directory is not None:
             closing,directory = directory,None
             try:os.close(closing)
@@ -7597,7 +7641,7 @@ def run_once(path,application,stderr_limit,read=None,listing=None,deadline=None)
         closing,directory=directory,None;os.close(closing)
         return payload
     except BaseException as cause:
-        cleanup=[]
+        cleanup=list(STAGE.cleanup_errors(cause))
         if directory is not None:
             closing,directory=directory,None
             try:os.close(closing)
@@ -13336,15 +13380,15 @@ c695a6f939cef5eb0dec883b04722c71095877f7e0c06f9a76161b6672f35bdf  lib/ssh/repair
 7478f5c253c56f1079cddbf7282a187cc22f423335de6f9be62156aada1862e3  lib/postgresql/live.py
 e73ce455f1cb8c5aeb8cc73b77dce4cffe6bdd95d30bd2480bf44da16ca5f944  lib/postgresql/access.py
 075d1757636bc1a2d75809c8bc999be8e8907b02043fa38f1150eb916eef801f  lib/postgresql/backup.py
-f6aa639d8dcce5a8a608afe961074fba6b2e840cc9ab05b2e710301827f4572d  lib/postgresql/archive_stage.py
-4a57e4192202901d4633e365e3ab72bdcca1a0f9897df81df544cea1dc7965ae  lib/postgresql/archive_inspection.py
+59e81c10f8f8b05a096bd97b582fd7daabb6335ce9e3e517cc5733b6e0f911bd  lib/postgresql/archive_stage.py
+e478ae4588092c4a7ad5a8fc910dae22bec8dfa16ccd9463c737e7bcbce6bdd1  lib/postgresql/archive_inspection.py
 2d3e55215a3fa91159fd5baacaf5e6bfe4ea7b4bdd79f709fc94ea26b0a15a1a  lib/postgresql/dump_stream.py
-b30c8812d83b813bcb9527ae0d94d9c2e8bd045563409851562bd88560bc7399  lib/postgresql/selected_stage.py
-48ab9060385fde87cf7fe8ef2ec2ffe27f1a161c73f817d30d9992faa067a857  lib/postgresql/selected_inspection.py
+cbf37f48fee0adada2758944e1fd03a437f363989895fbb96e5ada49dcfce28c  lib/postgresql/selected_stage.py
+e4c34d38e289799664836e4c7697b5ad19d115b14d3d76ca30f3d94daa33b49f  lib/postgresql/selected_inspection.py
 8ee33451c466e42e7509008d5181098f78bf462c18011a64ab7d5cf29af6083e  lib/postgresql/selected_uncertainty.py
 844e7b6eac0d47bfdf312bd017983f6d66a572645845ecc18b0d8eb08ee57251  lib/postgresql/stage_manifest.py
 2630cb24ea64108000990c07996177a767473851e5929536368f24993a1f1602  lib/postgresql/backup_attempt.py
-2a5f2814569163342dd82ccc7507be8aa684544fcfcd220bf5dbd3e4f1015a3a  lib/postgresql/backup_lifecycle.py
+fb8c5a191bf73925612d74e4aa0de83be61a020ef77e7e01bfb166e5e58e76b7  lib/postgresql/backup_lifecycle.py
 49852fae5396589b4e66ad2724200e29da4f9ac56be8775a4898d6b653625aa4  lib/postgresql/private_storage.py
 94d12ec5e94f12e24e6dd1da402e3e3b4b636a14f8dd1d7e687155e41886e61c  lib/postgresql/backup_status.py
 9035ef9a499f25e4bd1029b7c346a9d173ed3bd468fa9870b0132eb8a6e110d0  lib/postgresql/backup_run.py

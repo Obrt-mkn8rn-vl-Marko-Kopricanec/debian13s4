@@ -151,6 +151,7 @@ def inspect_stage(raw, maximum, read=None, deadline=None):
     if list(before) != record['directory_identity']:
         raise Pending('archive staging directory differs from receipt')
     directory = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    cause = None
     try:
         STAGE.directory_matches(path, directory, before)
         fcntl.flock(directory, fcntl.LOCK_SH | fcntl.LOCK_NB)
@@ -179,6 +180,9 @@ def inspect_stage(raw, maximum, read=None, deadline=None):
             raise Pending('archive inspection final executable or context changed')
         STAGE.admission(end)
         return payload
+    except BaseException as error:
+        cause = error
+        raise
     finally:
         closing, directory = directory, None
-        os.close(closing)
+        STAGE.close_retired(cause, closing)

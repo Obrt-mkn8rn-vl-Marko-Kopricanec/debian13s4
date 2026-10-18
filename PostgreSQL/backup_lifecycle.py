@@ -117,7 +117,7 @@ def run_once(path,application,stderr_limit,read=None,listing=None,deadline=None)
         closing,directory=directory,None;os.close(closing)
         return payload
     except BaseException as cause:
-        cleanup=[]
+        cleanup=list(STAGE.cleanup_errors(cause))
         if directory is not None:
             closing,directory=directory,None
             try:os.close(closing)

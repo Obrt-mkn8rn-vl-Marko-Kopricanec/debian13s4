@@ -31,6 +31,44 @@ class Blocked(RuntimeError):
     """An existing or acquired .partial target is not automatically retryable."""
 
 
+class CleanupFailure(Blocked):
+    """Keep the original failure and each separate checked-close failure."""
+    def __init__(self, cause, cleanup):
+        super().__init__('private archive operation and cleanup incomplete; no automatic retry')
+        self.cause, self.cleanup = cause, cleanup
+
+
+def close_retired(cause, *descriptors):
+    """Close already-retired owned descriptors once, even if an earlier close fails."""
+    errors = []
+    for descriptor in descriptors:
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except BaseException as error:
+                errors.append(error)
+    if errors:
+        if cause is None and len(errors) == 1:
+            raise errors[0]
+        raise CleanupFailure(cause, tuple(errors)) from cause
+
+
+def cleanup_errors(cause):
+    """Collect owned archive close errors from the original bounded cause chain."""
+    groups, seen = [], set()
+    while cause is not None and id(cause) not in seen and len(seen) < 16:
+        seen.add(id(cause))
+        if type(cause) is CleanupFailure:
+            groups.append(cause.cleanup)
+        cause = cause.__cause__
+    errors, seen = [], set()
+    for group in reversed(groups):
+        for error in group:
+            if id(error) not in seen:
+                seen.add(id(error)); errors.append(error)
+    return tuple(errors)
+
+
 def admission(end):
     if not KERNEL.finite_deadline(end) or KERNEL.now() >= end:
         raise Pending('private archive staging window expired')
@@ -89,6 +127,7 @@ def readback(directory, name, identity, count, digest, end):
     if file_identity(os.stat(name, dir_fd=directory, follow_symlinks=False)) != identity:
         raise Pending('private archive readback identity changed')
     fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=directory)
+    cause = None
     try:
         if file_matches(directory, name, fd) != identity:
             raise Pending('private archive readback descriptor changed')
@@ -106,9 +145,12 @@ def readback(directory, name, identity, count, digest, end):
         if total != count or hashed.hexdigest() != digest or file_matches(directory, name, fd) != identity:
             raise Pending('private archive bytes or identity changed during readback')
         admission(end)
+    except BaseException as error:
+        cause = error
+        raise
     finally:
         closing, fd = fd, None
-        os.close(closing)
+        close_retired(cause, closing)
 
 
 def stage(path, name, stream, limit, deadline=None):
@@ -121,7 +163,7 @@ def stage(path, name, stream, limit, deadline=None):
         raise Pending('unsupported private archive stream or bound')
     admission(end); before = directory_identity(path)
     directory = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
-    fd = None; acquired = False
+    fd = None; acquired = False; cause = None
     try:
         directory_matches(path, directory, before)
         fcntl.flock(directory, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -172,14 +214,12 @@ def stage(path, name, stream, limit, deadline=None):
         directory_matches(path, directory, before); admission(end)
         return receipt
     except BaseException as error:
+        cause = error
         if acquired or isinstance(error, FileExistsError):
-            raise Blocked('archive staging target exists or may be visible; no automatic retry') from error
+            cause = Blocked('archive staging target exists or may be visible; no automatic retry')
+            raise cause from error
         raise
     finally:
-        try:
-            if fd is not None:
-                closing, fd = fd, None
-                os.close(closing)
-        finally:
-            closing, directory = directory, None
-            os.close(closing)
+        closing_file, fd = fd, None
+        closing_directory, directory = directory, None
+        close_retired(cause, closing_file, closing_directory)
