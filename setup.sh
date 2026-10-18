@@ -405,7 +405,7 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=885abd9d29c56c48945b196058695ff4cfddb3c1720ff01b67b5dac787177102
+S4B_BUNDLE_ID=60a2a2b894547317c22ecaa6a0a303e36bbe530250199fa4f6972ff18217bd90
 S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/backup_run.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/managed_runtime.py lib/applications/cli_image.py lib/applications/managed_images.py lib/dns/prepare.py)
 S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
@@ -7503,6 +7503,7 @@ def reserve(path, application, namespace, deadline=None):
     _STORAGE.admission(end)
     directory, before = _STORAGE.locked(path, end)
     fd, acquired = None, False
+    cause = None
     try:
         try:
             fd = os.open(LEAF, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC,
@@ -7534,13 +7535,12 @@ def reserve(path, application, namespace, deadline=None):
             _STORAGE.directory_matches(path, directory, before)
             _STORAGE.admission(end)
             return raw
+        except BaseException as error:
+            cause = error
+            raise
         finally:
-            try:
-                if fd is not None:
-                    closing, fd = fd, None
-                    os.close(closing)
-            finally:
-                os.close(directory)
+            closing, closing_directory, fd, directory = fd, directory, None, None
+            _STORAGE.close_retired(cause, closing, closing_directory)
     except FileExistsError as error:
         raise Blocked('backup attempt slot already exists; no automatic retry') from error
     except BaseException as error:
@@ -7597,8 +7597,25 @@ class Blocked(RuntimeError):
 def admission(end,context):LISTING.fence(end,context)
 
 
+def cleanup_errors(cause):
+    owned = (STAGE.CleanupFailure, *(module._STORAGE.CleanupFailure for module in
+             (ATTEMPT, MANIFEST, UNCERTAINTY, FAILURE)))
+    groups, seen = [], set()
+    while cause is not None and id(cause) not in seen and len(seen) < 16:
+        seen.add(id(cause))
+        if type(cause) in owned: groups.append(cause.cleanup)
+        cause = cause.__cause__
+    errors, seen = [], set()
+    for group in reversed(groups):
+        for error in group:
+            if id(error) not in seen:
+                seen.add(id(error)); errors.append(error)
+    return tuple(errors)
+
+
 def outcomes_absent(path,end):
     backend=ATTEMPT._STORAGE;until=backend.window(end);directory,before=backend.locked(path,until)
+    cause=None
     try:
         for leaf in (MANIFEST.LEAF,UNCERTAINTY.LEAF,FAILURE.LEAF):
             backend.admission(until)
@@ -7608,7 +7625,12 @@ def outcomes_absent(path,end):
                 raise ATTEMPT.Blocked('backup failure history closes this attempt; no automatic retry')
             raise Pending('existing backup outcome history forbids another attempt')
         backend.directory_matches(path,directory,before);backend.admission(until)
-    finally:os.close(directory)
+    except BaseException as error:
+        cause=error
+        raise
+    finally:
+        closing,directory=directory,None
+        backend.close_retired(cause,closing)
 
 
 def run_once(path,application,stderr_limit,read=None,listing=None,deadline=None):
@@ -7670,7 +7692,7 @@ def run_once(path,application,stderr_limit,read=None,listing=None,deadline=None)
         closing,directory=directory,None;os.close(closing)
         return payload
     except BaseException as cause:
-        cleanup=list(STAGE.cleanup_errors(cause))
+        cleanup=list(cleanup_errors(cause))
         if directory is not None:
             closing,directory=directory,None
             try:os.close(closing)
@@ -7722,6 +7744,40 @@ TRUSTED_UID = 0
 LEAF = ''
 MAX_BYTES = 0
 ATTEMPT_SECONDS = 10
+
+
+class CleanupFailure(Pending):
+    \"\"\"Retain the original operation failure and separate cleanup failures.\"\"\"
+    def __init__(self, cause, cleanup):
+        super().__init__('private history operation or cleanup incomplete; preserve visible history')
+        self.cause, self.cleanup = cause, cleanup
+
+
+def close_retired(cause, *descriptors, errors=()):
+    \"\"\"Close already-retired descriptors once; never replace the original cause.\"\"\"
+    failures = list(errors)
+    for descriptor in descriptors:
+        if descriptor is not None:
+            try: os.close(descriptor)
+            except BaseException as error: failures.append(error)
+    if failures:
+        if cause is None and len(failures) == 1: raise failures[0]
+        raise CleanupFailure(cause, tuple(failures)) from cause
+
+
+def cleanup_errors(cause):
+    \"\"\"Extract only this owned storage instance's bounded cleanup diagnostics.\"\"\"
+    groups, seen = [], set()
+    while cause is not None and id(cause) not in seen and len(seen) < 16:
+        seen.add(id(cause))
+        if type(cause) is CleanupFailure: groups.append(cause.cleanup)
+        cause = cause.__cause__
+    result, seen = [], set()
+    for group in reversed(groups):
+        for error in group:
+            if id(error) not in seen:
+                seen.add(id(error)); result.append(error)
+    return tuple(result)
 
 
 def intent(raw):
@@ -7794,6 +7850,7 @@ def read_at(directory, end, sync=False, links=1):
     before = file_identity(os.stat(LEAF, dir_fd=directory, follow_symlinks=False), links)
     if before[0] != os.fstat(directory).st_dev:raise Pending('proposal leaf device disagrees')
     fd = os.open(LEAF, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=directory)
+    cause = None
     try:
         if file_identity(os.fstat(fd), links) != before:raise Pending('proposal leaf descriptor changed')
         data = bytearray()
@@ -7809,8 +7866,12 @@ def read_at(directory, end, sync=False, links=1):
             raise Pending('proposal leaf changed during read')
         admission(end)
         return bytes(data)
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        os.close(fd)
+        closing, fd = fd, None
+        close_retired(cause, closing)
 
 
 def locked(path, end):
@@ -7822,19 +7883,26 @@ def locked(path, end):
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         directory_matches(path, fd, before);admission(end)
         return fd, before
-    except BaseException:
-        os.close(fd);raise
+    except BaseException as cause:
+        closing, fd = fd, None
+        close_retired(cause, closing)
+        raise
 
 
 def load(path, deadline=None):
     end = window(deadline)
     directory, before = locked(path, end)
+    cause = None
     try:
         payload = checked(read_at(directory, end))
         directory_matches(path, directory, before);admission(end)
         return payload
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        os.close(directory)
+        closing, directory = directory, None
+        close_retired(cause, closing)
 
 
 def reconcile_link(path, directory, before, payload, end):
@@ -7876,6 +7944,7 @@ def create(path, payload, deadline=None):
     raw = envelope(payload);admission(end)
     directory, before = locked(path, end)
     temporary, owned, fd = None, None, None
+    cause = None
     try:
         reconcile_link(path, directory, before, payload, end)
         try:
@@ -7914,7 +7983,11 @@ def create(path, payload, deadline=None):
         if result != payload:raise Pending('published proposal differs from the intended bytes')
         directory_matches(path, directory, before);admission(end)
         return result
+    except BaseException as error:
+        cause = error
+        raise
     finally:
+        errors = []
         try:
             if temporary is not None:
                 directory_matches(path, directory, before)
@@ -7922,13 +7995,11 @@ def create(path, payload, deadline=None):
                         staging_identity(os.stat(temporary, dir_fd=directory, follow_symlinks=False)) != owned:
                     raise Pending('owned staging identity changed before cleanup')
                 os.unlink(temporary, dir_fd=directory)
+        except BaseException as error:
+            errors.append(error)
         finally:
-            try:
-                if fd is not None:
-                    closing, fd = fd, None
-                    os.close(closing)
-            finally:
-                os.close(directory)
+            closing, closing_directory, fd, directory = fd, directory, None, None
+            close_retired(cause, closing, closing_directory, errors=errors)
 " > "$S4B_STAGE/"lib/postgresql/private_storage.py || return 1
     printf '%s' "#!/usr/bin/python3
 \"\"\"Inspect one existing private backup history directory without native work.
@@ -7996,6 +8067,7 @@ def inspect(path, deadline=None):
     storage = LIFECYCLE.ATTEMPT._STORAGE
     end = storage.window(deadline)
     directory, before = storage.locked(path, end)
+    cause = None
     try:
         raw, records = snapshot(directory, end)
         state, application = classify(records)
@@ -8022,9 +8094,12 @@ def inspect(path, deadline=None):
             raise Pending('backup history changed after summary encoding')
         storage.directory_matches(path, directory, before)
         storage.admission(end)
+    except BaseException as error:
+        cause = error
+        raise
     finally:
         closing, directory = directory, None
-        os.close(closing)
+        storage.close_retired(cause, closing)
     return payload
 
 
@@ -13766,10 +13841,10 @@ cbf37f48fee0adada2758944e1fd03a437f363989895fbb96e5ada49dcfce28c  lib/postgresql
 e4c34d38e289799664836e4c7697b5ad19d115b14d3d76ca30f3d94daa33b49f  lib/postgresql/selected_inspection.py
 8ee33451c466e42e7509008d5181098f78bf462c18011a64ab7d5cf29af6083e  lib/postgresql/selected_uncertainty.py
 844e7b6eac0d47bfdf312bd017983f6d66a572645845ecc18b0d8eb08ee57251  lib/postgresql/stage_manifest.py
-2630cb24ea64108000990c07996177a767473851e5929536368f24993a1f1602  lib/postgresql/backup_attempt.py
-fb8c5a191bf73925612d74e4aa0de83be61a020ef77e7e01bfb166e5e58e76b7  lib/postgresql/backup_lifecycle.py
-49852fae5396589b4e66ad2724200e29da4f9ac56be8775a4898d6b653625aa4  lib/postgresql/private_storage.py
-94d12ec5e94f12e24e6dd1da402e3e3b4b636a14f8dd1d7e687155e41886e61c  lib/postgresql/backup_status.py
+ca965202b25b70f463d0a6c3d7b48ba245382274f520710f0c2fe57e14824aab  lib/postgresql/backup_attempt.py
+f231c41d5a7361fad8e4b1fa18d3c78ae2ab505c4b72de798c135edeac25d740  lib/postgresql/backup_lifecycle.py
+d99a4520415f43297fb0f1d85430b6593cc82b23b3d80161ca894bb289d89aa4  lib/postgresql/private_storage.py
+3c5e2277f334d6e69ed31aed79cdeee1f776b76d1f4440184a3e7b0f6c737d61  lib/postgresql/backup_status.py
 9035ef9a499f25e4bd1029b7c346a9d173ed3bd468fa9870b0132eb8a6e110d0  lib/postgresql/backup_run.py
 a3ae727aea741fd1e6eefd24b0e1ceb49ac8ba6200d0f29d6bf112e189337efb  lib/postgresql/attempt_failure.py
 369af8f804c8cc5381eebdae6884acd092f7e89931e1f7e3a8d555c323a0ad78  lib/postgresql/common.sh

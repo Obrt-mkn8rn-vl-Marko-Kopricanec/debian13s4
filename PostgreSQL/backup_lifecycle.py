@@ -44,8 +44,25 @@ class Blocked(RuntimeError):
 def admission(end,context):LISTING.fence(end,context)
 
 
+def cleanup_errors(cause):
+    owned = (STAGE.CleanupFailure, *(module._STORAGE.CleanupFailure for module in
+             (ATTEMPT, MANIFEST, UNCERTAINTY, FAILURE)))
+    groups, seen = [], set()
+    while cause is not None and id(cause) not in seen and len(seen) < 16:
+        seen.add(id(cause))
+        if type(cause) in owned: groups.append(cause.cleanup)
+        cause = cause.__cause__
+    errors, seen = [], set()
+    for group in reversed(groups):
+        for error in group:
+            if id(error) not in seen:
+                seen.add(id(error)); errors.append(error)
+    return tuple(errors)
+
+
 def outcomes_absent(path,end):
     backend=ATTEMPT._STORAGE;until=backend.window(end);directory,before=backend.locked(path,until)
+    cause=None
     try:
         for leaf in (MANIFEST.LEAF,UNCERTAINTY.LEAF,FAILURE.LEAF):
             backend.admission(until)
@@ -55,7 +72,12 @@ def outcomes_absent(path,end):
                 raise ATTEMPT.Blocked('backup failure history closes this attempt; no automatic retry')
             raise Pending('existing backup outcome history forbids another attempt')
         backend.directory_matches(path,directory,before);backend.admission(until)
-    finally:os.close(directory)
+    except BaseException as error:
+        cause=error
+        raise
+    finally:
+        closing,directory=directory,None
+        backend.close_retired(cause,closing)
 
 
 def run_once(path,application,stderr_limit,read=None,listing=None,deadline=None):
@@ -117,7 +139,7 @@ def run_once(path,application,stderr_limit,read=None,listing=None,deadline=None)
         closing,directory=directory,None;os.close(closing)
         return payload
     except BaseException as cause:
-        cleanup=list(STAGE.cleanup_errors(cause))
+        cleanup=list(cleanup_errors(cause))
         if directory is not None:
             closing,directory=directory,None
             try:os.close(closing)

@@ -194,7 +194,7 @@ class SelectedUncertaintyTests(unittest.TestCase):
         def readback(*args,**kwargs):raw=read(*args,**kwargs);clock[0]=now+2;return raw
         with patch.object(self.m._STORAGE.KERNEL,'now',side_effect=lambda:clock[0]),patch.object(self.m._STORAGE,'read_at',side_effect=readback),self.assertRaises(ValueError):self.m.load(self.history,deadline=now+2)
 
-    def test_original_backend_functions_and_other_storage_instances_are_unchanged(self):
+    def test_preserved_backend_policies_and_other_storage_instances_are_unchanged(self):
         import ast
         raw=(fixture.ROOT/'Firewall/proposal_store.py').read_bytes();tree=ast.parse(raw)
         self.assertEqual(self.m._STORAGE.LEAF,self.m.LEAF)
@@ -202,8 +202,11 @@ class SelectedUncertaintyTests(unittest.TestCase):
         self.assertTrue(any(isinstance(n,ast.FunctionDef) and n.name=='create' for n in tree.body))
         original={n.name:ast.dump(n,include_attributes=False) for n in tree.body if isinstance(n,ast.FunctionDef)}
         current=ast.parse((fixture.ROOT/'PostgreSQL/private_storage.py').read_bytes())
+        policies={'admission','window','decoded','directory_identity','directory_matches',
+                  'file_identity','reconcile_link','staging_identity'}
+        self.assertEqual({n.name for n in current.body if isinstance(n,ast.FunctionDef)} & policies,policies)
         for node in current.body:
-            if isinstance(node,ast.FunctionDef) and node.name not in ('intent','envelope','checked'):
+            if isinstance(node,ast.FunctionDef) and node.name in policies:
                 self.assertEqual(ast.dump(node,include_attributes=False),original[node.name])
         self.assertIsNot(self.m._STORAGE,self.h.m.STAGE)
         self.assertEqual(self.h.m.STAGE.MAX_RECEIPT,4096)

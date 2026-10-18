@@ -55,6 +55,7 @@ def reserve(path, application, namespace, deadline=None):
     _STORAGE.admission(end)
     directory, before = _STORAGE.locked(path, end)
     fd, acquired = None, False
+    cause = None
     try:
         try:
             fd = os.open(LEAF, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC,
@@ -86,13 +87,12 @@ def reserve(path, application, namespace, deadline=None):
             _STORAGE.directory_matches(path, directory, before)
             _STORAGE.admission(end)
             return raw
+        except BaseException as error:
+            cause = error
+            raise
         finally:
-            try:
-                if fd is not None:
-                    closing, fd = fd, None
-                    os.close(closing)
-            finally:
-                os.close(directory)
+            closing, closing_directory, fd, directory = fd, directory, None, None
+            _STORAGE.close_retired(cause, closing, closing_directory)
     except FileExistsError as error:
         raise Blocked('backup attempt slot already exists; no automatic retry') from error
     except BaseException as error:

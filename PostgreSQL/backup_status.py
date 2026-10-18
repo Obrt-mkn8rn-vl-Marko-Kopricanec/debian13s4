@@ -64,6 +64,7 @@ def inspect(path, deadline=None):
     storage = LIFECYCLE.ATTEMPT._STORAGE
     end = storage.window(deadline)
     directory, before = storage.locked(path, end)
+    cause = None
     try:
         raw, records = snapshot(directory, end)
         state, application = classify(records)
@@ -90,9 +91,12 @@ def inspect(path, deadline=None):
             raise Pending('backup history changed after summary encoding')
         storage.directory_matches(path, directory, before)
         storage.admission(end)
+    except BaseException as error:
+        cause = error
+        raise
     finally:
         closing, directory = directory, None
-        os.close(closing)
+        storage.close_retired(cause, closing)
     return payload
 
 

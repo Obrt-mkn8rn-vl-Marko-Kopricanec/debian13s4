@@ -34,6 +34,40 @@ MAX_BYTES = 0
 ATTEMPT_SECONDS = 10
 
 
+class CleanupFailure(Pending):
+    """Retain the original operation failure and separate cleanup failures."""
+    def __init__(self, cause, cleanup):
+        super().__init__('private history operation or cleanup incomplete; preserve visible history')
+        self.cause, self.cleanup = cause, cleanup
+
+
+def close_retired(cause, *descriptors, errors=()):
+    """Close already-retired descriptors once; never replace the original cause."""
+    failures = list(errors)
+    for descriptor in descriptors:
+        if descriptor is not None:
+            try: os.close(descriptor)
+            except BaseException as error: failures.append(error)
+    if failures:
+        if cause is None and len(failures) == 1: raise failures[0]
+        raise CleanupFailure(cause, tuple(failures)) from cause
+
+
+def cleanup_errors(cause):
+    """Extract only this owned storage instance's bounded cleanup diagnostics."""
+    groups, seen = [], set()
+    while cause is not None and id(cause) not in seen and len(seen) < 16:
+        seen.add(id(cause))
+        if type(cause) is CleanupFailure: groups.append(cause.cleanup)
+        cause = cause.__cause__
+    result, seen = [], set()
+    for group in reversed(groups):
+        for error in group:
+            if id(error) not in seen:
+                seen.add(id(error)); result.append(error)
+    return tuple(result)
+
+
 def intent(raw):
     raise Pending('no backup history schema is bound to this operation')
 
@@ -104,6 +138,7 @@ def read_at(directory, end, sync=False, links=1):
     before = file_identity(os.stat(LEAF, dir_fd=directory, follow_symlinks=False), links)
     if before[0] != os.fstat(directory).st_dev:raise Pending('proposal leaf device disagrees')
     fd = os.open(LEAF, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=directory)
+    cause = None
     try:
         if file_identity(os.fstat(fd), links) != before:raise Pending('proposal leaf descriptor changed')
         data = bytearray()
@@ -119,8 +154,12 @@ def read_at(directory, end, sync=False, links=1):
             raise Pending('proposal leaf changed during read')
         admission(end)
         return bytes(data)
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        os.close(fd)
+        closing, fd = fd, None
+        close_retired(cause, closing)
 
 
 def locked(path, end):
@@ -132,19 +171,26 @@ def locked(path, end):
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         directory_matches(path, fd, before);admission(end)
         return fd, before
-    except BaseException:
-        os.close(fd);raise
+    except BaseException as cause:
+        closing, fd = fd, None
+        close_retired(cause, closing)
+        raise
 
 
 def load(path, deadline=None):
     end = window(deadline)
     directory, before = locked(path, end)
+    cause = None
     try:
         payload = checked(read_at(directory, end))
         directory_matches(path, directory, before);admission(end)
         return payload
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        os.close(directory)
+        closing, directory = directory, None
+        close_retired(cause, closing)
 
 
 def reconcile_link(path, directory, before, payload, end):
@@ -186,6 +232,7 @@ def create(path, payload, deadline=None):
     raw = envelope(payload);admission(end)
     directory, before = locked(path, end)
     temporary, owned, fd = None, None, None
+    cause = None
     try:
         reconcile_link(path, directory, before, payload, end)
         try:
@@ -224,7 +271,11 @@ def create(path, payload, deadline=None):
         if result != payload:raise Pending('published proposal differs from the intended bytes')
         directory_matches(path, directory, before);admission(end)
         return result
+    except BaseException as error:
+        cause = error
+        raise
     finally:
+        errors = []
         try:
             if temporary is not None:
                 directory_matches(path, directory, before)
@@ -232,10 +283,8 @@ def create(path, payload, deadline=None):
                         staging_identity(os.stat(temporary, dir_fd=directory, follow_symlinks=False)) != owned:
                     raise Pending('owned staging identity changed before cleanup')
                 os.unlink(temporary, dir_fd=directory)
+        except BaseException as error:
+            errors.append(error)
         finally:
-            try:
-                if fd is not None:
-                    closing, fd = fd, None
-                    os.close(closing)
-            finally:
-                os.close(directory)
+            closing, closing_directory, fd, directory = fd, directory, None, None
+            close_retired(cause, closing, closing_directory, errors=errors)
