@@ -132,42 +132,81 @@ def arguments(kind,item=None,epoch=None):
     return OPENSSL,args
 
 
+class CleanupFailure(Pending):
+    """Keep the original capture refusal and separate owned cleanup errors."""
+    def __init__(self, cause, cleanup):
+        super().__init__('web native capture cleanup incomplete')
+        self.cause, self.cleanup = cause, cleanup
+
+
+def close_child(child, selector):
+    """Retire known pipes before cleanup; do not let one error skip another step."""
+    streams = child.stdout, child.stderr
+    child.stdout = child.stderr = None
+    errors = []
+    if child.returncode is None:
+        try:
+            os.killpg(child.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        except BaseException as error:
+            errors.append(error)
+        try:
+            child.wait(timeout=KERNEL.CLEANUP_SECONDS)
+        except BaseException as error:
+            errors.append(error)
+    if selector is not None:
+        try:
+            selector.close()
+        except BaseException as error:
+            errors.append(error)
+    for stream in streams:
+        if stream is not None:
+            try:
+                stream.close()
+            except BaseException as error:
+                errors.append(error)
+    return tuple(errors)
+
+
 def native(kind,item,end,epoch=None):
     PREP.BASE.fence(end);binary,args=arguments(kind,item,epoch)
     before=KERNEL.trusted_binary(binary)
     until=min(end,KERNEL.now()+KERNEL.QUERY_SECONDS);PREP.BASE.fence(until)
+    cause, selector = None, None
     child=subprocess.Popen([str(binary),*args],stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,bufsize=0,env={'PATH':'/usr/bin:/usr/sbin','LC_ALL':'C'},
         close_fds=True,start_new_session=True)
-    buffers={'stdout':bytearray(),'stderr':bytearray()}
     try:
-        with selectors.DefaultSelector() as selector:
-            for name,stream in (('stdout',child.stdout),('stderr',child.stderr)):
-                os.set_blocking(stream.fileno(),False);selector.register(stream,selectors.EVENT_READ,name)
-            while selector.get_map():
-                PREP.BASE.fence(until);remaining=until-KERNEL.now()
-                if remaining<=0:raise Pending('web native capture window expired')
-                for key,_ in selector.select(remaining):
-                    part=os.read(key.fileobj.fileno(),65536)
-                    if not part:selector.unregister(key.fileobj);continue
-                    buffer=buffers[key.data]
-                    if len(buffer)+len(part)>MAX_BYTES:raise Pending('web native channel bound')
-                    buffer.extend(part)
+        buffers={'stdout':bytearray(),'stderr':bytearray()}
+        selector = selectors.DefaultSelector()
+        for name,stream in (('stdout',child.stdout),('stderr',child.stderr)):
+            os.set_blocking(stream.fileno(),False);selector.register(stream,selectors.EVENT_READ,name)
+        while selector.get_map():
             PREP.BASE.fence(until);remaining=until-KERNEL.now()
-            if remaining<=0:raise Pending('web native root wait window expired')
-            code=child.wait(timeout=remaining)
-            if type(code) is not int or code!=0 or buffers['stderr']:raise Pending('web native check failed/warned')
+            if remaining<=0:raise Pending('web native capture window expired')
+            for key,_ in selector.select(remaining):
+                part=os.read(key.fileobj.fileno(),65536)
+                if not part:selector.unregister(key.fileobj);continue
+                buffer=buffers[key.data]
+                if len(buffer)+len(part)>MAX_BYTES:raise Pending('web native channel bound')
+                buffer.extend(part)
+        PREP.BASE.fence(until);remaining=until-KERNEL.now()
+        if remaining<=0:raise Pending('web native root wait window expired')
+        code=child.wait(timeout=remaining)
+        if type(code) is not int or code!=0 or buffers['stderr']:raise Pending('web native check failed/warned')
         if KERNEL.trusted_binary(binary)!=before:raise Pending('web native executable drift')
         PREP.BASE.fence(until);return bytes(buffers['stdout'])
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        try:
-            if child.returncode is None:
-                try:os.killpg(child.pid,signal.SIGKILL)
-                except ProcessLookupError:pass
-                child.wait(timeout=KERNEL.CLEANUP_SECONDS)
-        finally:
-            try:child.stdout.close()
-            finally:child.stderr.close()
+        closing, selector = selector, None
+        cleanup = close_child(child, closing)
+        if cleanup:
+            if cause is None and len(cleanup) == 1:
+                raise cleanup[0]
+            raise CleanupFailure(cause, cleanup) from cause
 
 
 def public_key(raw):

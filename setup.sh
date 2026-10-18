@@ -405,7 +405,7 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=9b037732126dccc2963def496d77ef2f3a7eb96e6710ce7ae13cb762d5df030b
+S4B_BUNDLE_ID=374dc382c6347e53cddd4470e3171831931be8d123fca81f13d5c165cab2a0f9
 S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/backup_run.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/linux_linkage.py lib/applications/managed_runtime.py lib/applications/cli_image.py lib/applications/managed_images.py lib/applications/managed_assets.py lib/dns/prepare.py)
 S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
@@ -9234,42 +9234,81 @@ def arguments(kind,item=None,epoch=None):
     return OPENSSL,args
 
 
+class CleanupFailure(Pending):
+    \"\"\"Keep the original capture refusal and separate owned cleanup errors.\"\"\"
+    def __init__(self, cause, cleanup):
+        super().__init__('web native capture cleanup incomplete')
+        self.cause, self.cleanup = cause, cleanup
+
+
+def close_child(child, selector):
+    \"\"\"Retire known pipes before cleanup; do not let one error skip another step.\"\"\"
+    streams = child.stdout, child.stderr
+    child.stdout = child.stderr = None
+    errors = []
+    if child.returncode is None:
+        try:
+            os.killpg(child.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        except BaseException as error:
+            errors.append(error)
+        try:
+            child.wait(timeout=KERNEL.CLEANUP_SECONDS)
+        except BaseException as error:
+            errors.append(error)
+    if selector is not None:
+        try:
+            selector.close()
+        except BaseException as error:
+            errors.append(error)
+    for stream in streams:
+        if stream is not None:
+            try:
+                stream.close()
+            except BaseException as error:
+                errors.append(error)
+    return tuple(errors)
+
+
 def native(kind,item,end,epoch=None):
     PREP.BASE.fence(end);binary,args=arguments(kind,item,epoch)
     before=KERNEL.trusted_binary(binary)
     until=min(end,KERNEL.now()+KERNEL.QUERY_SECONDS);PREP.BASE.fence(until)
+    cause, selector = None, None
     child=subprocess.Popen([str(binary),*args],stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,bufsize=0,env={'PATH':'/usr/bin:/usr/sbin','LC_ALL':'C'},
         close_fds=True,start_new_session=True)
-    buffers={'stdout':bytearray(),'stderr':bytearray()}
     try:
-        with selectors.DefaultSelector() as selector:
-            for name,stream in (('stdout',child.stdout),('stderr',child.stderr)):
-                os.set_blocking(stream.fileno(),False);selector.register(stream,selectors.EVENT_READ,name)
-            while selector.get_map():
-                PREP.BASE.fence(until);remaining=until-KERNEL.now()
-                if remaining<=0:raise Pending('web native capture window expired')
-                for key,_ in selector.select(remaining):
-                    part=os.read(key.fileobj.fileno(),65536)
-                    if not part:selector.unregister(key.fileobj);continue
-                    buffer=buffers[key.data]
-                    if len(buffer)+len(part)>MAX_BYTES:raise Pending('web native channel bound')
-                    buffer.extend(part)
+        buffers={'stdout':bytearray(),'stderr':bytearray()}
+        selector = selectors.DefaultSelector()
+        for name,stream in (('stdout',child.stdout),('stderr',child.stderr)):
+            os.set_blocking(stream.fileno(),False);selector.register(stream,selectors.EVENT_READ,name)
+        while selector.get_map():
             PREP.BASE.fence(until);remaining=until-KERNEL.now()
-            if remaining<=0:raise Pending('web native root wait window expired')
-            code=child.wait(timeout=remaining)
-            if type(code) is not int or code!=0 or buffers['stderr']:raise Pending('web native check failed/warned')
+            if remaining<=0:raise Pending('web native capture window expired')
+            for key,_ in selector.select(remaining):
+                part=os.read(key.fileobj.fileno(),65536)
+                if not part:selector.unregister(key.fileobj);continue
+                buffer=buffers[key.data]
+                if len(buffer)+len(part)>MAX_BYTES:raise Pending('web native channel bound')
+                buffer.extend(part)
+        PREP.BASE.fence(until);remaining=until-KERNEL.now()
+        if remaining<=0:raise Pending('web native root wait window expired')
+        code=child.wait(timeout=remaining)
+        if type(code) is not int or code!=0 or buffers['stderr']:raise Pending('web native check failed/warned')
         if KERNEL.trusted_binary(binary)!=before:raise Pending('web native executable drift')
         PREP.BASE.fence(until);return bytes(buffers['stdout'])
+    except BaseException as error:
+        cause = error
+        raise
     finally:
-        try:
-            if child.returncode is None:
-                try:os.killpg(child.pid,signal.SIGKILL)
-                except ProcessLookupError:pass
-                child.wait(timeout=KERNEL.CLEANUP_SECONDS)
-        finally:
-            try:child.stdout.close()
-            finally:child.stderr.close()
+        closing, selector = selector, None
+        cleanup = close_child(child, closing)
+        if cleanup:
+            if cause is None and len(cleanup) == 1:
+                raise cleanup[0]
+            raise CleanupFailure(cause, cleanup) from cause
 
 
 def public_key(raw):
@@ -14375,7 +14414,7 @@ a3ae727aea741fd1e6eefd24b0e1ceb49ac8ba6200d0f29d6bf112e189337efb  lib/postgresql
 b09b6b1a5ff3e4c162a2d6bae7a47a1bc39dd804d88bf3f9ecdb56ed5f4b5ba5  lib/tasks/postgresql/apply.sh
 71c562845f4f9d7130ac675d4912ce7ae3459b74050d1b90f22e64a25fa36f84  lib/tasks/postgresql/verify.sh
 f648899b4a9f33e7dbcfb4267bb50b35d6e75f89c6568ba3d00353e5274091c6  lib/web/prepare.py
-297ed3357e3cdae5e2cc601504e12514d1e31d9f4c09c2a54907241d3a78bd76  lib/web/live.py
+90fd1681fc2858eb7525ca0753a7d6b34854c2b43d95dd17577cf2a0d8983649  lib/web/live.py
 61e514726ac9214b7eee710b762c262c66d6f9beb23f2b889efce544d44914e2  lib/web/upstream.py
 bddf21d0cedecc46afb05bf6e610cbb88d1cb4432b67aeb09898f737200ac283  lib/web/common.sh
 1293c7fded0b7f3d157042c6b1dabbbc457721f8d1da0a7963a006dbb045f29d  lib/web/repair.sh
