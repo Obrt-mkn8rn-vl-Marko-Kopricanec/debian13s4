@@ -18,6 +18,8 @@ import time
 CHECKS = {
     'releases': ('releases.py', 'four-app-complete-release-files-v1',
                  'protected-preinstalled-release-source-only'),
+    'linux-images': ('linux_images.py', 'four-app-linux-elf64-entry-structure-v1',
+                     'protected-linux-entry-structure-source-only'),
     'identities': ('identities.py', 'four-app-release-account-intention-v1',
                    'protected-application-execution-identity-source-only'),
     'dns': ('dns_service.py', 'protected-dns-release-service-intention-v1',
