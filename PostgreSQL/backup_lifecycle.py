@@ -45,7 +45,8 @@ def admission(end,context):LISTING.fence(end,context)
 
 
 def cleanup_errors(cause):
-    owned = (STAGE.CleanupFailure, *(module._STORAGE.CleanupFailure for module in
+    owned = (STAGE.CleanupFailure, PREP.CleanupFailure, BACKUP.ACCESS.LIVE.CleanupFailure,
+             *(module._STORAGE.CleanupFailure for module in
              (ATTEMPT, MANIFEST, UNCERTAINTY, FAILURE)))
     groups, seen = [], set()
     while cause is not None and id(cause) not in seen and len(seen) < 16:

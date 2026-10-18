@@ -123,7 +123,8 @@ def stage_selected(application, stderr_limit, read=None, deadline=None):
         if cleanup: raise DUMP.Uncertain(cleanup[0],stream.evidence(),cleanup[1:]) from cleanup[0]
         return payload
     except BaseException as cause:
-        cleanup = list(STAGE.cleanup_errors(cause))
+        cleanup = list(STAGE.cleanup_errors(cause,
+            (PREP.CleanupFailure, BACKUP.ACCESS.LIVE.CleanupFailure)))
         if directory is not None:
             closing, directory = directory, None
             try: os.close(closing)

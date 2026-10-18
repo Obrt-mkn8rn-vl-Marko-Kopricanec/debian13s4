@@ -53,12 +53,12 @@ def close_retired(cause, *descriptors):
         raise CleanupFailure(cause, tuple(errors)) from cause
 
 
-def cleanup_errors(cause):
-    """Collect owned archive close errors from the original bounded cause chain."""
+def cleanup_errors(cause, additional=()):
+    """Collect archive and explicitly owned caller cleanup types from the cause chain."""
     groups, seen = [], set()
     while cause is not None and id(cause) not in seen and len(seen) < 16:
         seen.add(id(cause))
-        if type(cause) is CleanupFailure:
+        if type(cause) in (CleanupFailure, *additional):
             groups.append(cause.cleanup)
         cause = cause.__cause__
     errors, seen = [], set()

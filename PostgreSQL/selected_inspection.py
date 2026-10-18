@@ -112,7 +112,8 @@ def inspect_selected(raw, read=None, listing=None, deadline=None):
         closing,directory = directory,None;os.close(closing)
         return payload
     except BaseException as cause:
-        cleanup = list(STAGE.cleanup_errors(cause))
+        cleanup = list(STAGE.cleanup_errors(cause,
+            (PREP.CleanupFailure, BACKUP.ACCESS.LIVE.CleanupFailure)))
         if directory is not None:
             closing,directory = directory,None
             try:os.close(closing)

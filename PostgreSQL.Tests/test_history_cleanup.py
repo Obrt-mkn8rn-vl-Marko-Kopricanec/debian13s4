@@ -33,6 +33,27 @@ class HistoryCleanupTests(unittest.TestCase):
     def bind(self, storage):
         storage.TRUST_ROOT, storage.TRUSTED_UID = self.root, os.geteuid()
 
+    def test_owned_preparation_and_capture_cleanup_reach_historical_diagnostics(self):
+        life = load('backup_lifecycle.py')
+        original = OSError('original read refusal')
+        read_close, capture_close = OSError('reader close'), OSError('capture close')
+        reader = life.PREP.CleanupFailure(original, (read_close,))
+        reader.__cause__ = original
+        capture = life.BACKUP.ACCESS.LIVE.CleanupFailure(reader, (capture_close, read_close))
+        capture.__cause__ = reader
+        owned = (life.PREP.CleanupFailure, life.BACKUP.ACCESS.LIVE.CleanupFailure)
+        self.assertIsNot(owned[0], owned[1])
+        self.assertEqual(life.STAGE.cleanup_errors(capture, owned), (read_close, capture_close))
+        self.assertEqual(life.cleanup_errors(capture), (read_close, capture_close))
+        self.assertEqual([life.UNCERTAINTY.describe(error) for error in life.cleanup_errors(capture)],
+            [['OSError', 'reader close'], ['OSError', 'capture close']])
+        self.assertEqual(life.UNCERTAINTY.chain(capture)[-1], ['OSError', 'original read refusal'])
+        self.assertEqual(life.STAGE.cleanup_errors(capture), ())
+        foreign = load('prepare.py').CleanupFailure(original, (read_close,))
+        self.assertIsNot(type(foreign), owned[0])
+        self.assertEqual(life.cleanup_errors(foreign), ())
+        self.assertIs(capture.cause, reader); self.assertIs(reader.cause, original)
+
     def test_history_success_resync_and_narrow_link_recovery_keep_exact_payload(self):
         self.assertEqual(self.m.create(self.store, b'opaque'), b'opaque')
         leaf = self.store/self.m.LEAF; before = leaf.stat()
