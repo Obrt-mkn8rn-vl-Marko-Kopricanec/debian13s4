@@ -405,9 +405,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=36c6a21b8c8941aa1e044a9bba5d31578c001a1d2a1994e4435de509c66ade9b
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/managed_runtime.py lib/dns/prepare.py)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=f084978be3fa6fd4dd78e47c6e859cf8178363f61a780c3d25a44fcfddb3baf0
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/backup_run.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/managed_runtime.py lib/dns/prepare.py)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     mkdir -p -- "$S4B_STAGE/"lib "$S4B_STAGE/"lib/tasks/prerequisites "$S4B_STAGE/"units "$S4B_STAGE/"lib/maintenance "$S4B_STAGE/"lib/tasks/maintenance "$S4B_STAGE/"lib/dotnet "$S4B_STAGE/"lib/tasks/dotnet "$S4B_STAGE/"lib/network "$S4B_STAGE/"lib/tasks/network "$S4B_STAGE/"lib/retention "$S4B_STAGE/"lib/tasks/retention "$S4B_STAGE/"lib/hardening "$S4B_STAGE/"lib/tasks/hardening "$S4B_STAGE/"lib/firewall "$S4B_STAGE/"lib/ssh "$S4B_STAGE/"lib/tasks/ssh "$S4B_STAGE/"lib/postgresql "$S4B_STAGE/"lib/tasks/postgresql "$S4B_STAGE/"lib/web "$S4B_STAGE/"lib/tasks/web "$S4B_STAGE/"lib/applications "$S4B_STAGE/"lib/dns || return 1
@@ -7518,6 +7518,7 @@ class Blocked(RuntimeError):
         self.cause,self.reservation,self.selection=cause,reservation,selection
         self.listing,self.manifest,self.history_error,self.cleanup=listing,manifest,history_error,cleanup
         self.failure_record,self.failure_record_error=None,None
+        self.phase=None
 
 
 def admission(end,context):LISTING.fence(end,context)
@@ -7606,6 +7607,7 @@ def run_once(path,application,stderr_limit,read=None,listing=None,deadline=None)
             try:UNCERTAINTY.record(path,cause,deadline=end)
             except BaseException as failure:history_error=failure
         blocked=Blocked(cause,reservation,selected,listed,manifest,history_error,tuple(cleanup))
+        blocked.phase=phase
         try:
             blocked.failure_record=FAILURE.record(path,reservation,phase,cause,
                 {'selection':selected,'listing':listed,'manifest':manifest},history_error,tuple(cleanup),deadline=end)
@@ -7987,6 +7989,144 @@ def main(argv=None):
 if __name__ == '__main__':
     sys.exit(main())
 " > "$S4B_STAGE/"lib/postgresql/backup_status.py || return 1
+    printf '%s' "#!/usr/bin/python3
+\"\"\"Explicit command interface for one reserved backup SOURCE attempt.
+
+status reads existing history only. run-once launches the configured native
+PostgreSQL queries, dump and listing and writes private stage/history files;
+it requires separate operational authorization. No automatic scheduler, retry,
+reset, promotion, completed-backup certification or restore is provided.
+\"\"\"
+import argparse
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import re
+import sys
+
+APPLICATIONS = ('mk8.dns', 'mk8.email')
+MAX_STDERR = 1048576
+MAX_DIAGNOSTIC = 1048576
+
+
+class Pending(ValueError):
+    pass
+
+
+def owned():
+    # Argument errors and --help must not load the preparation/native graph.
+    spec = importlib.util.spec_from_file_location('debian13s4_backup_command_status',
+        Path(__file__).resolve().with_name('backup_status.py'))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def stderr_bound(value):
+    if re.fullmatch('[1-9][0-9]{0,6}', value) is None or int(value) > MAX_STDERR:
+        raise argparse.ArgumentTypeError('stderr bytes must be an integer from 1 through 1048576')
+    return int(value)
+
+
+def write(stream, raw, maximum):
+    if type(raw) is not bytes or not raw or len(raw) > maximum:
+        raise Pending('unsupported bounded backup command output')
+    count = stream.write(raw)
+    if type(count) is not int or count != len(raw):
+        raise Pending('incomplete backup command output')
+    stream.flush()
+
+
+def commitment(raw):
+    if raw is None:
+        return {'returned': False}
+    if type(raw) is not bytes:
+        return {'returned': True, 'supported_bytes': False}
+    return {'returned': True, 'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
+
+
+def describe(error):
+    # Diagnostic formatting must not replace an existing lifecycle failure.
+    name = type(error).__name__[:128]
+    try:
+        message = str(error)[:1024]
+    except BaseException as formatting_error:
+        message = '<message unavailable: '+type(formatting_error).__name__[:128]+'>'
+    return {'type': name, 'message_prefix': message}
+
+
+def chain(error):
+    rows, seen = [], set()
+    while error is not None and id(error) not in seen and len(rows) < 16:
+        seen.add(id(error)); rows.append(describe(error))
+        error = error.__cause__ if error.__cause__ is not None else (
+            None if error.__suppress_context__ else error.__context__)
+    return {'entries': rows, 'truncated_or_cyclic': error is not None}
+
+
+def failure(error, status, operation, phase, directory, result):
+    value = {'schema': 1, 'state': 'backup-command-failed-no-retry',
+        'operation': operation, 'phase': phase, 'directory': str(directory),
+        'backup_complete': False, 'retry_authorized': False, 'diagnostics_only': True,
+        'cause': chain(error), 'known_result': commitment(result)}
+    if status is not None and isinstance(error, status.LIFECYCLE.Blocked):
+        value['state'] = 'reserved-backup-attempt-incomplete-no-retry'
+        value['lifecycle'] = {'phase': error.phase, 'reservation': commitment(error.reservation),
+            'known': {name: commitment(getattr(error, name)) for name in ('selection', 'listing', 'manifest')},
+            'history_error': None if error.history_error is None else chain(error.history_error),
+            'failure_record': commitment(error.failure_record),
+            'failure_record_error': None if error.failure_record_error is None else chain(error.failure_record_error),
+            'cleanup': [describe(item) for item in error.cleanup[:16]],
+            'cleanup_truncated': len(error.cleanup) > 16}
+    raw = (json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+                      allow_nan=False)+'\\n').encode('ascii')
+    if len(raw) > MAX_DIAGNOSTIC:
+        raise Pending('backup command diagnostics exceed their output bound')
+    return raw
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    actions = parser.add_subparsers(dest='action', required=True)
+    history = actions.add_parser('status', help='read existing history without a native operation')
+    history.add_argument('--directory', type=Path, required=True)
+    run = actions.add_parser('run-once', help='perform one explicit reserved native dump/listing attempt')
+    run.add_argument('--directory', type=Path, required=True, help='existing private history directory')
+    run.add_argument('--application', choices=APPLICATIONS, required=True)
+    run.add_argument('--stderr-bytes', type=stderr_bound, required=True,
+                     help='explicit bounded raw dump-warning capacity')
+    args = parser.parse_args(argv)
+    status, result, phase = None, None, 'admission'
+    try:
+        status = owned()
+        if args.action == 'status':
+            phase = 'history-read'
+            result = status.inspect(args.directory)
+            maximum = status.MAX_OUTPUT
+        else:
+            lifecycle = status.LIFECYCLE
+            if tuple(lifecycle.PREP.APPLICATIONS) != APPLICATIONS or lifecycle.SELECTED.DUMP.MAX_STDERR != MAX_STDERR:
+                raise Pending('backup command and owned lifecycle bounds differ')
+            phase = 'lifecycle'
+            result = lifecycle.run_once(args.directory, args.application, args.stderr_bytes)
+            maximum = lifecycle.MAX_OUTPUT
+        phase = 'output'
+        write(sys.stdout.buffer, result, maximum)
+        return 0
+    except (OSError, ValueError, RuntimeError, TypeError, AttributeError, UnicodeError, RecursionError, KeyboardInterrupt) as error:
+        try:
+            diagnostic = failure(error, status, args.action, phase, args.directory, result)
+            write(sys.stderr.buffer, diagnostic, MAX_DIAGNOSTIC)
+        except (OSError, ValueError, TypeError, AttributeError, UnicodeError, RecursionError):
+            # An unavailable diagnostic sink still cannot turn failure into success.
+            pass
+        return 130 if isinstance(error, KeyboardInterrupt) else 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/postgresql/backup_run.py || return 1
     printf '%s' "#!/usr/bin/python3
 \"\"\"Retain a reserved lifecycle failure without discharging its original error.
 
@@ -13204,9 +13344,10 @@ b30c8812d83b813bcb9527ae0d94d9c2e8bd045563409851562bd88560bc7399  lib/postgresql
 8ee33451c466e42e7509008d5181098f78bf462c18011a64ab7d5cf29af6083e  lib/postgresql/selected_uncertainty.py
 844e7b6eac0d47bfdf312bd017983f6d66a572645845ecc18b0d8eb08ee57251  lib/postgresql/stage_manifest.py
 2630cb24ea64108000990c07996177a767473851e5929536368f24993a1f1602  lib/postgresql/backup_attempt.py
-18de7923f6dd4e6ade2b80f88e6aa793074d82d6b6af8cb02ba2c34bf2a2c94b  lib/postgresql/backup_lifecycle.py
+2a5f2814569163342dd82ccc7507be8aa684544fcfcd220bf5dbd3e4f1015a3a  lib/postgresql/backup_lifecycle.py
 49852fae5396589b4e66ad2724200e29da4f9ac56be8775a4898d6b653625aa4  lib/postgresql/private_storage.py
 94d12ec5e94f12e24e6dd1da402e3e3b4b636a14f8dd1d7e687155e41886e61c  lib/postgresql/backup_status.py
+9035ef9a499f25e4bd1029b7c346a9d173ed3bd468fa9870b0132eb8a6e110d0  lib/postgresql/backup_run.py
 a3ae727aea741fd1e6eefd24b0e1ceb49ac8ba6200d0f29d6bf112e189337efb  lib/postgresql/attempt_failure.py
 369af8f804c8cc5381eebdae6884acd092f7e89931e1f7e3a8d555c323a0ad78  lib/postgresql/common.sh
 8970d97756f23f5a59e3ea3b13e251226883ebb35563746369befd626db30d42  lib/postgresql/repair.sh

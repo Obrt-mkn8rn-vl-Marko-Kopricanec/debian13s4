@@ -38,6 +38,7 @@ class Blocked(RuntimeError):
         self.cause,self.reservation,self.selection=cause,reservation,selection
         self.listing,self.manifest,self.history_error,self.cleanup=listing,manifest,history_error,cleanup
         self.failure_record,self.failure_record_error=None,None
+        self.phase=None
 
 
 def admission(end,context):LISTING.fence(end,context)
@@ -126,6 +127,7 @@ def run_once(path,application,stderr_limit,read=None,listing=None,deadline=None)
             try:UNCERTAINTY.record(path,cause,deadline=end)
             except BaseException as failure:history_error=failure
         blocked=Blocked(cause,reservation,selected,listed,manifest,history_error,tuple(cleanup))
+        blocked.phase=phase
         try:
             blocked.failure_record=FAILURE.record(path,reservation,phase,cause,
                 {'selection':selected,'listing':listed,'manifest':manifest},history_error,tuple(cleanup),deadline=end)

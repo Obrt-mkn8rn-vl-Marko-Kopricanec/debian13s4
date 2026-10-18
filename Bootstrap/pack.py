@@ -74,7 +74,7 @@ def assets():
     for name in ('prepare.py', 'live.py', 'access.py', 'backup.py', 'archive_stage.py',
                  'archive_inspection.py', 'dump_stream.py', 'selected_stage.py',
                  'selected_inspection.py', 'selected_uncertainty.py', 'stage_manifest.py',
-                 'backup_attempt.py', 'backup_lifecycle.py', 'private_storage.py', 'backup_status.py', 'attempt_failure.py',
+                 'backup_attempt.py', 'backup_lifecycle.py', 'private_storage.py', 'backup_status.py', 'backup_run.py', 'attempt_failure.py',
                  'common.sh', 'repair.sh',
                  'debian13s4-postgresql-server.service', 'debian13s4-postgresql.service',
                  'debian13s4-postgresql.timer'):
