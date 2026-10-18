@@ -405,7 +405,7 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=49b0cfec81f12c4dfc36e1c2b4df659caf312ff1ea7dc22ec193bbbc8dd286d4
+S4B_BUNDLE_ID=a1ba3b6024e1f380a43366a33249ba7a1a3a27efdf634c4dab0e4374f7245fb0
 S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/backup_run.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/managed_runtime.py lib/applications/cli_image.py lib/applications/managed_images.py lib/applications/managed_assets.py lib/dns/prepare.py)
 S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
@@ -12421,6 +12421,7 @@ CHECKS = {
 GROUPS = {
     'all': ('prerequisites', 'ingress'),
     'service-plans': ('linux-images', 'managed-runtime', 'sava-service', 'email-worker'),
+    'release-files': ('linux-images', 'managed-images', 'managed-assets'),
 }
 ATTEMPT_SECONDS = 2400
 MAX_OUTPUT = 65536
@@ -12558,6 +12559,53 @@ def service_plan_correspondence(values):
         raise Pending('incomplete service-plan correspondence') from error
 
 
+def release_file_correspondence(values):
+    \"\"\"Join native entries, managed entries and selected assets of one release.\"\"\"
+    try:
+        native, managed, assets = (values[tag] for tag in GROUPS['release-files'])
+        releases = [digest(row['release_sha256']) for row in (native, managed, assets)]
+        if len(set(releases)) != 1:
+            raise Pending('complete release observations differ between file checks')
+        runtime = digest(managed['runtime_sha256'])
+        if runtime != digest(assets['runtime_sha256']):
+            raise Pending('complete runtime metadata observations differ between file checks')
+        configuration = canonical(native['configuration'])
+        if any(canonical(row['image_configuration']) != configuration for row in (managed, assets)):
+            raise Pending('Linux target configuration observations differ between file checks')
+        architecture = native['configuration']['value']['architecture']
+        if architecture not in ('x86_64', 'aarch64'):
+            raise Pending('unsupported release-file target architecture')
+        applications = ('mk8.dns', 'mk8.drava', 'mk8.email', 'mk8.sava')
+        if any(set(row['applications']) != set(applications) for row in (native, managed, assets)):
+            raise Pending('release file checks must cover all four applications')
+        entries = []
+        for app in applications:
+            if any(set(row['applications'][app]) != {'application', 'gateway'} for row in (native, managed, assets)):
+                raise Pending('release file checks must cover both application roles')
+            for role in ('application', 'gateway'):
+                executable = native['applications'][app][role]
+                assembly = managed['applications'][app][role]['source']
+                selected = assets['applications'][app][role]['assets']
+                if (type(executable['source']['path']) is not str or
+                    assembly['path'] != executable['source']['path']+'.dll' or
+                    executable['image']['architecture'] != architecture):
+                    raise Pending('native and managed entry paths or architecture differ')
+                if type(selected) is not list or not 1 <= len(selected) <= 256:
+                    raise Pending('unsupported selected release dependency assets')
+                matches = [row['source'] for row in selected if row['kind'] == 'runtime' and
+                           row['source']['path'] == assembly['path']]
+                if len(matches) != 1 or canonical(matches[0]) != canonical(assembly):
+                    raise Pending('managed entry and selected dependency file observations differ')
+                entries.append({'application': app, 'role': role,
+                    'native_sha256': digest(executable['source']['sha256']),
+                    'assembly_sha256': digest(assembly['sha256']), 'selected_assets': len(selected)})
+        return {'release_sha256': releases[0], 'runtime_sha256': runtime,
+                'architecture': architecture, 'entries': entries,
+                'runtime_compatibility_verified': False, 'publisher_authenticated': False}
+    except (KeyError, TypeError, UnicodeError) as error:
+        raise Pending('incomplete release-file correspondence') from error
+
+
 def prepare(check='all', deadline=None):
     if type(check) is not str or check not in (*CHECKS, *GROUPS):
         raise Pending('unknown application preflight check')
@@ -12587,6 +12635,8 @@ def prepare(check='all', deadline=None):
         'listener_intentions': listeners, 'limitations': list(LIMITATIONS)}
     if check == 'service-plans':
         report['service_plan_correspondence'] = service_plan_correspondence(values)
+    if check == 'release-files':
+        report['release_file_correspondence'] = release_file_correspondence(values)
     payload = canonical(report)
     if len(payload) > MAX_OUTPUT:
         raise Pending('preflight report exceeds its bound')
@@ -12613,6 +12663,10 @@ def main(argv=None):
             if 'service_plan_correspondence' in value:
                 lines.append('Matching release and identity observations for unit intentions: '+
                     ', '.join(row['name'] for row in value['service_plan_correspondence']['units'])+'.')
+            if 'release_file_correspondence' in value:
+                files = value['release_file_correspondence']
+                lines.append('Matching native entries, managed entries and dependency files: '+
+                    str(len(files['entries']))+' entries for '+files['architecture']+'.')
             lines.extend(value['limitations'])
             raw = ('\\n'.join(lines)+'\\n').encode('ascii')
         sink = sys.stdout.buffer
@@ -14077,7 +14131,7 @@ e146268fc4e5f727d730135c3875282149c807079d989eb63f7e30da8d457c0d  lib/applicatio
 0ef1b8e9e6258d3492353bb1fcddce322e165c8c24b930c71522c8480ab19528  lib/applications/email_worker.py
 fffc4daf3a061c6223fc6ffb52125ea62b8bdef1ec9d0ebfd05b15b64474d8ed  lib/applications/email_gateway.py
 4668dcff64153729aa7dd09cdba6583adb9044f22e42bb8f230894339955d2b4  lib/applications/prepare.py
-e7733112900fd805a25cdc70f94352ee5c61ea52778615bf21931652078f86a5  lib/applications/preflight.py
+3afea365b4d83c18585e7046a01c9e915ac365e0661337ded2238e7d9c696101  lib/applications/preflight.py
 1de119181721839e120647eaf34023d5879602ab1b7b9793e32750c0f65a43e7  lib/applications/release_manifest.py
 ba6972cd98dfe8761ea62d77f542ade67741d794f9b967c5bd84bd973e22913d  lib/applications/linux_images.py
 9f0009b9cdf5436649268b9b99dddbef78ce16092e48f554798fbab91c5aedb1  lib/applications/managed_runtime.py

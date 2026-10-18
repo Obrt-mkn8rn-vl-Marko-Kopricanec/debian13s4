@@ -49,6 +49,7 @@ CHECKS = {
 GROUPS = {
     'all': ('prerequisites', 'ingress'),
     'service-plans': ('linux-images', 'managed-runtime', 'sava-service', 'email-worker'),
+    'release-files': ('linux-images', 'managed-images', 'managed-assets'),
 }
 ATTEMPT_SECONDS = 2400
 MAX_OUTPUT = 65536
@@ -186,6 +187,53 @@ def service_plan_correspondence(values):
         raise Pending('incomplete service-plan correspondence') from error
 
 
+def release_file_correspondence(values):
+    """Join native entries, managed entries and selected assets of one release."""
+    try:
+        native, managed, assets = (values[tag] for tag in GROUPS['release-files'])
+        releases = [digest(row['release_sha256']) for row in (native, managed, assets)]
+        if len(set(releases)) != 1:
+            raise Pending('complete release observations differ between file checks')
+        runtime = digest(managed['runtime_sha256'])
+        if runtime != digest(assets['runtime_sha256']):
+            raise Pending('complete runtime metadata observations differ between file checks')
+        configuration = canonical(native['configuration'])
+        if any(canonical(row['image_configuration']) != configuration for row in (managed, assets)):
+            raise Pending('Linux target configuration observations differ between file checks')
+        architecture = native['configuration']['value']['architecture']
+        if architecture not in ('x86_64', 'aarch64'):
+            raise Pending('unsupported release-file target architecture')
+        applications = ('mk8.dns', 'mk8.drava', 'mk8.email', 'mk8.sava')
+        if any(set(row['applications']) != set(applications) for row in (native, managed, assets)):
+            raise Pending('release file checks must cover all four applications')
+        entries = []
+        for app in applications:
+            if any(set(row['applications'][app]) != {'application', 'gateway'} for row in (native, managed, assets)):
+                raise Pending('release file checks must cover both application roles')
+            for role in ('application', 'gateway'):
+                executable = native['applications'][app][role]
+                assembly = managed['applications'][app][role]['source']
+                selected = assets['applications'][app][role]['assets']
+                if (type(executable['source']['path']) is not str or
+                    assembly['path'] != executable['source']['path']+'.dll' or
+                    executable['image']['architecture'] != architecture):
+                    raise Pending('native and managed entry paths or architecture differ')
+                if type(selected) is not list or not 1 <= len(selected) <= 256:
+                    raise Pending('unsupported selected release dependency assets')
+                matches = [row['source'] for row in selected if row['kind'] == 'runtime' and
+                           row['source']['path'] == assembly['path']]
+                if len(matches) != 1 or canonical(matches[0]) != canonical(assembly):
+                    raise Pending('managed entry and selected dependency file observations differ')
+                entries.append({'application': app, 'role': role,
+                    'native_sha256': digest(executable['source']['sha256']),
+                    'assembly_sha256': digest(assembly['sha256']), 'selected_assets': len(selected)})
+        return {'release_sha256': releases[0], 'runtime_sha256': runtime,
+                'architecture': architecture, 'entries': entries,
+                'runtime_compatibility_verified': False, 'publisher_authenticated': False}
+    except (KeyError, TypeError, UnicodeError) as error:
+        raise Pending('incomplete release-file correspondence') from error
+
+
 def prepare(check='all', deadline=None):
     if type(check) is not str or check not in (*CHECKS, *GROUPS):
         raise Pending('unknown application preflight check')
@@ -215,6 +263,8 @@ def prepare(check='all', deadline=None):
         'listener_intentions': listeners, 'limitations': list(LIMITATIONS)}
     if check == 'service-plans':
         report['service_plan_correspondence'] = service_plan_correspondence(values)
+    if check == 'release-files':
+        report['release_file_correspondence'] = release_file_correspondence(values)
     payload = canonical(report)
     if len(payload) > MAX_OUTPUT:
         raise Pending('preflight report exceeds its bound')
@@ -241,6 +291,10 @@ def main(argv=None):
             if 'service_plan_correspondence' in value:
                 lines.append('Matching release and identity observations for unit intentions: '+
                     ', '.join(row['name'] for row in value['service_plan_correspondence']['units'])+'.')
+            if 'release_file_correspondence' in value:
+                files = value['release_file_correspondence']
+                lines.append('Matching native entries, managed entries and dependency files: '+
+                    str(len(files['entries']))+' entries for '+files['architecture']+'.')
             lines.extend(value['limitations'])
             raw = ('\n'.join(lines)+'\n').encode('ascii')
         sink = sys.stdout.buffer
