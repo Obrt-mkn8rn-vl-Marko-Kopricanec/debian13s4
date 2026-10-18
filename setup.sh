@@ -405,9 +405,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=040ac8f20d5b8855b973d4d0621674130c89dcd5b28c50e06ad47e9bb6f6ff42
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/dns/prepare.py)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=ff85f6dcd05803ee80019b8f51ed5d191d85c5dc5ab0f2304a263745f1420313
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/dns/prepare.py)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     mkdir -p -- "$S4B_STAGE/"lib "$S4B_STAGE/"lib/tasks/prerequisites "$S4B_STAGE/"units "$S4B_STAGE/"lib/maintenance "$S4B_STAGE/"lib/tasks/maintenance "$S4B_STAGE/"lib/dotnet "$S4B_STAGE/"lib/tasks/dotnet "$S4B_STAGE/"lib/network "$S4B_STAGE/"lib/tasks/network "$S4B_STAGE/"lib/retention "$S4B_STAGE/"lib/tasks/retention "$S4B_STAGE/"lib/hardening "$S4B_STAGE/"lib/tasks/hardening "$S4B_STAGE/"lib/firewall "$S4B_STAGE/"lib/ssh "$S4B_STAGE/"lib/tasks/ssh "$S4B_STAGE/"lib/postgresql "$S4B_STAGE/"lib/tasks/postgresql "$S4B_STAGE/"lib/web "$S4B_STAGE/"lib/tasks/web "$S4B_STAGE/"lib/applications "$S4B_STAGE/"lib/dns || return 1
@@ -10951,6 +10951,10 @@ SPEC = importlib.util.spec_from_file_location('debian13s4_sava_service_ingress',
     Path(__file__).resolve().with_name('sava_ingress.py'))
 INGRESS = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(INGRESS)
+SPEC = importlib.util.spec_from_file_location('debian13s4_sava_private_directory',
+    Path(__file__).resolve().with_name('private_directory.py'))
+STORAGE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(STORAGE)
 SAVA = INGRESS.SAVA
 BASE, KERNEL, Pending = SAVA.BASE, SAVA.KERNEL, SAVA.Pending
 ATTEMPT_SECONDS = 1220
@@ -10994,7 +10998,7 @@ def prerequisite(end, context):
     try:
         raw = INGRESS.prepare(deadline=end)
     except INGRESS.Pending as error:
-        raise Pending('Sava ingress preparation refused') from error
+        raise Pending('Sava ingress preparation refused: '+str(error)) from error
     if type(raw) is not bytes or not raw or len(raw) > INGRESS.MAX_OUTPUT:
         raise Pending('unsupported complete Sava ingress receipt')
     try:
@@ -11119,19 +11123,48 @@ def render(ingress):
             'gateway_listener_intention': gateway['listener']}
 
 
-def prepare(deadline=None):
+def storage_observation(plan, end, context):
+    required = plan['required_storage']
+    shared = plan['units']['application']['identity']['shared_groups']
+    BASE.fence(end)
+    try:
+        raw = STORAGE.observe(Path(required['path']), required['owner_uid'], required['owner_gid'],
+                              list(shared.values()), deadline=end)
+    except (STORAGE.Pending, OSError) as error:
+        raise Pending('Sava private storage directory refused: '+str(error)) from error
+    if type(raw) is not bytes or not raw or len(raw) > STORAGE.MAX_OUTPUT:
+        raise Pending('unsupported private storage observation bytes')
+    value = json.loads(raw, object_pairs_hook=KERNEL.unique_object)
+    if (type(value) is not dict or type(value.get('schema')) is not int or value['schema'] != 1 or
+        value.get('state') != STORAGE.STATE or KERNEL.uint(value.get('namespace'), 0xffffffffffffffff) != context or
+        value.get('path') != required['path'] or type(value.get('owner_uid')) is not int or
+        value['owner_uid'] != required['owner_uid'] or type(value.get('owner_gid')) is not int or
+        value['owner_gid'] != required['owner_gid'] or raw != BASE.canonical(value)):
+        raise Pending('private storage observation differs from the selected Sava identity')
+    BASE.fence(end)
+    return raw, value
+
+
+def prepare(deadline=None, require_storage=False):
     end = KERNEL.now()+ATTEMPT_SECONDS
     if deadline is not None:
         if not KERNEL.finite_deadline(deadline):
             raise Pending('invalid inherited Sava service window')
         end = min(end, deadline)
     BASE.fence(end)
+    if type(require_storage) is not bool:
+        raise Pending('storage admission selection must be a Boolean')
     context = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
     if context == 0:
         raise Pending('missing Sava service namespace')
     raw, ingress = prerequisite(end, context)
     _, private = application_files(ingress, end)
     plan = render(ingress)
+    storage = None
+    if require_storage:
+        storage, observation = storage_observation(plan, end, context)
+        plan['required_storage'].update(observed=True, observation=observation,
+            observation_sha256=hashlib.sha256(storage).hexdigest())
     payload = BASE.canonical({'schema': 1, 'profile': PROFILE, 'state': STATE,
         'namespace': context, 'ingress_sha256': hashlib.sha256(raw).hexdigest(),
         'plan': plan})
@@ -11143,6 +11176,8 @@ def prepare(deadline=None):
     _, after_private = application_files(after_value, end)
     if after_private != private:
         raise Pending('Sava settings bytes changed after service encoding')
+    if require_storage and storage_observation(plan, end, context)[0] != storage:
+        raise Pending('Sava private storage observation changed after service encoding')
     if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != context:
         raise Pending('Sava service namespace changed')
     BASE.fence(end)
@@ -11152,9 +11187,11 @@ def prepare(deadline=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--unit', choices=tuple(UNITS), help='emit only the selected unit text')
+    parser.add_argument('--require-storage', action='store_true',
+                        help='also require the declared existing private data directory')
     args = parser.parse_args(argv)
     try:
-        raw = prepare()
+        raw = prepare(require_storage=args.require_storage)
         if args.unit:
             raw = json.loads(raw)['plan']['units'][args.unit]['unit'].encode('ascii')
         sink = sys.stdout.buffer
@@ -11171,6 +11208,139 @@ def main(argv=None):
 if __name__ == '__main__':
     sys.exit(main())
 " > "$S4B_STAGE/"lib/applications/sava_service.py || return 1
+    printf '%s' "\"\"\"Read-only admission of an existing application-owned private directory.
+
+This observes POSIX file metadata for explicitly supplied numeric identities.
+It does not authenticate NSS credentials, inspect data contents, acquire a
+service lease, test writes, reserve capacity or prove mount/physical durability.
+\"\"\"
+import importlib.util
+import os
+from pathlib import Path
+import re
+import stat
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_directory_reader',
+    Path(__file__).resolve().parents[1]/'PostgreSQL/prepare.py')
+if not Path(SPEC.origin).is_file():
+    SPEC = importlib.util.spec_from_file_location('debian13s4_directory_reader',
+        Path(__file__).resolve().parents[1]/'postgresql/prepare.py')
+BASE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(BASE)
+KERNEL, Pending = BASE.KERNEL, BASE.Pending
+ATTEMPT_SECONDS = 10
+MAX_OUTPUT = 32768
+STATE = 'private-application-directory-file-observation-only'
+
+
+class CleanupFailure(Pending):
+    \"\"\"Keep a body refusal and its separate descriptor cleanup failure.\"\"\"
+    def __init__(self, cause, close_error):
+        super().__init__('private directory observation and descriptor close both failed')
+        self.cause = cause
+        self.close_error = close_error
+
+
+def identity(info):
+    # Directory contents may change: this is ownership/path identity, not an
+    # inventory or a snapshot of the application's stored data.
+    return [info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid]
+
+
+def searchable(info, uid, groups):
+    permission = 0o100 if info.st_uid == uid else 0o010 if info.st_gid in groups else 0o001
+    return bool(info.st_mode & permission)
+
+
+def ancestry(path, uid, groups, end):
+    try:
+        relative = path.relative_to(BASE.TRUST_ROOT)
+    except ValueError as error:
+        raise Pending('private application directory is outside the trusted root') from error
+    if not relative.parts:
+        raise Pending('application data cannot be the trusted ancestry root')
+    current = BASE.TRUST_ROOT
+    result = {}
+    for part in ('', *relative.parts[:-1]):
+        if part:
+            current /= part
+        BASE.fence(end)
+        info = current.lstat()
+        if (not stat.S_ISDIR(info.st_mode) or info.st_uid != BASE.TRUSTED_UID or
+            info.st_mode & 0o022):
+            raise Pending('private application data requires protected root-owned ancestry')
+        if not searchable(info, uid, groups):
+            raise Pending('application identity lacks an ancestry search permission')
+        result[str(current)] = identity(info)
+    return result
+
+
+def leaf(info, uid, gid):
+    if (not stat.S_ISDIR(info.st_mode) or stat.S_IMODE(info.st_mode) != 0o700 or
+        info.st_uid != uid or info.st_gid != gid):
+        raise Pending('application data requires its declared UID/GID and directory mode 0700')
+    return identity(info)
+
+
+def observe(path, uid, gid, supplementary_groups=(), deadline=None):
+    start = KERNEL.now()
+    if deadline is not None and (not KERNEL.finite_deadline(deadline) or deadline <= start):
+        raise Pending('invalid inherited private directory window')
+    end = min(start+ATTEMPT_SECONDS, deadline) if deadline is not None else start+ATTEMPT_SECONDS
+    BASE.fence(end)
+    if (type(path) is not type(BASE.TRUST_ROOT) or not path.is_absolute() or
+        not 1 < len(str(path)) <= 512 or os.path.normpath(str(path)) != str(path) or
+        re.fullmatch(r'/[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*', str(path)) is None or
+        any(part in ('.', '..') for part in path.parts)):
+        raise Pending('unsupported canonical private directory path')
+    if (type(uid) is not int or not 1 <= uid <= 0x7fffffff or
+        type(gid) is not int or not 1 <= gid <= 0x7fffffff or
+        type(supplementary_groups) not in (tuple, list) or len(supplementary_groups) > 8):
+        raise Pending('unsupported explicit private directory identity')
+    groups = {gid}
+    for group in supplementary_groups:
+        if type(group) is not int or not 1 <= group <= 0x7fffffff or group in groups:
+            raise Pending('unsupported or duplicate supplementary group')
+        groups.add(group)
+    context = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
+    if context == 0:
+        raise Pending('missing private directory namespace')
+    parents = ancestry(path, uid, groups, end)
+    before = leaf(path.lstat(), uid, gid)
+    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    error = close_error = None
+    try:
+        if leaf(os.fstat(descriptor), uid, gid) != before:
+            raise Pending('private directory descriptor differs from its path')
+        payload = BASE.canonical({'schema': 1, 'state': STATE, 'namespace': context,
+            'path': str(path), 'owner_uid': uid, 'owner_gid': gid,
+            'supplementary_groups': sorted(groups-{gid}), 'identity': before,
+            'ancestry': parents, 'contents_inspected': False, 'write_tested': False})
+        if len(payload) > MAX_OUTPUT:
+            raise Pending('private directory observation exceeds its output bound')
+        if (leaf(os.fstat(descriptor), uid, gid) != before or
+            leaf(path.lstat(), uid, gid) != before or ancestry(path, uid, groups, end) != parents):
+            raise Pending('private directory or ancestry changed after encoding')
+        if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != context:
+            raise Pending('private directory namespace changed')
+        BASE.fence(end)
+    except BaseException as caught:
+        error = caught
+    finally:
+        closing, descriptor = descriptor, None
+        try:
+            os.close(closing)
+        except OSError as caught:
+            close_error = caught
+    if error is not None:
+        if close_error is not None:
+            raise CleanupFailure(error, close_error) from error
+        raise error
+    if close_error is not None:
+        raise Pending('private directory close did not complete successfully') from close_error
+    BASE.fence(end)
+    return payload
+" > "$S4B_STAGE/"lib/applications/private_directory.py || return 1
     printf '%s' "#!/usr/bin/python3
 \"\"\"Compose known protected application FILE prerequisites, never app readiness.
 
@@ -12031,7 +12201,8 @@ ba5b74a1977287ea168574c2021e638966f400a5bc3f47e255c144a4e59d4073  lib/applicatio
 f5e10597f7bb35cb04ca76ee75c0ec2aed5910698fe256e523f6e2e91f23d561  lib/applications/postgresql_identity.py
 adead23bd4503d3525e3a5cce0bf46de28f7c46b7e3dba9c362f53a1a46042fc  lib/applications/sava_transport.py
 d3a9632c7e3e3bb8e42a060d2c9c0ccbc01deade8d9d4f2a1b7d80754217e226  lib/applications/sava_ingress.py
-9e06c6960c73432c527aeda5a96b83281c44d132d2a6a96cf33627012ef9906e  lib/applications/sava_service.py
+358c142b6ee062282292c05c444c20a2e9c76f593f57673f261664dcbd485588  lib/applications/sava_service.py
+e146268fc4e5f727d730135c3875282149c807079d989eb63f7e30da8d457c0d  lib/applications/private_directory.py
 4668dcff64153729aa7dd09cdba6583adb9044f22e42bb8f230894339955d2b4  lib/applications/prepare.py
 dc957231a4ace8087397de6f81c652e1e85b83e65320ef3f87c67e7c519d0b35  lib/applications/preflight.py
 1de119181721839e120647eaf34023d5879602ab1b7b9793e32750c0f65a43e7  lib/applications/release_manifest.py

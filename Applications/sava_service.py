@@ -18,6 +18,10 @@ SPEC = importlib.util.spec_from_file_location('debian13s4_sava_service_ingress',
     Path(__file__).resolve().with_name('sava_ingress.py'))
 INGRESS = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(INGRESS)
+SPEC = importlib.util.spec_from_file_location('debian13s4_sava_private_directory',
+    Path(__file__).resolve().with_name('private_directory.py'))
+STORAGE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(STORAGE)
 SAVA = INGRESS.SAVA
 BASE, KERNEL, Pending = SAVA.BASE, SAVA.KERNEL, SAVA.Pending
 ATTEMPT_SECONDS = 1220
@@ -61,7 +65,7 @@ def prerequisite(end, context):
     try:
         raw = INGRESS.prepare(deadline=end)
     except INGRESS.Pending as error:
-        raise Pending('Sava ingress preparation refused') from error
+        raise Pending('Sava ingress preparation refused: '+str(error)) from error
     if type(raw) is not bytes or not raw or len(raw) > INGRESS.MAX_OUTPUT:
         raise Pending('unsupported complete Sava ingress receipt')
     try:
@@ -186,19 +190,48 @@ def render(ingress):
             'gateway_listener_intention': gateway['listener']}
 
 
-def prepare(deadline=None):
+def storage_observation(plan, end, context):
+    required = plan['required_storage']
+    shared = plan['units']['application']['identity']['shared_groups']
+    BASE.fence(end)
+    try:
+        raw = STORAGE.observe(Path(required['path']), required['owner_uid'], required['owner_gid'],
+                              list(shared.values()), deadline=end)
+    except (STORAGE.Pending, OSError) as error:
+        raise Pending('Sava private storage directory refused: '+str(error)) from error
+    if type(raw) is not bytes or not raw or len(raw) > STORAGE.MAX_OUTPUT:
+        raise Pending('unsupported private storage observation bytes')
+    value = json.loads(raw, object_pairs_hook=KERNEL.unique_object)
+    if (type(value) is not dict or type(value.get('schema')) is not int or value['schema'] != 1 or
+        value.get('state') != STORAGE.STATE or KERNEL.uint(value.get('namespace'), 0xffffffffffffffff) != context or
+        value.get('path') != required['path'] or type(value.get('owner_uid')) is not int or
+        value['owner_uid'] != required['owner_uid'] or type(value.get('owner_gid')) is not int or
+        value['owner_gid'] != required['owner_gid'] or raw != BASE.canonical(value)):
+        raise Pending('private storage observation differs from the selected Sava identity')
+    BASE.fence(end)
+    return raw, value
+
+
+def prepare(deadline=None, require_storage=False):
     end = KERNEL.now()+ATTEMPT_SECONDS
     if deadline is not None:
         if not KERNEL.finite_deadline(deadline):
             raise Pending('invalid inherited Sava service window')
         end = min(end, deadline)
     BASE.fence(end)
+    if type(require_storage) is not bool:
+        raise Pending('storage admission selection must be a Boolean')
     context = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
     if context == 0:
         raise Pending('missing Sava service namespace')
     raw, ingress = prerequisite(end, context)
     _, private = application_files(ingress, end)
     plan = render(ingress)
+    storage = None
+    if require_storage:
+        storage, observation = storage_observation(plan, end, context)
+        plan['required_storage'].update(observed=True, observation=observation,
+            observation_sha256=hashlib.sha256(storage).hexdigest())
     payload = BASE.canonical({'schema': 1, 'profile': PROFILE, 'state': STATE,
         'namespace': context, 'ingress_sha256': hashlib.sha256(raw).hexdigest(),
         'plan': plan})
@@ -210,6 +243,8 @@ def prepare(deadline=None):
     _, after_private = application_files(after_value, end)
     if after_private != private:
         raise Pending('Sava settings bytes changed after service encoding')
+    if require_storage and storage_observation(plan, end, context)[0] != storage:
+        raise Pending('Sava private storage observation changed after service encoding')
     if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != context:
         raise Pending('Sava service namespace changed')
     BASE.fence(end)
@@ -219,9 +254,11 @@ def prepare(deadline=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--unit', choices=tuple(UNITS), help='emit only the selected unit text')
+    parser.add_argument('--require-storage', action='store_true',
+                        help='also require the declared existing private data directory')
     args = parser.parse_args(argv)
     try:
-        raw = prepare()
+        raw = prepare(require_storage=args.require_storage)
         if args.unit:
             raw = json.loads(raw)['plan']['units'][args.unit]['unit'].encode('ascii')
         sink = sys.stdout.buffer
