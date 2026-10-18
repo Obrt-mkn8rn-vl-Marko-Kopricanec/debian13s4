@@ -25,6 +25,8 @@ CHECKS = {
                         'protected-managed-runtime-metadata-source-only'),
     'managed-images': ('managed_images.py', 'four-app-pe-cli-entry-structure-v1',
                        'protected-managed-entry-structure-source-only'),
+    'managed-assets': ('managed_assets.py', 'four-app-selected-dependency-file-correspondence-v1',
+                       'protected-managed-dependency-files-source-only'),
     'identities': ('identities.py', 'four-app-release-account-intention-v1',
                    'protected-application-execution-identity-source-only'),
     'dns': ('dns_service.py', 'protected-dns-release-service-intention-v1',

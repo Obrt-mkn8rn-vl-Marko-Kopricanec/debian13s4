@@ -405,9 +405,9 @@ s4b_main() {
     s4b_log 'This development checkpoint does not yet implement the complete hardened server.'
 }
 
-S4B_BUNDLE_ID=60a2a2b894547317c22ecaa6a0a303e36bbe530250199fa4f6972ff18217bd90
-S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/backup_run.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/managed_runtime.py lib/applications/cli_image.py lib/applications/managed_images.py lib/dns/prepare.py)
-S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
+S4B_BUNDLE_ID=49b0cfec81f12c4dfc36e1c2b4df659caf312ff1ea7dc22ec193bbbc8dd286d4
+S4B_FILES=(lib/repair.sh lib/tasks.list lib/tasks/prerequisites/apply.sh lib/tasks/prerequisites/verify.sh lib/tasks/prerequisites/common.sh lib/tasks/prerequisites/debian.sources units/debian13s4-repair.service units/debian13s4-repair.timer units/debian13s4-resume.service lib/maintenance/common.sh lib/maintenance/update.sh lib/maintenance/policy.conf lib/maintenance/needrestart.conf lib/maintenance/restart-policy.pl lib/maintenance/retain-kernels.py lib/maintenance/debian13s4-maintenance.service lib/maintenance/debian13s4-maintenance.timer lib/tasks/maintenance/apply.sh lib/tasks/maintenance/verify.sh lib/dotnet/common.sh lib/dotnet/update.sh lib/dotnet/verify-payload.pl lib/dotnet/policy.conf lib/dotnet/preferences lib/dotnet/microsoft-2025.asc lib/dotnet/debian13s4-dotnet.service lib/dotnet/debian13s4-dotnet.timer lib/dotnet/sources.sources lib/tasks/dotnet/apply.sh lib/tasks/dotnet/verify.sh lib/network/common.sh lib/network/repair.sh lib/network/verify.py lib/network/network.conf lib/network/debian13s4-network.service lib/network/debian13s4-network.timer lib/tasks/network/apply.sh lib/tasks/network/verify.sh lib/retention/common.sh lib/retention/repair.sh lib/retention/journal.py lib/retention/clean-cache.py lib/retention/apt.conf lib/retention/journal.conf lib/retention/debian13s4-retention.service lib/retention/debian13s4-retention.timer lib/tasks/retention/apply.sh lib/tasks/retention/verify.sh lib/hardening/common.sh lib/hardening/repair.sh lib/hardening/verify.py lib/hardening/kernel.conf lib/hardening/debian13s4-hardening.service lib/hardening/debian13s4-hardening.timer lib/tasks/hardening/apply.sh lib/tasks/hardening/verify.sh lib/firewall/kernel.py lib/ssh/common.sh lib/ssh/policy.py lib/ssh/repair.sh lib/ssh/debian13s4-admin-ssh.service lib/ssh/debian13s4-ssh.service lib/ssh/debian13s4-ssh.timer lib/tasks/ssh/apply.sh lib/tasks/ssh/verify.sh lib/postgresql/prepare.py lib/postgresql/live.py lib/postgresql/access.py lib/postgresql/backup.py lib/postgresql/archive_stage.py lib/postgresql/archive_inspection.py lib/postgresql/dump_stream.py lib/postgresql/selected_stage.py lib/postgresql/selected_inspection.py lib/postgresql/selected_uncertainty.py lib/postgresql/stage_manifest.py lib/postgresql/backup_attempt.py lib/postgresql/backup_lifecycle.py lib/postgresql/private_storage.py lib/postgresql/backup_status.py lib/postgresql/backup_run.py lib/postgresql/attempt_failure.py lib/postgresql/common.sh lib/postgresql/repair.sh lib/postgresql/debian13s4-postgresql-server.service lib/postgresql/debian13s4-postgresql.service lib/postgresql/debian13s4-postgresql.timer lib/tasks/postgresql/apply.sh lib/tasks/postgresql/verify.sh lib/web/prepare.py lib/web/live.py lib/web/upstream.py lib/web/common.sh lib/web/repair.sh lib/web/debian13s4-web-server.service lib/web/debian13s4-web.service lib/web/debian13s4-web.timer lib/tasks/web/apply.sh lib/tasks/web/verify.sh lib/applications/releases.py lib/applications/identities.py lib/applications/dns_service.py lib/applications/postgresql_identity.py lib/applications/sava_transport.py lib/applications/sava_ingress.py lib/applications/sava_service.py lib/applications/private_directory.py lib/applications/email_worker.py lib/applications/email_gateway.py lib/applications/prepare.py lib/applications/preflight.py lib/applications/release_manifest.py lib/applications/linux_images.py lib/applications/managed_runtime.py lib/applications/cli_image.py lib/applications/managed_images.py lib/applications/managed_assets.py lib/dns/prepare.py)
+S4B_MODES=(0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0755 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644 0644)
 
 s4b_write_bundle() {
     mkdir -p -- "$S4B_STAGE/"lib "$S4B_STAGE/"lib/tasks/prerequisites "$S4B_STAGE/"units "$S4B_STAGE/"lib/maintenance "$S4B_STAGE/"lib/tasks/maintenance "$S4B_STAGE/"lib/dotnet "$S4B_STAGE/"lib/tasks/dotnet "$S4B_STAGE/"lib/network "$S4B_STAGE/"lib/tasks/network "$S4B_STAGE/"lib/retention "$S4B_STAGE/"lib/tasks/retention "$S4B_STAGE/"lib/hardening "$S4B_STAGE/"lib/tasks/hardening "$S4B_STAGE/"lib/firewall "$S4B_STAGE/"lib/ssh "$S4B_STAGE/"lib/tasks/ssh "$S4B_STAGE/"lib/postgresql "$S4B_STAGE/"lib/tasks/postgresql "$S4B_STAGE/"lib/web "$S4B_STAGE/"lib/tasks/web "$S4B_STAGE/"lib/applications "$S4B_STAGE/"lib/dns || return 1
@@ -12397,6 +12397,8 @@ CHECKS = {
                         'protected-managed-runtime-metadata-source-only'),
     'managed-images': ('managed_images.py', 'four-app-pe-cli-entry-structure-v1',
                        'protected-managed-entry-structure-source-only'),
+    'managed-assets': ('managed_assets.py', 'four-app-selected-dependency-file-correspondence-v1',
+                       'protected-managed-dependency-files-source-only'),
     'identities': ('identities.py', 'four-app-release-account-intention-v1',
                    'protected-application-execution-identity-source-only'),
     'dns': ('dns_service.py', 'protected-dns-release-service-intention-v1',
@@ -13471,6 +13473,206 @@ if __name__ == '__main__':
     sys.exit(main())
 " > "$S4B_STAGE/"lib/applications/managed_images.py || return 1
     printf '%s' "#!/usr/bin/python3
+\"\"\"Bind already-selected .NET dependency assets to protected release files.
+
+This is a closed app-directory file profile, not host probing, RID fallback,
+framework resolution, native dependency resolution, signature or ABI validation.
+No CLR, package, application, socket or process entry occurs here.
+\"\"\"
+import base64
+import hashlib
+import importlib.util
+from pathlib import Path
+import re
+import sys
+
+SPEC = importlib.util.spec_from_file_location('debian13s4_managed_assets_runtime',
+    Path(__file__).resolve().with_name('managed_runtime.py'))
+RUNTIME = importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(RUNTIME)
+RELEASE, BASE, KERNEL, Pending = RUNTIME.RELEASE, RUNTIME.BASE, RUNTIME.KERNEL, RUNTIME.Pending
+PROFILE = 'four-app-selected-dependency-file-correspondence-v1'
+STATE = 'protected-managed-dependency-files-source-only'
+ATTEMPT_SECONDS = 2 * (RUNTIME.ATTEMPT_SECONDS + RELEASE.ATTEMPT_SECONDS) + 10
+MAX_OUTPUT, MAX_ASSETS = 1048577, 256
+
+
+def library_name(value):
+    if type(value) is not str or re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,127}', value) is None:
+        raise Pending('unsupported dependency library name')
+    return value
+
+
+def version(value):
+    if type(value) is not str or re.fullmatch(r'[0-9][A-Za-z0-9_.+-]{0,95}', value) is None:
+        raise Pending('dependency requires an explicit bounded version')
+    return value
+
+
+def library(value):
+    if type(value) is not str or value.count('/') != 1:
+        raise Pending('dependency library key requires name/version')
+    name, release = value.split('/')
+    return library_name(name), version(release)
+
+
+def library_record(value):
+    KERNEL.known(value, {'type', 'serviceable', 'sha512', 'path', 'hashPath'}, {'type', 'serviceable', 'sha512'})
+    if value['type'] not in ('project', 'package', 'reference') or type(value['serviceable']) is not bool:
+        raise Pending('unsupported selected dependency library record')
+    digest = value['sha512']
+    if type(digest) is not str or len(digest) > 88: raise Pending('unsupported dependency hash declaration')
+    if digest:
+        try: data = base64.b64decode(digest, validate=True)
+        except ValueError as error: raise Pending('invalid dependency hash declaration') from error
+        if len(data) != 64 or base64.b64encode(data).decode('ascii') != digest:
+            raise Pending('dependency hash declaration is not canonical SHA512-sized data')
+    for name in ('path', 'hashPath'):
+        if name in value: RELEASE.relative(value[name])
+
+
+def asset_path(kind, name, value):
+    RELEASE.relative(name)
+    fields = {'assemblyVersion', 'fileVersion'} | ({'locale'} if kind == 'resources' else set())
+    KERNEL.known(value, fields, {'locale'} if kind == 'resources' else set())
+    for key in ('assemblyVersion', 'fileVersion'):
+        if key in value:
+            text = value[key]
+            if (type(text) is not str or re.fullmatch(r'[0-9]{1,5}(?:\\.[0-9]{1,5}){1,3}', text) is None or
+                any(int(part) > 65535 for part in text.split('.'))):
+                raise Pending('unsupported reported dependency asset version')
+    pieces = name.split('/')
+    if pieces[-1] == '_._': raise Pending('dependency placeholders are outside the selected file profile')
+    if kind == 'resources':
+        locale = value['locale']
+        if (type(locale) is not str or re.fullmatch(r'[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8}){0,4}', locale) is None or
+            len(pieces) < 2 or pieces[-2] != locale):
+            raise Pending('resource path and explicit locale differ')
+        return locale+'/'+pieces[-1]
+    return pieces[-1]
+
+
+def bind(value, architecture, entry, declared, observed):
+    \"\"\"Correspondence within the owned whole release; no external probing.\"\"\"
+    summary = RUNTIME.dependencies(value, architecture)
+    target = summary['runtime_target']
+    if set(value['targets']) != {target} or set(value['targets'][target]) != set(value['libraries']):
+        raise Pending('dependency file requires one complete already-selected target')
+    RELEASE.relative(entry)
+    parent = Path(entry).parent
+    assets, destinations, entry_count = [], set(), 0
+    group = value['targets'][target]
+    for key, row in sorted(group.items()):
+        library(key); library_record(value['libraries'][key])
+        KERNEL.known(row, {'dependencies', 'runtime', 'native', 'resources'}, set())
+        dependencies = row.get('dependencies', {})
+        if type(dependencies) is not dict or len(dependencies) > 4096:
+            raise Pending('unsupported selected dependency references')
+        for name, release in dependencies.items():
+            reference = library_name(name)+'/'+version(release)
+            if reference not in group: raise Pending('dependency reference is absent from the selected library table')
+        for kind in ('runtime', 'native', 'resources'):
+            table = row.get(kind, {})
+            if type(table) is not dict or len(table) > MAX_ASSETS:
+                raise Pending('dependency asset inventory exceeds its bound')
+            for name, facts in sorted(table.items()):
+                relative = str(parent/asset_path(kind, name, facts))
+                RELEASE.relative(relative)
+                if relative in destinations: raise Pending('dependency assets collide at one published file')
+                destinations.add(relative)
+                if relative not in declared['files'] or relative not in observed['files']:
+                    raise Pending('selected dependency asset is absent from the whole release: '+relative)
+                item, source = declared['files'][relative], observed['files'][relative]
+                if (item['bytes'] == 0 or item['mode'] not in (('0644', '0755') if kind == 'native' else ('0644',)) or
+                    source['sha256'] != item['sha256'] or source['identity'][5] != item['bytes'] or
+                    source['path'] != str(Path(declared['directory'])/relative)):
+                    raise Pending('dependency asset differs from its nonempty protected file declaration')
+                assets.append({'library': key, 'kind': kind, 'declared_path': name,
+                               'release_path': relative, 'source': source})
+                if kind == 'runtime' and relative == entry+'.dll': entry_count += 1
+                if len(assets) > MAX_ASSETS: raise Pending('selected dependency assets exceed their combined bound')
+    if entry_count != 1:
+        raise Pending('dependency target must include the declared entry assembly exactly once')
+    return {'runtime_target': target, 'libraries': len(group), 'assets': assets,
+            'framework_resolution_verified': False, 'loader_resolution_verified': False,
+            'package_hashes_verified': False}
+
+
+def prerequisites(end, context):
+    BASE.fence(end)
+    try: runtime_raw = RUNTIME.prepare(deadline=end)
+    except RUNTIME.Pending as error: raise Pending('complete managed runtime preparation refused') from error
+    if type(runtime_raw) is not bytes or not runtime_raw or len(runtime_raw) > RUNTIME.MAX_OUTPUT:
+        raise Pending('unsupported managed runtime receipt')
+    runtime = RUNTIME.decoded(runtime_raw)
+    fields = {'schema', 'profile', 'state', 'namespace', 'image_configuration', 'release_sha256', 'applications'}
+    KERNEL.known(runtime, fields, fields)
+    if (type(runtime['schema']) is not int or runtime['schema'] != 1 or runtime['profile'] != RUNTIME.PROFILE or
+        runtime['state'] != RUNTIME.STATE or KERNEL.uint(runtime['namespace'], 0xffffffffffffffff) != context or
+        runtime_raw != BASE.canonical(runtime)):
+        raise Pending('managed runtime profile, context or canonical receipt differs')
+    release_raw, release = RUNTIME.IMAGE.prerequisite(end, context)
+    if hashlib.sha256(release_raw).hexdigest() != runtime['release_sha256']:
+        raise Pending('managed runtime and whole release observations differ')
+    BASE.fence(end)
+    return runtime_raw, runtime, release_raw, release
+
+
+def observations(runtime, release, end):
+    result = {}
+    architecture = runtime['image_configuration']['value']['architecture']
+    for app in RELEASE.APPLICATIONS:
+        declared, observed = release['configuration']['value']['applications'][app], release['applications'][app]
+        result[app] = {}
+        for role in RELEASE.SERVICES:
+            entry = declared['entry_points'][role]; expected = runtime['applications'][app][role]['sources']['dependencies']
+            raw, source = BASE.read_protected(Path(declared['directory'])/(entry+'.deps.json'), RUNTIME.MAX_JSON, False, end)
+            if BASE.canonical(source) != BASE.canonical(expected): raise Pending('selected dependency file observation changed')
+            BASE.fence(end)
+            value = bind(RUNTIME.decoded(raw), architecture, entry, declared, observed)
+            result[app][role] = {'dependencies': source, **value}
+            BASE.fence(end)
+    return result
+
+
+def prepare(deadline=None):
+    end = KERNEL.now()+ATTEMPT_SECONDS
+    if deadline is not None:
+        if not KERNEL.finite_deadline(deadline): raise Pending('invalid inherited dependency file window')
+        end = min(end, deadline)
+    BASE.fence(end)
+    context = KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff)
+    if not context: raise Pending('missing dependency file namespace')
+    runtime_raw, runtime, release_raw, release = prerequisites(end, context)
+    observed = observations(runtime, release, end)
+    raw = BASE.canonical({'schema': 1, 'profile': PROFILE, 'state': STATE, 'namespace': context,
+        'runtime_sha256': hashlib.sha256(runtime_raw).hexdigest(), 'release_sha256': hashlib.sha256(release_raw).hexdigest(),
+        'image_configuration': runtime['image_configuration'], 'applications': observed})
+    if len(raw) > MAX_OUTPUT: raise Pending('dependency file report exceeds its bound')
+    final_runtime_raw, final_runtime, final_release_raw, final_release = prerequisites(end, context)
+    if (final_runtime_raw != runtime_raw or final_release_raw != release_raw or
+        BASE.canonical(observations(final_runtime, final_release, end)) != BASE.canonical(observed)):
+        raise Pending('managed runtime, release or dependency observations changed after encoding')
+    if KERNEL.uint(KERNEL.namespace(), 0xffffffffffffffff) != context: raise Pending('dependency file namespace changed')
+    BASE.fence(end)
+    return raw
+
+
+def main():
+    try:
+        if len(sys.argv) != 1: raise Pending('dependency file inspection accepts no overrides')
+        raw = prepare(); count = sys.stdout.buffer.write(raw)
+        if type(count) is not int or count != len(raw): raise Pending('incomplete dependency file output')
+        sys.stdout.buffer.flush()
+        return 0
+    except (Pending, OSError, ValueError, KeyError, TypeError, AttributeError, UnicodeError, RecursionError) as error:
+        print('Pending: '+str(error), file=sys.stderr)
+        return 75
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+" > "$S4B_STAGE/"lib/applications/managed_assets.py || return 1
+    printf '%s' "#!/usr/bin/python3
 \"\"\"Prepare PARTIAL preprovisioned mk8.dns replica service intentions only.
 
 No binaries, accounts, snapshots, directories, units or network are installed,
@@ -13875,12 +14077,13 @@ e146268fc4e5f727d730135c3875282149c807079d989eb63f7e30da8d457c0d  lib/applicatio
 0ef1b8e9e6258d3492353bb1fcddce322e165c8c24b930c71522c8480ab19528  lib/applications/email_worker.py
 fffc4daf3a061c6223fc6ffb52125ea62b8bdef1ec9d0ebfd05b15b64474d8ed  lib/applications/email_gateway.py
 4668dcff64153729aa7dd09cdba6583adb9044f22e42bb8f230894339955d2b4  lib/applications/prepare.py
-d63c740caa504b39869bf0c22ac2e67e56895079aa21055948769fc27d7c25b1  lib/applications/preflight.py
+e7733112900fd805a25cdc70f94352ee5c61ea52778615bf21931652078f86a5  lib/applications/preflight.py
 1de119181721839e120647eaf34023d5879602ab1b7b9793e32750c0f65a43e7  lib/applications/release_manifest.py
 ba6972cd98dfe8761ea62d77f542ade67741d794f9b967c5bd84bd973e22913d  lib/applications/linux_images.py
 9f0009b9cdf5436649268b9b99dddbef78ce16092e48f554798fbab91c5aedb1  lib/applications/managed_runtime.py
 6e2221da7775202b8f485966c16ad270c799cbe0a216a1142619c11e975e6952  lib/applications/cli_image.py
 07f5d29181a12228fb2846509c2efd6c41fa138057bcbda721efc9de5c409c9d  lib/applications/managed_images.py
+998cf9331a7979f4e24f9b8239efebcb44eddf1df42c49e300eafb592cfaff80  lib/applications/managed_assets.py
 472655d786dcbce62247771243c6c856a49ea7dbed9abcad80d7aee3c7915093  lib/dns/prepare.py
 " > "$S4B_STAGE/files.sha256" || return 1
 }
